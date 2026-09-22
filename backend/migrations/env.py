@@ -30,6 +30,9 @@ from deos.modules.agent_runtime.adapter.persistence import (
 from deos.modules.tool.adapter.persistence import models as tool_models
 from deos.modules.skill.adapter.persistence import models as skill_models
 from deos.modules.knowledge.adapter.persistence import models as knowledge_models
+from deos.modules.orchestration.adapter.persistence import (
+    models as orchestration_models,
+)
 
 # Memory (P4) is wired in once modules/memory lands — placeholder for
 # memory_models import; left as a comment to keep env.py importable even

@@ -355,6 +355,71 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     app.state.knowledge_service_factory = _KnowledgeFactory()
 
+    # ── per-request orchestration factory ───────────────────────────────
+    from deos.modules.orchestration.adapter.events import (
+        MessagingOrchestrationEventPublisher,
+    )
+    from deos.modules.orchestration.adapter.persistence.repositories import (
+        SqlPlanRepository,
+        SqlStepRunRepository,
+        SqlWorkflowRunRepository,
+    )
+    from deos.modules.orchestration.adapter.runtime_adapters import (
+        SkillDispatchAdapter,
+        SubAgentAdapter,
+        ToolDispatchAdapter,
+    )
+    from deos.modules.orchestration.application.conditions import (
+        SafeConditionEvaluator,
+    )
+    from deos.modules.orchestration.application.services import (
+        OrchestrationService,
+    )
+    from deos.modules.orchestration.application.template import (
+        StringTemplateRenderer,
+    )
+
+    orchestration_bus = container.bus()
+    orchestration_publisher = MessagingOrchestrationEventPublisher(
+        orchestration_bus
+    )
+
+    class _OrchestrationFactory:
+        def __init__(self) -> None:
+            self._agent_runtime_factory = getattr(
+                app.state, "agent_runtime_factory", None
+            )
+            self._tool_factory = getattr(app.state, "tool_factory", None)
+            self._skill_factory = getattr(app.state, "skill_factory", None)
+            self._publisher = orchestration_publisher
+            self._policy_guard = policy_guard
+
+        def for_session(self):  # type: ignore[no-untyped-def]
+            sf = container.session_factory().maker()
+            sub_agent = SubAgentAdapter(self._agent_runtime_factory)
+            tool_dispatch = ToolDispatchAdapter(self._tool_factory)
+            skill_dispatch = SkillDispatchAdapter(self._skill_factory)
+            return OrchestrationService.from_parts(
+                plan_repository=SqlPlanRepository(sf),
+                run_repository=SqlWorkflowRunRepository(sf),
+                step_run_repository=SqlStepRunRepository(sf),
+                sub_agent=sub_agent,
+                tool_dispatch=tool_dispatch,
+                skill_dispatch=skill_dispatch,
+                template_renderer=StringTemplateRenderer(),
+                condition_evaluator=SafeConditionEvaluator(),
+                publisher=self._publisher,
+                policy_guard=self._policy_guard,
+                max_total_steps=(
+                    container.settings.orchestration_max_total_steps
+                ),
+                default_step_timeout_seconds=(
+                    container.settings.orchestration_default_step_timeout_seconds
+                ),
+            )
+
+    app.state.orchestration_service_factory = _OrchestrationFactory()
+
     # ── bus (must be available before subscribers install) ──────────────
     bus = container.bus()
     await bus.start()

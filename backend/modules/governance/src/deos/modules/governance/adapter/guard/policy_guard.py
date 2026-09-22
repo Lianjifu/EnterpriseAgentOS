@@ -48,12 +48,12 @@ class PolicyGuard:
         if rec.effect is POL_EFFECT.REQUIRE_APPROVAL:
             raise ApprovalRequiredError(
                 approval_id=str(rec.approval_id) if rec.approval_id else None,
-                reason=rec.reason,
                 code="APPROVAL_REQUIRED",
                 details={
                     "action": action,
                     "rule_id": str(rec.rule_id) if rec.rule_id else None,
                     "approval_id": str(rec.approval_id) if rec.approval_id else None,
+                    "reason": rec.reason,
                 },
             )
         return rec

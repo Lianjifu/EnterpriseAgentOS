@@ -40,6 +40,8 @@ async def install(
     # policy lifecycle → invalidate evaluator cache.
     # We register a separate handler rather than wrap ``handler`` so the
     # cache invalidation runs even if the audit recorder skips a payload.
+    # The cache-invalidator subscribes alongside the recorder (same topic
+    # = two handlers); we don't dedupe across handler kinds.
     if cache_invalidator is not None:
         async def _policy_changed(envelope: Any) -> None:
             payload = (
@@ -47,18 +49,22 @@ async def install(
                 if not isinstance(envelope, dict)
                 else envelope
             )
-            tenant_id = payload.get("tenant_id") if isinstance(payload, dict) else None
-            if tenant_id is not None:
-                cache_invalidator(tenant_id)
+            raw_tid = payload.get("tenant_id") if isinstance(payload, dict) else None
+            if raw_tid is None:
+                return
+            try:
+                from uuid import UUID
+
+                tenant_id = UUID(str(raw_tid))
+            except (TypeError, ValueError):
+                return
+            cache_invalidator(tenant_id)
 
         for topic in (
             "governance.policy.created",
             "governance.policy.updated",
             "governance.policy.deleted",
         ):
-            if topic in seen:
-                continue
-            seen.add(topic)
             await event_bus.subscribe(topic, _policy_changed)
 
 

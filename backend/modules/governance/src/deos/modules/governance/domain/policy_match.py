@@ -37,10 +37,17 @@ def _glob_match(pattern: str, value: str) -> bool:
         return False
     if "*" not in pattern and "?" not in pattern:
         return pattern == value
-    # iterative: split pattern into tokens around ``*``
+    # ``?`` only (no ``*``): every char must match, ``?`` = any one char.
+    if "?" in pattern and "*" not in pattern:
+        if len(pattern) != len(value):
+            return False
+        for pc, vc in zip(pattern, value, strict=False):
+            if pc == "?" or pc == vc:
+                continue
+            return False
+        return True
+    # ``*`` (possibly mixed): split around ``*`` and anchor prefix/middle/suffix.
     tokens = pattern.split("*")
-    pos = 0
-    # left-anchored prefix
     if not value.startswith(tokens[0]):
         return False
     pos = len(tokens[0])
@@ -49,26 +56,12 @@ def _glob_match(pattern: str, value: str) -> bool:
         if idx < 0:
             return False
         pos = idx + len(tok)
-    # right-anchored suffix
     if tokens[-1] and not value.endswith(tokens[-1]):
         return False
-    # remaining length must equal suffix length
     if tokens[-1]:
-        pos = len(value) - len(tokens[-1])
-    # length already matched by anchors + middle tokens; nothing more to do
-    _ = pos
-    # ``?`` translation: a pattern like ``"tool:?:execute"`` is uncommon
-    # but supported — translate each ``?`` to a char and re-match.
-    if "?" in pattern:
-        # simple ``?`` → any one char; pattern may not include ``*``
-        if "*" in pattern:
-            return False  # mixed semantics; reject for safety
-        if len(pattern) != len(value):
-            return False
-        for pc, vc in zip(pattern, value, strict=False):
-            if pc == "?" or pc == vc:
-                continue
-            return False
+        # remaining middle length must accommodate suffix; prefix+middle
+        # already consumed value[:pos], so value must have tokens[-1] suffix.
+        pass
     return True
 
 

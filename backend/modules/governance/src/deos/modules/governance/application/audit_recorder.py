@@ -68,8 +68,17 @@ class AuditRecorder:
     async def handle(self, envelope: Any) -> None:
         """EventBus handler — accepts an EventEnvelope or a raw dict payload."""
         if isinstance(envelope, dict):
-            payload = envelope
-            event_type = envelope.get("event_name") or envelope.get("topic") or "unknown"
+            # The EventEnvelope shape wraps the actual payload under
+            # ``payload``; if present, persist only that sub-dict so we
+            # don't try to JSON-envelope UUIDs/``occurred_at_ms`` ints
+            # from the envelope envelope itself.
+            payload = envelope.get("payload") if "payload" in envelope else envelope
+            event_type = (
+                envelope.get("event_name")
+                or envelope.get("topic")
+                or payload.get("event_name")
+                or "unknown"
+            )
         else:
             payload = getattr(envelope, "payload", None) or {}
             event_type = (

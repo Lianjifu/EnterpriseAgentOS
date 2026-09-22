@@ -31,6 +31,9 @@ from deos.modules.agent_runtime.application.use_cases.get_session import (
 from deos.modules.agent_runtime.application.use_cases.run_turn import (
     RunTurnUseCase,
 )
+from deos.modules.agent_runtime.application.use_cases.run_turn_to_completion import (
+    RunTurnCompletionUseCase,
+)
 
 
 @dataclass(slots=True)
@@ -64,3 +67,6 @@ class AgentRuntimeService:
             memory_port=self.memory_port,
             knowledge_port=self.knowledge_port,
         )
+
+    def run_turn_to_completion(self) -> RunTurnCompletionUseCase:
+        return RunTurnCompletionUseCase(self.run_turn())

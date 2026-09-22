@@ -82,6 +82,13 @@ def create_app() -> FastAPI:
     if mp is not None:
         app.include_router(mp)
 
+    # P7 orchestration module — /v1/orchestration/plans + /runs
+    from deos.modules.orchestration.adapter.http.router import (
+        build_router as orchestration_router,
+    )
+
+    app.include_router(orchestration_router())
+
     # Governance module — /v1/policies + /v1/approvals
     from deos.modules.governance.adapter.http.factory import (
         make_approval_service,

@@ -187,6 +187,7 @@ pythonpath = [
     "modules/channel/tests/unit",
     "modules/knowledge/src/deos",
     "modules/orchestration/src/deos",
+    "modules/orchestration/tests/unit",
     "runtimes/embedding_runtime/src/deos",
     "runtimes/skill_runtime/src/deos",
     "composition/eos_app/src/deos",

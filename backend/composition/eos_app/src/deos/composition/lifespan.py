@@ -396,9 +396,23 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
         def for_session(self):  # type: ignore[no-untyped-def]
             sf = container.session_factory().maker()
-            sub_agent = SubAgentAdapter(self._agent_runtime_factory)
-            tool_dispatch = ToolDispatchAdapter(self._tool_factory)
-            skill_dispatch = SkillDispatchAdapter(self._skill_factory)
+            # Sub-agent / tool / skill dispatch adapters open their
+            # OWN DB sessions per call so the orchestration service's
+            # session is not coupled to the dispatched request's
+            # lifecycle.  We hand them a fresh session maker.
+            adapter_session_maker = container.session_factory().maker
+            sub_agent = SubAgentAdapter(
+                agent_runtime_factory=self._agent_runtime_factory,
+                session_maker=adapter_session_maker,
+            )
+            tool_dispatch = ToolDispatchAdapter(
+                tool_factory=self._tool_factory,
+                session_maker=adapter_session_maker,
+            )
+            skill_dispatch = SkillDispatchAdapter(
+                skill_factory=self._skill_factory,
+                session_maker=adapter_session_maker,
+            )
             return OrchestrationService.from_parts(
                 plan_repository=SqlPlanRepository(sf),
                 run_repository=SqlWorkflowRunRepository(sf),

@@ -119,11 +119,35 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 self._llm_client,
                 model_service=model_service,
             )
+            # Lazily resolve the per-request knowledge service and wrap it
+            # in the agent_runtime's KnowledgePort adapter so RunTurnUseCase
+            # can pull RAG context into the system prompt.
+            from deos.modules.agent_runtime.adapter.knowledge import (
+                KnowledgeServiceAdapter,
+            )
+
+            knowledge_adapter: object | None = None
+            knowledge_factory = getattr(
+                app.state, "knowledge_service_factory", None
+            )
+            if knowledge_factory is not None:
+                try:
+                    knowledge_adapter = KnowledgeServiceAdapter(
+                        knowledge_factory.for_session()
+                    )
+                except Exception:  # pragma: no cover - defensive  # noqa: BLE001
+                    _log.warning(
+                        "knowledge adapter unavailable; turns will skip RAG",
+                        exc_info=True,
+                    )
+                    knowledge_adapter = None
+
             return AgentRuntimeService(
                 sessions=SqlSessionRepository(session),
                 turns=SqlTurnRepository(session),
                 llm=llm,
                 events=AgentRuntimeEventPublisher(self._bus),
+                knowledge_port=knowledge_adapter,
             )
 
     app.state.agent_runtime_factory = _AgentRuntimeFactory()
@@ -294,6 +318,48 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     app.state.memory_service_factory = _MemoryFactory()
 
+    # ── per-request knowledge factory ───────────────────────────────────
+    from deos.modules.knowledge.adapter.events import (
+        MessagingKnowledgeEventPublisher,
+    )
+    from deos.modules.knowledge.adapter.persistence.repositories import (
+        SqlKnowledgeRepository,
+    )
+    from deos.modules.knowledge.adapter.persistence.vector_adapter import (
+        PgKnowledgeVectorAdapter,
+    )
+    from deos.modules.knowledge.application.chunker import FixedWindowChunker
+    from deos.modules.knowledge.application.services import KnowledgeService
+
+    knowledge_bus = container.bus()
+    knowledge_publisher = MessagingKnowledgeEventPublisher(knowledge_bus)
+
+    class _KnowledgeFactory:
+        def for_session(self):  # type: ignore[no-untyped-def]
+            sf = container.session_factory().maker()
+            return KnowledgeService.from_parts(
+                repository=SqlKnowledgeRepository(sf),
+                storage=container.knowledge_storage(),
+                embedding=container.memory_embedding_adapter(),
+                vector_search=PgKnowledgeVectorAdapter(
+                    store=container.knowledge_vector_store(),
+                ),
+                publisher=knowledge_publisher,
+                chunker=FixedWindowChunker(),
+                policy_guard=policy_guard,
+                default_chunk_size=container.settings.knowledge_default_chunk_size,
+                default_chunk_overlap=(
+                    container.settings.knowledge_default_chunk_overlap
+                ),
+            )
+
+    app.state.knowledge_service_factory = _KnowledgeFactory()
+
+    # ── bus (must be available before subscribers install) ──────────────
+    bus = container.bus()
+    await bus.start()
+    app.state.bus = bus
+
     # ── P5 audit subscriber (governance events → audit_log) ─────────────
     from deos.modules.governance.adapter.subscribers import audit_subscriber
 
@@ -313,11 +379,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.redis = container.redis_client()
     except Exception:  # noqa: BLE001
         _log.warning("redis client not attached; /readyz will report redis=skipped")
-
-    # ── bus ───────────────────────────────────────────────────────────────
-    bus = container.bus()
-    await bus.start()
-    app.state.bus = bus
 
     try:
         yield

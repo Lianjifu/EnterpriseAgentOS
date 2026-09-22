@@ -284,6 +284,34 @@ class Container:
 
         return PgVectorStore(self.engine(), dim=self.settings.llm_embedding_dim)
 
+    # ── P7 knowledge ───────────────────────────────────────────────────────
+
+    def knowledge_vector_store(self):
+        """The pgvector store used by the knowledge vector adapter.
+
+        Distinct from ``memory_vector_store`` — different table +
+        different payload schema.  Embedding dim is shared.
+        """
+        from eos_vector.pg_vector import PgVectorStore
+
+        return PgVectorStore(
+            self.engine(),
+            dim=self.settings.llm_embedding_dim,
+            table="knowledge_chunks_vec",
+        )
+
+    def knowledge_storage(self):
+        """Local-disk object storage for raw knowledge asset bytes."""
+        from pathlib import Path
+
+        from deos.modules.knowledge.adapter.persistence.storage.local import (
+            LocalDiskKnowledgeStorage,
+        )
+
+        return LocalDiskKnowledgeStorage(
+            Path(self.settings.knowledge_storage_root).resolve()
+        )
+
     # ── P6 model ────────────────────────────────────────────────────────────
 
     def model_credential_cipher(self):

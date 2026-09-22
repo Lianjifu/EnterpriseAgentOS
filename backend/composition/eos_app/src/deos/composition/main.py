@@ -71,6 +71,17 @@ def create_app() -> FastAPI:
 
     app.include_router(memory_router())
 
+    # P7 knowledge module — /v1/knowledge/packages + assets + search
+    from deos.modules.knowledge.adapter.http.router import build_multipart_router
+    from deos.modules.knowledge.adapter.http.router import (
+        build_router as knowledge_router,
+    )
+
+    app.include_router(knowledge_router())
+    mp = build_multipart_router()
+    if mp is not None:
+        app.include_router(mp)
+
     # Governance module — /v1/policies + /v1/approvals
     from deos.modules.governance.adapter.http.factory import (
         make_approval_service,

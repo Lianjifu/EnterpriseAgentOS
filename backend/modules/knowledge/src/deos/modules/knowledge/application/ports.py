@@ -167,7 +167,10 @@ class KnowledgeRepository(Protocol):
     async def update_asset(self, asset: KnowledgeAsset) -> KnowledgeAsset: ...
 
     async def add_chunks(
-        self, *, chunks: list[KnowledgeChunk]
+        self,
+        *,
+        chunks: list[KnowledgeChunk],
+        embeddings: list[list[float]] | None = None,
     ) -> list[KnowledgeChunk]: ...
 
     async def list_chunks_for_asset(

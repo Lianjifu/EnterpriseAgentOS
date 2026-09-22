@@ -1,0 +1,184 @@
+[project]
+name = "enterprise-agent-os"
+version = "0.1.0"
+description = "Enterprise Agent OS — modular monolith on FastAPI + uv workspace"
+requires-python = ">=3.12"
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.7.4",
+    "mypy>=1.13.0",
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=5.0.0",
+    "import-linter>=2.3.0",
+    "grimp>=3.2.0",
+    "pip-audit>=2.7.0",
+    "pre-commit>=4.0.0",
+    "alembic>=1.14.0",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30.0",
+    "pgvector>=0.3.6",
+    "testcontainers[postgres,redis]>=4.8.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = [
+    "libs/*",
+    "modules/*",
+    "runtimes/*",
+    "composition/*",
+]
+
+[tool.uv.sources]
+eos-kernel = { workspace = true }
+eos-schema = { workspace = true }
+eos-persistence = { workspace = true }
+eos-observability = { workspace = true }
+eos-auth = { workspace = true }
+eos-messaging = { workspace = true }
+eos-llm = { workspace = true }
+eos-sandbox = { workspace = true }
+eos-vector = { workspace = true }
+eos-vault = { workspace = true }
+eos-http = { workspace = true }
+eos-embedding-runtime = { workspace = true }
+eos-skill-runtime = { workspace = true }
+deos-identity = { workspace = true }
+deos-agent-runtime = { workspace = true }
+deos-tool = { workspace = true }
+deos-skill = { workspace = true }
+deos-memory = { workspace = true }
+deos-governance = { workspace = true }
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["libs", "modules", "composition"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",  # pycodestyle/pyflakes
+    "I",             # isort
+    "N",             # pep8-naming
+    "UP",            # pyupgrade
+    "B",             # bugbear
+    "C4",            # comprehensions
+    "SIM",           # simplify
+    "TCH",           # type-checking blocks
+    "RUF",           # ruff-specific
+    "ASYNC",         # async-correctness
+    "S",             # bandit (security) — relaxed via per-file-ignores
+    "TRY",           # tryceratops
+]
+ignore = [
+    "S101",          # allow assert in tests
+    "S104",          # allow 0.0.0.0 binding (gateway)
+    "TRY003",        # allow raise-without-message in domain errors
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**/*.py" = ["S", "B011"]
+"**/migrations/**/*.py" = ["E", "F", "I", "N", "TC003"]
+"**/router.py" = ["B008"]  # FastAPI Depends() in defaults is intentional
+"**/events.py" = ["RUF009"]
+"**/_in_memory.py" = ["PYI034"]
+"**/uow.py" = ["PYI034"]
+"lifespan.py" = ["PYI034"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["eos_*", "deos"]
+
+[tool.mypy]
+python_version = "3.12"
+# Each module under modules/ and composition/ is a separate namespace package;
+# without `explicit_package_bases` mypy sees two packages with the same
+# `__init__.py` leaf as a duplicate-module collision.
+explicit_package_bases = true
+# Week 1 settings: lenient on missing-imports / untyped-defs so we can land
+# the broad skeleton. The plan is to tighten these in Week 2 once individual
+# libs get `py.typed` markers.
+ignore_missing_imports = true
+disallow_untyped_defs = false
+warn_unused_ignores = false
+plugins = ["pydantic.mypy"]
+# Each mypy_path entry MUST be the deepest directory that contains an
+# __init__.py; otherwise mypy sees the same file as two modules
+# (e.g. `identity.domain` AND `deos.modules.identity.domain`).
+mypy_path = "libs/kernel/src:libs/auth/src:libs/observability/src:libs/persistence/src:libs/messaging/src:libs/http/src:libs/schema/src:libs/llm/src:libs/sandbox/src:libs/vector/src:libs/vault/src:modules/identity/src/deos:modules/agent_runtime/src/deos:modules/tool/src/deos:modules/governance/src/deos:composition/eos_app/src/deos"
+
+[[tool.mypy.overrides]]
+# Tests + generated migrations are exempt from strict checks.
+module = [
+    "tests.*",
+    "modules.*.tests.*",
+    "migrations.*",
+]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+# Composition root and identity module currently lack full type annotations;
+# tighten this list as `py.typed` markers land. We turn off `strict` rather
+# than `ignore_errors` so per-file issues still surface, just at low priority.
+module = [
+    "deos.composition",
+    "deos.modules.identity",
+    "deos.modules.agent_runtime",
+    "deos.modules.tool",
+]
+disallow_untyped_defs = false
+warn_return_any = false
+
+[[tool.mypy.overrides]]
+# The OTLP gRPC exporter is an optional runtime dependency; ignore its
+# stub-absence so the rest of `eos_observability` still type-checks.
+module = ["eos_observability.tracing"]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+# Allow missing type arguments and ambiguous suppression on libraries whose
+# source predates the strict rollout.
+module = [
+    "eos_auth.*",
+    "eos_http.*",
+    "eos_messaging.*",
+    "eos_observability.*",
+    "eos_persistence.*",
+    "eos_llm.*",
+]
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["libs", "modules", "runtimes"]
+pythonpath = [
+    "libs/kernel/src",
+    "libs/auth/src",
+    "libs/observability/src",
+    "libs/persistence/src",
+    "libs/messaging/src",
+    "libs/http/src",
+    "libs/schema/src",
+    "libs/llm/src",
+    "libs/sandbox/src",
+    "libs/vector/src",
+    "libs/vault/src",
+    "modules/identity/src/deos",
+    "modules/agent_runtime/src/deos",
+    "modules/tool/src/deos",
+    "modules/skill/src/deos",
+    "modules/memory/src/deos",
+    "modules/governance/src/deos",
+    "runtimes/embedding_runtime/src/deos",
+    "runtimes/skill_runtime/src/deos",
+    "composition/eos_app/src/deos",
+]
+addopts = "-ra --strict-markers --strict-config --import-mode=importlib --cov=eos_kernel --cov=eos_auth --cov=eos_observability --cov=eos_persistence --cov=eos_messaging --cov=eos_http --cov=eos_schema --cov=eos_llm --cov=eos_sandbox --cov=eos_vector --cov=eos_vault --cov=deos --cov-report=term-missing"
+markers = [
+    "integration: marks integration tests (require DB/Redis)",
+    "contract: marks contract tests",
+    "smoke: marks end-to-end smoke tests",
+]

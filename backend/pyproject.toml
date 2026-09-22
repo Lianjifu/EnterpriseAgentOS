@@ -54,6 +54,9 @@ deos-skill = { workspace = true }
 deos-memory = { workspace = true }
 deos-governance = { workspace = true }
 deos-model = { workspace = true }
+deos-channel = { workspace = true }
+deos-knowledge = { workspace = true }
+deos-orchestration = { workspace = true }
 
 [tool.ruff]
 target-version = "py312"
@@ -109,7 +112,7 @@ plugins = ["pydantic.mypy"]
 # Each mypy_path entry MUST be the deepest directory that contains an
 # __init__.py; otherwise mypy sees the same file as two modules
 # (e.g. `identity.domain` AND `deos.modules.identity.domain`).
-mypy_path = "libs/kernel/src:libs/auth/src:libs/observability/src:libs/persistence/src:libs/messaging/src:libs/http/src:libs/schema/src:libs/llm/src:libs/sandbox/src:libs/vector/src:libs/vault/src:modules/identity/src/deos:modules/agent_runtime/src/deos:modules/tool/src/deos:modules/governance/src/deos:composition/eos_app/src/deos"
+mypy_path = "libs/kernel/src:libs/auth/src:libs/observability/src:libs/persistence/src:libs/messaging/src:libs/http/src:libs/schema/src:libs/llm/src:libs/sandbox/src:libs/vector/src:libs/vault/src:modules/identity/src/deos:modules/agent_runtime/src/deos:modules/tool/src/deos:modules/governance/src/deos:modules/channel/src/deos:modules/knowledge/src/deos:modules/orchestration/src/deos:composition/eos_app/src/deos"
 
 [[tool.mypy.overrides]]
 # Tests + generated migrations are exempt from strict checks.
@@ -129,6 +132,8 @@ module = [
     "deos.modules.identity",
     "deos.modules.agent_runtime",
     "deos.modules.tool",
+    "deos.modules.knowledge",
+    "deos.modules.orchestration",
 ]
 disallow_untyped_defs = false
 warn_return_any = false
@@ -175,6 +180,10 @@ pythonpath = [
     "modules/governance/src/deos",
     "modules/model/src/deos",
     "modules/model/tests/unit",
+    "modules/channel/src/deos",
+    "modules/channel/tests/unit",
+    "modules/knowledge/src/deos",
+    "modules/orchestration/src/deos",
     "runtimes/embedding_runtime/src/deos",
     "runtimes/skill_runtime/src/deos",
     "composition/eos_app/src/deos",

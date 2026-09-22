@@ -35,6 +35,7 @@ SkillInvocationId = NewType("SkillInvocationId", UUID)
 MemoryEntryId = NewType("MemoryEntryId", UUID)
 KnowledgePackageId = NewType("KnowledgePackageId", UUID)
 KnowledgeAssetId = NewType("KnowledgeAssetId", UUID)
+KnowledgeChunkId = NewType("KnowledgeChunkId", UUID)
 
 # ── Governance / Platform ─────────────────────────────────────────────────
 PolicyId = NewType("PolicyId", UUID)
@@ -42,6 +43,8 @@ ApprovalId = NewType("ApprovalId", UUID)
 DecisionEventId = NewType("DecisionEventId", UUID)
 AuditLogId = NewType("AuditLogId", UUID)
 PlanId = NewType("PlanId", UUID)
+WorkflowRunId = NewType("WorkflowRunId", UUID)
+StepRunId = NewType("StepRunId", UUID)
 
 # ── Model / Channel ───────────────────────────────────────────────────────
 ModelId = NewType("ModelId", UUID)

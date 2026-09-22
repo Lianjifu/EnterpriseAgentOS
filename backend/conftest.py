@@ -60,5 +60,7 @@ for _rel, _alias in (
     ("modules/tool/tests/unit", "_tool_unit_in_memory"),
     ("modules/skill/tests/unit", "_skill_unit_in_memory"),
     ("modules/agent_runtime/tests/unit", "_agent_runtime_unit_in_memory"),
+    ("modules/knowledge/tests/unit", "_knowledge_unit_in_memory"),
+    ("modules/orchestration/tests/unit", "_orchestration_unit_in_memory"),
 ):
     _load(_rel, _alias)

@@ -53,6 +53,7 @@ deos-tool = { workspace = true }
 deos-skill = { workspace = true }
 deos-memory = { workspace = true }
 deos-governance = { workspace = true }
+deos-model = { workspace = true }
 
 [tool.ruff]
 target-version = "py312"

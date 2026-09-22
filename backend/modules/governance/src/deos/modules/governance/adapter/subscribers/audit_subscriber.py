@@ -1,0 +1,65 @@
+"""Audit subscriber — wires the AuditRecorder to the EventBus.
+
+Lifespan calls ``install(event_bus, recorder)`` to register handlers
+for every topic returned by ``recorder.topics()``.  The handler is
+``recorder.handle`` itself; the recorder swallows them.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Callable, Coroutine
+
+from deos.modules.governance.application.audit_recorder import AuditRecorder
+
+
+SubscriberHandler = Callable[[Any], Coroutine[Any, Any, None]]
+
+
+async def install(
+    event_bus: Any,
+    recorder: AuditRecorder,
+    *,
+    cache_invalidator: Callable[[Any], None] | None = None,
+) -> None:
+    """Subscribe the recorder to its topics; invalidate cache on
+    governance.policy.* mutations.
+
+    ``event_bus`` must expose ``subscribe(topic, handler)``.
+    """
+    handler = recorder.handle
+
+    # business events; recorder already includes governance.* topics so
+    # cache invalidation hooks into the recorder's own handler below.
+    seen: set[str] = set()
+    for topic in recorder.topics():
+        if topic in seen:
+            continue
+        seen.add(topic)
+        await event_bus.subscribe(topic, handler)
+
+    # policy lifecycle → invalidate evaluator cache.
+    # We register a separate handler rather than wrap ``handler`` so the
+    # cache invalidation runs even if the audit recorder skips a payload.
+    if cache_invalidator is not None:
+        async def _policy_changed(envelope: Any) -> None:
+            payload = (
+                getattr(envelope, "payload", None)
+                if not isinstance(envelope, dict)
+                else envelope
+            )
+            tenant_id = payload.get("tenant_id") if isinstance(payload, dict) else None
+            if tenant_id is not None:
+                cache_invalidator(tenant_id)
+
+        for topic in (
+            "governance.policy.created",
+            "governance.policy.updated",
+            "governance.policy.deleted",
+        ):
+            if topic in seen:
+                continue
+            seen.add(topic)
+            await event_bus.subscribe(topic, _policy_changed)
+
+
+__all__ = ["install"]

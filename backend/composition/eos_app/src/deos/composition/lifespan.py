@@ -450,6 +450,38 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         cache_invalidator=evaluator.invalidate,
     )
 
+    # ── P7 channel → agent_runtime dispatch subscriber ──────────────────
+    # Conditional install: only when both the channel module is wired
+    # and the agent_runtime factory is available. Older dev shells
+    # (legacy / model_service absent) skip this and inbound webhooks
+    # simply don't trigger agent replies.
+    ar_factory = getattr(app.state, "agent_runtime_factory", None)
+    channel_service_obj = getattr(app.state, "channel_service", None)
+    if channel_service_obj is not None and ar_factory is not None:
+        from deos.modules.channel.adapter.dispatch.dispatch_subscriber import (
+            ChannelDispatchSubscriber,
+        )
+
+        dispatch = ChannelDispatchSubscriber(
+            channel_repository=channel_service_obj.channel_repo,
+            agent_runtime_factory=ar_factory,
+            outbound_registry_getter=lambda: getattr(
+                app.state, "channel_outbound_registry", {}
+            )
+            or {},
+            clock=container.clock(),
+            open_session=container.session_factory().maker,
+        )
+        await dispatch.install(bus)
+        app.state.channel_dispatch_subscriber = dispatch
+        _log.info("channel dispatch subscriber active")
+    else:
+        _log.info(
+            "channel dispatch subscriber skipped (channel_service=%s, ar_factory=%s)",
+            channel_service_obj is not None,
+            ar_factory is not None,
+        )
+
     # ── seed default resources ───────────────────────────────────────────
     await ensure_default_resources(container)
 

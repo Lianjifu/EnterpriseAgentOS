@@ -173,6 +173,8 @@ pythonpath = [
     "modules/skill/src/deos",
     "modules/memory/src/deos",
     "modules/governance/src/deos",
+    "modules/model/src/deos",
+    "modules/model/tests/unit",
     "runtimes/embedding_runtime/src/deos",
     "runtimes/skill_runtime/src/deos",
     "composition/eos_app/src/deos",

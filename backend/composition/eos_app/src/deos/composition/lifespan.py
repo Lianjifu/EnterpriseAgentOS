@@ -447,11 +447,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     from deos.modules.evaluation.application.services import (
         EvaluationService,
     )
-    from deos.modules.evaluation.fixtures.golden_dataset import (
-        BUILTIN_GOLDEN_DATASET_DESCRIPTION,
-        BUILTIN_GOLDEN_DATASET_NAME,
-        builtin_golden_cases,
-    )
 
     evaluation_bus = container.bus()
     evaluation_publisher = MessagingEvaluationEventPublisher(evaluation_bus)
@@ -641,15 +636,11 @@ async def _seed_builtin_eval_datasets(
     """
     from uuid import uuid4
 
-    from eos_schema.ids import TenantId, UserId, WorkspaceId
-    from sqlalchemy import select
-
     from deos.modules.evaluation.adapter.persistence.mappers import (
         case_to_orm,
         dataset_to_orm,
     )
     from deos.modules.evaluation.adapter.persistence.models import (
-        EvalCaseORM,
         EvalDatasetORM,
     )
     from deos.modules.evaluation.domain.entities import EvalCase, EvalDataset
@@ -661,6 +652,8 @@ async def _seed_builtin_eval_datasets(
         BUILTIN_GOLDEN_DATASET_NAME,
         builtin_golden_cases,
     )
+    from eos_schema.ids import TenantId, UserId, WorkspaceId
+    from sqlalchemy import select
 
     factory = getattr(app.state, "evaluation_service_factory", None)
     if factory is None:
@@ -678,9 +671,9 @@ async def _seed_builtin_eval_datasets(
         .where(EvalDatasetORM.name == BUILTIN_GOLDEN_DATASET_NAME)
         .distinct()
     )
-    seeded_pairs: set[tuple[object, object]] = set(
+    seeded_pairs: set[tuple[object, object]] = {
         (r[0], r[1]) for r in (await sf.execute(stmt)).all()
-    )
+    }
 
     tenant_stmt = select(TenantScopedMixin.tenant_id).limit(500)
     try:

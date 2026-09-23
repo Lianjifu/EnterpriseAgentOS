@@ -220,10 +220,10 @@ async def test_policy_list_filters_by_tenant_and_workspace(policy_repo):
     for r in (rule_t1_ws1, rule_t1_tenant_wide, rule_t2):
         await policy_repo.add(r)
 
-    a_rules = await policy_repo.list(tenant_id=TENANT_A)
+    a_rules = await policy_repo.list_records(tenant_id=TENANT_A)
     assert {r.action_pattern for r in a_rules} == {"tool:execute:a", "tool:execute:b"}
 
-    b_rules = await policy_repo.list(tenant_id=TENANT_B)
+    b_rules = await policy_repo.list_records(tenant_id=TENANT_B)
     assert {r.action_pattern for r in b_rules} == {"tool:execute:c"}
 
 

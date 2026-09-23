@@ -27,7 +27,7 @@ def build(service: ObservabilityService) -> Any:
         limit: int = 200,
         offset: int = 0,
     ) -> list[CostRecord]:
-        return await service.cost_repo.list(
+        return await service.cost_repo.list_records(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             cost_type=cost_type,

@@ -81,7 +81,7 @@ class SqlEvalDatasetRepository(EvalDatasetRepository):
         row = result.scalar_one_or_none()
         return dataset_to_domain(row) if row is not None else None
 
-    async def list(
+    async def list_records(
         self,
         *,
         tenant_id: TenantId,
@@ -139,7 +139,7 @@ class SqlEvalDatasetRepository(EvalDatasetRepository):
 
     async def list_cases(
         self, *, tenant_id: TenantId, dataset_id: EvalDatasetId
-    ) -> list[EvalCase]:  # type: ignore[valid-type]
+    ) -> list[EvalCase]:
         result = await self._session.execute(
             select(EvalCaseORM)
             .where(
@@ -180,7 +180,7 @@ class SqlEvalRunRepository(EvalRunRepository):
         row = result.scalar_one_or_none()
         return run_to_domain(row) if row is not None else None
 
-    async def list(
+    async def list_records(
         self,
         *,
         tenant_id: TenantId,

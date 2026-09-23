@@ -54,7 +54,7 @@ class EvaluationServiceAdapter(EvaluationQueryPort):
         template_id: AgentTemplateId,
         version_id: AgentVersionId,
     ) -> EvalRunSummary | None:
-        rows = await self._repo.list(
+        rows = await self._repo.list_records(
             tenant_id=tenant_id,
             workspace_id=_ZERO_WORKSPACE,
             template_id=template_id,

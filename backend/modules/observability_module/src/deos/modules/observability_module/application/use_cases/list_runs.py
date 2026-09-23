@@ -29,7 +29,7 @@ def build(service: ObservabilityService) -> Any:
         limit: int = 50,
         offset: int = 0,
     ) -> list[RunRecord]:
-        return await service.run_repo.list(
+        return await service.run_repo.list_records(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             run_type=run_type,

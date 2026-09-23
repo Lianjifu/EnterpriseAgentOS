@@ -36,7 +36,7 @@ class ListEvalDatasetsUseCase:
         limit: int = 50,
         offset: int = 0,
     ) -> list[EvalDataset]:
-        return await self.repository.list(
+        return await self.repository.list_records(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             limit=limit,

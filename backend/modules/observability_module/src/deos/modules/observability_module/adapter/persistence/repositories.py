@@ -75,7 +75,7 @@ class SqlRunRecordRepository(RunRecordRepository):
         row = result.scalar_one_or_none()
         return run_record_to_domain(row) if row is not None else None
 
-    async def list(
+    async def list_records(
         self,
         *,
         tenant_id: TenantId,
@@ -126,7 +126,7 @@ class SqlCostRecordRepository(CostRecordRepository):
         row = result.scalar_one_or_none()
         return cost_record_to_domain(row) if row is not None else None
 
-    async def list(
+    async def list_records(
         self,
         *,
         tenant_id: TenantId,
@@ -166,7 +166,7 @@ class SqlCostRecordRepository(CostRecordRepository):
         workspace_id: WorkspaceId | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
-    ) -> list[dict[str, Any]]:  # type: ignore[valid-type]
+    ) -> list[dict[str, Any]]:
         stmt = (
             select(CostRecordORM.cost_type, func.sum(CostRecordORM.amount_usd))
             .where(CostRecordORM.tenant_id == tenant_id)
@@ -190,7 +190,7 @@ class SqlCostRecordRepository(CostRecordRepository):
         tenant_id: TenantId,
         since: datetime | None = None,
         until: datetime | None = None,
-    ) -> list[dict[str, Any]]:  # type: ignore[valid-type]
+    ) -> list[dict[str, Any]]:
         stmt = (
             select(CostRecordORM.workspace_id, func.sum(CostRecordORM.amount_usd))
             .where(CostRecordORM.tenant_id == tenant_id)
@@ -213,7 +213,7 @@ class SqlCostRecordRepository(CostRecordRepository):
         workspace_id: WorkspaceId | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
-    ) -> list[dict[str, Any]]:  # type: ignore[valid-type]
+    ) -> list[dict[str, Any]]:
         stmt = (
             select(CostRecordORM.model_id, func.sum(CostRecordORM.amount_usd))
             .where(CostRecordORM.tenant_id == tenant_id)

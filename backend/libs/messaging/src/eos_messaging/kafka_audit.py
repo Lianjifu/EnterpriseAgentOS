@@ -28,6 +28,7 @@ import uuid
 from typing import Any, Protocol, runtime_checkable
 
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
+from aiokafka.errors import KafkaConnectionError
 
 _log = logging.getLogger(__name__)
 
@@ -123,19 +124,39 @@ class KafkaAuditPublisher:
         self._timeout_ms = request_timeout_ms
         self._producer: AIOKafkaProducer | None = None
         self._start_lock = asyncio.Lock()
+        self._started: bool = False
 
     async def start(self) -> None:
         async with self._start_lock:
             if self._producer is not None:
+                self._started = True
                 return
-            self._producer = AIOKafkaProducer(
-                bootstrap_servers=self._bootstrap,
-                key_serializer=_key_serializer,
-                value_serializer=_value_serializer,
-                request_timeout_ms=self._timeout_ms,
-                acks="all",
-            )
-            await self._producer.start()
+            try:
+                self._producer = AIOKafkaProducer(
+                    bootstrap_servers=self._bootstrap,
+                    key_serializer=_key_serializer,
+                    value_serializer=_value_serializer,
+                    request_timeout_ms=self._timeout_ms,
+                    acks="all",
+                )
+                await self._producer.start()
+            except KafkaConnectionError as exc:
+                # Audit must not raise back to the caller (P5). The retry+DLQ
+                # path in ``append()`` will re-attempt on every send; if the
+                # broker stays down for the whole retry window, ``append()``
+                # logs and returns the body without raising. Mark _started
+                # anyway so append() distinguishes "start() called" from
+                # "start() never called".
+                self._producer = None
+                self._started = True
+                _log.warning(
+                    "kafka audit producer start failed bootstrap=%s topic=%s err=%s",
+                    self._bootstrap,
+                    self._topic,
+                    exc,
+                )
+                return
+            self._started = True
             _log.info(
                 "kafka audit producer started bootstrap=%s topic=%s",
                 self._bootstrap,
@@ -177,7 +198,7 @@ class KafkaAuditPublisher:
         Here we still try-DLQ before giving up so a recovered broker
         doesn't drop the event silently.
         """
-        if self._producer is None:
+        if not self._started:
             raise RuntimeError(
                 "KafkaAuditPublisher not started — call start() in lifespan"
             )
@@ -191,6 +212,17 @@ class KafkaAuditPublisher:
             "schema_version": 1,
         }
         key = body["tenant_id"]
+
+        # Broker was never reachable (start() failed at boot) — log + return
+        # body without raising. Audit must never fail back to caller.
+        if self._producer is None:
+            _log.error(
+                "kafka audit publisher not started topic=%s event_type=%s; "
+                "dropping event silently",
+                self._topic,
+                event_type,
+            )
+            return body
 
         attempts = 0
         last_exc: Exception | None = None
@@ -210,7 +242,6 @@ class KafkaAuditPublisher:
 
         # All retries exhausted → DLQ.
         try:
-            assert self._producer is not None  # for type checker
             await self._producer.send_and_wait(
                 self._dlq_topic,
                 value={**body, "dlq_reason": repr(last_exc)},

@@ -62,7 +62,7 @@ class SqlPolicyRepository(PolicyRepository):
                 return None
             return policy_to_domain(row)
 
-    async def list(
+    async def list_records(
         self,
         *,
         tenant_id: UUID,
@@ -82,7 +82,7 @@ class SqlPolicyRepository(PolicyRepository):
             rows = (await session.execute(stmt)).scalars().all()
             return [policy_to_domain(r) for r in rows]
 
-    async def list_enabled(self, *, tenant_id: UUID) -> list[PolicyRule]:  # type: ignore[valid-type]
+    async def list_enabled(self, *, tenant_id: UUID) -> list[PolicyRule]:
         async with self._sf() as session:
             stmt = (
                 select(PolicyORM)

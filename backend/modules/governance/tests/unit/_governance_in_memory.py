@@ -42,7 +42,7 @@ class InMemoryPolicyRepository(PolicyRepository):
             return None
         return row
 
-    async def list(
+    async def list_records(
         self,
         *,
         tenant_id,
@@ -64,7 +64,7 @@ class InMemoryPolicyRepository(PolicyRepository):
         return out[:limit]
 
     async def list_enabled(self, *, tenant_id):  # type: ignore[no-untyped-def]
-        return await self.list(
+        return await self.list_records(
             tenant_id=tenant_id, workspace_id=None, enabled_only=True, limit=10_000
         )
 

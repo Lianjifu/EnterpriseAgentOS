@@ -37,7 +37,7 @@ class RunRecordRepository(Protocol):
     async def get(
         self, *, tenant_id: TenantId, run_id: RunRecordId
     ) -> RunRecord | None: ...
-    async def list(
+    async def list_records(
         self,
         *,
         tenant_id: TenantId,
@@ -54,7 +54,7 @@ class CostRecordRepository(Protocol):
     async def get(
         self, *, tenant_id: TenantId, cost_id: CostRecordId
     ) -> CostRecord | None: ...
-    async def list(
+    async def list_records(
         self,
         *,
         tenant_id: TenantId,
@@ -72,14 +72,16 @@ class CostRecordRepository(Protocol):
         workspace_id: WorkspaceId | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
-    ) -> list[dict[str, Any]]: ...  # type: ignore[valid-type]
+    ) -> list[dict[str, Any]]: ...
+
     async def sum_by_workspace(
         self,
         *,
         tenant_id: TenantId,
         since: datetime | None = None,
         until: datetime | None = None,
-    ) -> list[dict[str, Any]]: ...  # type: ignore[valid-type]
+    ) -> list[dict[str, Any]]: ...
+
     async def sum_by_model(
         self,
         *,
@@ -87,7 +89,7 @@ class CostRecordRepository(Protocol):
         workspace_id: WorkspaceId | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
-    ) -> list[dict[str, Any]]: ...  # type: ignore[valid-type]
+    ) -> list[dict[str, Any]]: ...
 
 
 # ── Event publisher (internal — emitted when we record an event) ────────

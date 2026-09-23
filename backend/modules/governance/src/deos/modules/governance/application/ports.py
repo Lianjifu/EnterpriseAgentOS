@@ -35,7 +35,7 @@ class PolicyRepository(Protocol):
         self, *, tenant_id: TenantId, rule_id: PolicyId
     ) -> PolicyRule | None: ...
 
-    async def list(
+    async def list_records(
         self,
         *,
         tenant_id: TenantId,
@@ -45,7 +45,7 @@ class PolicyRepository(Protocol):
         cursor: str | None = None,
     ) -> list[PolicyRule]: ...
 
-    async def list_enabled(self, *, tenant_id: TenantId) -> list[PolicyRule]:  # type: ignore[valid-type]
+    async def list_enabled(self, *, tenant_id: TenantId) -> list[PolicyRule]:
         """Bulk fetch the tenant's enabled rules — the evaluator hot path."""
         ...
 

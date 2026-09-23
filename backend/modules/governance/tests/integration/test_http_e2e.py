@@ -184,7 +184,7 @@ async def test_create_policy_returns_201_and_persists() -> None:
     assert body["priority"] == 50
     assert body["action_pattern"] == "tool:execute:reverse"
     # Persisted in repo
-    listed = await ctx["policy_repo"].list(tenant_id=TENANT_A)
+    listed = await ctx["policy_repo"].list_records(tenant_id=TENANT_A)
     assert len(listed) == 1
 
 

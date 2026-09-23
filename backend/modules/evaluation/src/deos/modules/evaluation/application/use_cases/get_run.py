@@ -42,7 +42,7 @@ class ListEvalRunsUseCase:
         limit: int = 50,
         offset: int = 0,
     ) -> list[EvalRun]:
-        return await self.repository.list(
+        return await self.repository.list_records(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             template_id=template_id,

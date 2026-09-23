@@ -208,7 +208,7 @@ async def test_evaluate_invalidate_forces_refetch():
     assert rec1.effect is PolicyEffect.ALLOW
 
     # flip the rule to deny, then invalidate — second call should see deny
-    row = next(iter(await repo.list(tenant_id=TID)))
+    row = next(iter(await repo.list_records(tenant_id=TID)))
     from dataclasses import replace
 
     await repo.update(replace(row, effect=PolicyEffect.DENY))

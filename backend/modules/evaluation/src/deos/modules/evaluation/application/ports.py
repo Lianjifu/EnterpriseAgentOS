@@ -43,7 +43,7 @@ class EvalDatasetRepository(Protocol):
         self, *, tenant_id: TenantId, name: str
     ) -> EvalDataset | None: ...
 
-    async def list(
+    async def list_records(
         self,
         *,
         tenant_id: TenantId,
@@ -60,7 +60,7 @@ class EvalDatasetRepository(Protocol):
 
     async def list_cases(
         self, *, tenant_id: TenantId, dataset_id: EvalDatasetId
-    ) -> list[EvalCase]: ...  # type: ignore[valid-type]
+    ) -> list[EvalCase]: ...
 
 
 @runtime_checkable
@@ -73,7 +73,7 @@ class EvalRunRepository(Protocol):
         self, *, tenant_id: TenantId, idempotency_key: str
     ) -> EvalRun | None: ...
 
-    async def list(
+    async def list_records(
         self,
         *,
         tenant_id: TenantId,

@@ -54,7 +54,7 @@ class InMemoryRunRecordRepository(RunRecordRepository):
             return rec
         return None
 
-    async def list(
+    async def list_records(
         self,
         *,
         tenant_id: TenantId,
@@ -96,7 +96,7 @@ class InMemoryCostRecordRepository(CostRecordRepository):
             return rec
         return None
 
-    async def list(
+    async def list_records(
         self,
         *,
         tenant_id: TenantId,

@@ -48,7 +48,7 @@ class InMemoryEvalDatasetRepository(EvalDatasetRepository):
         did = self._by_name.get((tenant_id, name))
         return self._by_id.get((tenant_id, did)) if did else None
 
-    async def list(
+    async def list_records(
         self,
         *,
         tenant_id: TenantId,
@@ -101,7 +101,7 @@ class InMemoryEvalRunRepository(EvalRunRepository):
         rid = self._by_idem.get((tenant_id, idempotency_key))
         return self._by_id.get((tenant_id, rid)) if rid else None
 
-    async def list(
+    async def list_records(
         self,
         *,
         tenant_id: TenantId,

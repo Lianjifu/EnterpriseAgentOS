@@ -103,7 +103,7 @@ class PolicyService:
         limit: int = 100,
         cursor: str | None = None,
     ) -> list[PolicyRule]:
-        return await self._repo.list(
+        return await self._repo.list_records(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             enabled_only=enabled_only,

@@ -71,6 +71,10 @@ class Settings(BaseSettings):
     event_bus: Literal["inprocess", "redis-stream"] = "inprocess"
     event_redis_stream_prefix: str = "eos:events:"
     event_dlq_stream: str = "eos:events:dlq"
+    event_redis_consumer_name: str = ""  # env EOS_EVENT_REDIS_CONSUMER_NAME wins
+    event_redis_max_retries: int = 3
+    event_redis_block_ms: int = 1000
+    event_redis_count: int = 10
 
     # rate limit
     rate_limit_per_tenant_per_min: int = 1000

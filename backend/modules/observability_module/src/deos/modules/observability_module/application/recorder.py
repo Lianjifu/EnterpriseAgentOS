@@ -17,6 +17,7 @@ left alone for P9 to ship the observability path first.
 
 from __future__ import annotations
 
+import inspect
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -435,20 +436,27 @@ class ObservabilityRecorder:
 # ── subscriber installer ─────────────────────────────────────────────────
 
 
-def install(
+async def install(
     event_bus: Any,
     recorder: ObservabilityRecorder,
     *,
     logger: logging.Logger | None = None,
 ) -> None:
-    """Subscribe recorder.handle to every topic in recorder.topics()."""
+    """Subscribe recorder.handle to every topic in recorder.topics().
+
+    Awaits ``event_bus.subscribe`` so this works with both sync-subscribe
+    buses (InProcessBus — handler stored immediately) and async-subscribe
+    buses (RedisStreamBus — handler registered once the awaitable resolves).
+    """
     handler = recorder.handle
     seen: set[str] = set()
     for topic in recorder.topics():
         if topic in seen:
             continue
         seen.add(topic)
-        event_bus.subscribe(topic, handler)
+        result = event_bus.subscribe(topic, handler)
+        if inspect.isawaitable(result):
+            await result
     (logger or _log).info("observability recorder installed topics=%d", len(seen))
 
 

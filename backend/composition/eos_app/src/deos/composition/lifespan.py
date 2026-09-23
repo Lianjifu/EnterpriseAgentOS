@@ -633,7 +633,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         cost_repo=SqlCostRecordRepository(obs_session_factory()),
         pricing=obs_pricing_catalog,
     )
-    obs_install(bus, obs_recorder, logger=_log)
+    await obs_install(bus, obs_recorder, logger=_log)
 
     # ── P5 audit subscriber (governance events → audit_log) ─────────────
     from deos.modules.governance.adapter.subscribers import audit_subscriber

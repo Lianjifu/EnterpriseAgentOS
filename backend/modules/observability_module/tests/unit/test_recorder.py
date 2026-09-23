@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime
 from decimal import Decimal
 from types import SimpleNamespace
@@ -413,8 +414,8 @@ def test_install_subscribes_each_topic_once() -> None:
         ),
     )
     bus = FakeBus()
-    # install() is sync now (subscribe is sync on EventBus Protocol).
-    install(bus, r)
+    # install() is async so it works with both sync- and async-subscribe buses.
+    asyncio.run(install(bus, r))
     assert set(bus.subs.keys()) == set(r.SUBSCRIBED_EVENTS)
     for handlers in bus.subs.values():
         assert len(handlers) == 1

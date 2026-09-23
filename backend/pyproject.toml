@@ -182,6 +182,7 @@ pythonpath = [
     "libs/sandbox/src",
     "libs/vector/src",
     "libs/vault/src",
+    "tests",
     "modules/identity/src/deos",
     "modules/agent_runtime/src/deos",
     "modules/tool/src/deos",

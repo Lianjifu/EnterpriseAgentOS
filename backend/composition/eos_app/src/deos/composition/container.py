@@ -61,6 +61,26 @@ class Container:
         )
 
     def bus(self) -> EventBus:
+        """Return the configured EventBus backend.
+
+        ``EOS_EVENT_BUS=inprocess`` (default) returns the in-process bus
+        used by dev + tests. ``EOS_EVENT_BUS=redis-stream`` wires a real
+        Redis Streams bus — every replica gets a stable consumer name
+        (env / hostname / uuid4 fallback) so events reach all
+        subscribers across the cluster.
+        """
+        if self.settings.event_bus == "redis-stream":
+            from eos_messaging.redis_stream import RedisStreamBus
+
+            return RedisStreamBus(
+                self.redis_client(),
+                prefix=self.settings.event_redis_stream_prefix,
+                dlq_stream=self.settings.event_dlq_stream,
+                consumer_name=self.settings.event_redis_consumer_name,
+                max_retries=self.settings.event_redis_max_retries,
+                block_ms=self.settings.event_redis_block_ms,
+                count=self.settings.event_redis_count,
+            )
         return InProcessBus()
 
     def hasher(self) -> ApiKeyHasher:

@@ -42,8 +42,12 @@ from deos.modules.evaluation.adapter.persistence import (
 from deos.modules.observability_module.adapter.persistence import (
     models as observability_models,
 )
+from deos.modules.platform.adapter.persistence import (
+    models as platform_models,
+)
 
 _ = observability_models  # registered on Base.metadata
+_ = platform_models  # registered on Base.metadata
 
 # Memory (P4) is wired in once modules/memory lands — placeholder for
 # memory_models import; left as a comment to keep env.py importable even

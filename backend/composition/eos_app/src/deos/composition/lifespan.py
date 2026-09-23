@@ -506,6 +506,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # already exists.
     _seed_builtin_eval_datasets(app, container)
 
+    # Seed the 3 default Plans (free / pro / enterprise) on first
+    # boot.  Idempotent — re-running is a no-op when plans already
+    # exist.  Runs only when ``platform_seed_default_plans`` is true.
+    if container.settings.platform_seed_default_plans:
+        await _seed_default_plans(container)
+
     # ── P8 agent_factory (depends on evaluation; this is the P8-6 closed
     # loop — agent_factory reads the latest passed eval run via
     # EvaluationServiceAdapter).
@@ -569,6 +575,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
     from deos.modules.observability_module.application.recorder import (
         ObservabilityRecorder,
+    )
+    from deos.modules.observability_module.application.recorder import (
         install as obs_install,
     )
     from deos.modules.observability_module.application.services import (
@@ -591,6 +599,28 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             )
 
     app.state.observability_service_factory = _ObservabilityFactory()
+
+    # ── P9 platform (per-request service factory + default-plans seed) ──
+    from deos.modules.platform.adapter.persistence import (
+        SqlPlanRepository as PlatformSqlPlanRepository,
+    )
+    from deos.modules.platform.adapter.persistence import (
+        SqlSubscriptionRepository,
+        SqlTenantSettingRepository,
+    )
+    from deos.modules.platform.application.services import PlatformService
+
+    class _PlatformFactory:
+        def for_session(self) -> PlatformService:
+            sf = container.session_factory().maker()
+            return PlatformService.from_parts(
+                plan_repo=PlatformSqlPlanRepository(sf),
+                subscription_repo=SqlSubscriptionRepository(sf),
+                setting_repo=SqlTenantSettingRepository(sf),
+                publisher=None,
+            )
+
+    app.state.platform_service_factory = _PlatformFactory()
 
     # ── bus (must be available before subscribers install) ──────────────
     bus = container.bus()
@@ -664,6 +694,41 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         sandbox = getattr(app.state, "sandbox", None)
         if sandbox is not None:
             await sandbox.shutdown()
+
+
+async def _seed_default_plans(container: Container) -> None:
+    """Seed the 3 default Plans (free / pro / enterprise).
+
+    Idempotent: skips when a plan with the same ``code`` already
+    exists.  Called once at lifespan start when
+    ``platform_seed_default_plans`` is enabled (default: true).
+    """
+    from deos.modules.platform.adapter.persistence import (
+        SqlPlanRepository as PlatformSqlPlanRepository,
+    )
+    from deos.modules.platform.adapter.persistence.mappers import plan_to_orm
+    from deos.modules.platform.fixtures.default_plans import (
+        DEFAULT_PLANS,
+        build_default_plan,
+    )
+
+    sf = container.session_factory()
+    seeded = 0
+    try:
+        async with sf.session() as session:
+            repo = PlatformSqlPlanRepository(session)
+            for spec in DEFAULT_PLANS:
+                existing = await repo.get_by_code(code=spec.code)
+                if existing is not None:
+                    continue
+                plan = build_default_plan(spec)
+                session.add(plan_to_orm(plan))
+                seeded += 1
+            if seeded > 0:
+                await session.commit()
+                _log.info("seeded %d default plans", seeded)
+    except Exception:  # noqa: BLE001
+        _log.exception("seed_default_plans failed; continuing boot")
 
 
 async def _seed_builtin_eval_datasets(

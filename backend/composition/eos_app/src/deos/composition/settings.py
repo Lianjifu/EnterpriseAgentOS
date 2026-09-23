@@ -139,6 +139,10 @@ class Settings(BaseSettings):
     channel_send_unit_cost_usd: float = 0.0005
     default_currency: str = "USD"
 
+    # P9 platform — default catalog + seed
+    platform_default_plan_code: str = "free"
+    platform_seed_default_plans: bool = True
+
     # P6 model
     model_master_key: str = ""
     model_master_key_version: int = 1

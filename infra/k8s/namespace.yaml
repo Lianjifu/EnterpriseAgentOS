@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: eos-prod
+  labels:
+    name: eos-prod
+    purpose: enterprise-agent-os
+    environment: production

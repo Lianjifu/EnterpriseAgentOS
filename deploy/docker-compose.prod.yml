@@ -1,0 +1,138 @@
+# Enterprise-Agent-OS — Production docker-compose
+# Two app pools (stable + canary), single PG/Redis/MinIO.
+# Image built from infra/docker/Dockerfile.app.
+
+name: eos-prod
+
+x-app-defaults: &app-defaults
+  build:
+    context: ..
+    dockerfile: infra/docker/Dockerfile.app
+  image: eos-app:prod
+  restart: unless-stopped
+  env_file: .env.prod
+  healthcheck:
+    test: ["CMD", "curl", "-fsS", "http://localhost:8102/readyz"]
+    interval: 15s
+    timeout: 5s
+    retries: 5
+    start_period: 30s
+  deploy:
+    resources:
+      limits:
+        cpus: "1.0"
+        memory: 1G
+      reservations:
+        cpus: "0.25"
+        memory: 512M
+  logging:
+    driver: json-file
+    options: { max-size: "20m", max-file: "5" }
+
+services:
+  eos-app-stable:
+    <<: *app-defaults
+    container_name: eos-app-stable
+    ports:
+      - "8102:8102"
+    environment:
+      EOS_RING: stable
+      EOS_GUNICORN_BIND: 0.0.0.0:8102
+    profiles: ["prod"]
+
+  eos-app-canary:
+    <<: *app-defaults
+    container_name: eos-app-canary
+    ports:
+      - "8103:8102"
+    environment:
+      EOS_RING: canary
+      EOS_GUNICORN_BIND: 0.0.0.0:8102
+    profiles: ["prod"]
+
+  postgres:
+    image: postgres:16
+    container_name: eos-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: eos
+      POSTGRES_USER: eos
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_pass
+    secrets:
+      - pg_pass
+    volumes:
+      - eos_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits: { cpus: "2.0", memory: 4G }
+    profiles: ["prod"]
+
+  redis:
+    image: redis:7-alpine
+    container_name: eos-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - eos_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles: ["prod"]
+
+  minio:
+    image: minio/minio:latest
+    container_name: eos-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER_FILE: /run/secrets/minio_user
+      MINIO_ROOT_PASSWORD_FILE: /run/secrets/minio_pass
+    secrets:
+      - minio_user
+      - minio_pass
+    volumes:
+      - eos_minio:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    profiles: ["prod"]
+
+  # Optional: header-based traffic splitter for compose-only dev
+  # In production prefer the k8s ingress (infra/k8s/ingress.yaml)
+  ingress:
+    image: nginx:1.27-alpine
+    container_name: eos-ingress
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ../infra/envoy/nginx.compose.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      eos-app-stable: { condition: service_healthy }
+      eos-app-canary: { condition: service_healthy }
+    profiles: ["prod", "with-ingress"]
+
+volumes:
+  eos_pgdata:
+  eos_redis:
+  eos_minio:
+
+secrets:
+  pg_pass:
+    file: ./secrets/pg_pass.txt
+  minio_user:
+    file: ./secrets/minio_user.txt
+  minio_pass:
+    file: ./secrets/minio_pass.txt

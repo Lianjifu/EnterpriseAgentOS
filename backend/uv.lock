@@ -21,6 +21,7 @@ members = [
     "deos-observability-module",
     "deos-orchestration",
     "deos-platform",
+    "deos-self-evolution",
     "deos-skill",
     "deos-tool",
     "enterprise-agent-os",
@@ -1129,6 +1130,27 @@ requires-dist = [
     { name = "eos-kernel", editable = "libs/kernel" },
     { name = "eos-persistence", editable = "libs/persistence" },
     { name = "eos-schema", editable = "libs/schema" },
+    { name = "pydantic", specifier = ">=2.9" },
+]
+
+[[package]]
+name = "deos-self-evolution"
+version = "0.1.0"
+source = { editable = "modules/self_evolution" }
+dependencies = [
+    { name = "eos-kernel" },
+    { name = "eos-persistence" },
+    { name = "eos-schema" },
+    { name = "fastapi" },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "eos-kernel", editable = "libs/kernel" },
+    { name = "eos-persistence", editable = "libs/persistence" },
+    { name = "eos-schema", editable = "libs/schema" },
+    { name = "fastapi", specifier = ">=0.115.0" },
     { name = "pydantic", specifier = ">=2.9" },
 ]
 

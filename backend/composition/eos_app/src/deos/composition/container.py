@@ -247,6 +247,32 @@ class Container:
             default_ttl_seconds=self.settings.policy_approval_ttl_seconds,
         )
 
+    def evolution_service(self):
+        """Self-evolution candidate service (A4).
+
+        Default ``DirectApplyGuard`` is a placeholder — production deploys
+        must swap it for a kind-specific guard (memory working layer,
+        skill draft, routing draft) before exposing ``/v1/evolve/*``.
+        """
+        from deos.modules.self_evolution.adapter.persistence.repositories import (
+            SqlEvolutionCandidateRepository,
+        )
+        from deos.modules.self_evolution.application.apply_guard import (
+            DirectApplyGuard,
+        )
+        from deos.modules.self_evolution.application.evolution_service import (
+            EvolutionCandidateService,
+        )
+
+        return EvolutionCandidateService(
+            repo=SqlEvolutionCandidateRepository(self.session_factory().maker()),
+            clock=self.clock(),
+            ids=self.id_generator(),
+            apply_guard=DirectApplyGuard(),
+            publisher=self.messaging_event_publisher(),
+            default_ttl_seconds=3600,
+        )
+
     def memory_embedding_adapter(self):
         """Pick the embedding adapter per ``settings.embedding_provider``."""
         provider = self.settings.embedding_provider

@@ -36,7 +36,7 @@ def _load(rel_dir: str, alias: str) -> None:
     """
     base = _BACKEND_ROOT / rel_dir
     candidates = [base / "_in_memory.py"]
-    for stem in ("identity", "memory", "governance"):
+    for stem in ("identity", "memory", "governance", "self_evolution"):
         candidates.append(base / f"_{stem}_in_memory.py")
     for path in candidates:
         if path.exists():
@@ -64,5 +64,6 @@ for _rel, _alias in (
     ("modules/orchestration/tests/unit", "_orchestration_unit_in_memory"),
     ("modules/agent_factory/tests/unit", "_agent_factory_unit_in_memory"),
     ("modules/evaluation/tests/unit", "_evaluation_unit_in_memory"),
+    ("modules/self_evolution/tests/unit", "_self_evolution_unit_in_memory"),
 ):
     _load(_rel, _alias)

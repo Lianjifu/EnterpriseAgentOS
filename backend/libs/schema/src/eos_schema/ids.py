@@ -67,3 +67,6 @@ RunRecordId = NewType("RunRecordId", UUID)
 CostRecordId = NewType("CostRecordId", UUID)
 SubscriptionId = NewType("SubscriptionId", UUID)
 TenantSettingId = NewType("TenantSettingId", UUID)
+
+# ── Self-Evolution (A4 / P10+) ─────────────────────────────────────────────
+EvolveCandidateId = NewType("EvolveCandidateId", UUID)

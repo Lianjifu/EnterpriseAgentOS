@@ -12,7 +12,6 @@ from eos_schema.ids import TenantId, WorkspaceId
 
 from deos.modules.observability_module.application.pricing import (
     DEFAULT_LLM_PRICING,
-    ModelPricing,
     PricingCatalog,
 )
 from deos.modules.observability_module.application.recorder import (
@@ -28,7 +27,6 @@ from ._in_memory import (
     InMemoryCostRecordRepository,
     InMemoryRunRecordRepository,
 )
-
 
 # ── helpers ───────────────────────────────────────────────────────────────
 
@@ -63,9 +61,9 @@ def test_topics_contains_all_subscribed_events() -> None:
             llm_pricing=dict(DEFAULT_LLM_PRICING),
             tool_unit_cost={},
             skill_unit_cost={},
-            memory_write_unit_cost_usd=Decimal("0"),
-            knowledge_ingest_unit_cost_usd=Decimal("0"),
-            channel_send_unit_cost_usd=Decimal("0"),
+            memory_write_unit_cost_usd=Decimal(0),
+            knowledge_ingest_unit_cost_usd=Decimal(0),
+            channel_send_unit_cost_usd=Decimal(0),
         ),
     )
     topics = r.topics()
@@ -354,9 +352,9 @@ def test_handle_never_raises_when_repo_errors(recorder: ObservabilityRecorder) -
             llm_pricing=dict(DEFAULT_LLM_PRICING),
             tool_unit_cost={},
             skill_unit_cost={},
-            memory_write_unit_cost_usd=Decimal("0"),
-            knowledge_ingest_unit_cost_usd=Decimal("0"),
-            channel_send_unit_cost_usd=Decimal("0"),
+            memory_write_unit_cost_usd=Decimal(0),
+            knowledge_ingest_unit_cost_usd=Decimal(0),
+            channel_send_unit_cost_usd=Decimal(0),
         ),
     )
     tid = TenantId(uuid4())
@@ -385,20 +383,21 @@ def test_handle_falls_back_workspace_id(recorder: ObservabilityRecorder) -> None
     asyncio.get_event_loop().run_until_complete(go())
     runs = list(recorder.run_repo._store.values())
     assert len(runs) == 1
-    assert runs[0].workspace_id == WorkspaceId("00000000-0000-0000-0000-000000000000")
+    from uuid import UUID as _UUID
+
+    assert runs[0].workspace_id == _UUID("00000000-0000-0000-0000-000000000000")
 
 
 # ── install() helper ──────────────────────────────────────────────────────
 
 
 def test_install_subscribes_each_topic_once() -> None:
-    import asyncio
 
     class FakeBus:
         def __init__(self) -> None:
             self.subs: dict[str, list] = {}
 
-        async def subscribe(self, topic, handler) -> None:
+        def subscribe(self, topic, handler) -> None:
             self.subs.setdefault(topic, []).append(handler)
 
     r = ObservabilityRecorder(
@@ -408,13 +407,14 @@ def test_install_subscribes_each_topic_once() -> None:
             llm_pricing=dict(DEFAULT_LLM_PRICING),
             tool_unit_cost={},
             skill_unit_cost={},
-            memory_write_unit_cost_usd=Decimal("0"),
-            knowledge_ingest_unit_cost_usd=Decimal("0"),
-            channel_send_unit_cost_usd=Decimal("0"),
+            memory_write_unit_cost_usd=Decimal(0),
+            knowledge_ingest_unit_cost_usd=Decimal(0),
+            channel_send_unit_cost_usd=Decimal(0),
         ),
     )
     bus = FakeBus()
-    asyncio.get_event_loop().run_until_complete(install(bus, r))
+    # install() is sync now (subscribe is sync on EventBus Protocol).
+    install(bus, r)
     assert set(bus.subs.keys()) == set(r.SUBSCRIBED_EVENTS)
     for handlers in bus.subs.values():
         assert len(handlers) == 1

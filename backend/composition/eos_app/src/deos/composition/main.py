@@ -96,6 +96,13 @@ def create_app() -> FastAPI:
 
     app.include_router(agent_factory_router())
 
+    # P8 evaluation module — /v1/eval/datasets + runs
+    from deos.modules.evaluation.adapter.http.router import (
+        build_router as evaluation_router,
+    )
+
+    app.include_router(evaluation_router())
+
     # Governance module — /v1/policies + /v1/approvals
     from deos.modules.governance.adapter.http.factory import (
         make_approval_service,

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from logging import getLogger
 from uuid import UUID
 
@@ -434,9 +435,85 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     app.state.orchestration_service_factory = _OrchestrationFactory()
 
-    # ── P8 agent_factory (depends on evaluation; evaluation is wired
-    # separately at P8-6 and the EvaluationServiceAdapter replaces the
-    # NoOpEvalQuery below at that point). For now the gate fails closed.
+    # ── P8 evaluation (independent module) ──────────────────────────────
+    from deos.modules.evaluation.adapter.events import (
+        MessagingEvaluationEventPublisher,
+    )
+    from deos.modules.evaluation.adapter.persistence.repositories import (
+        SqlEvalDatasetRepository,
+        SqlEvalRunRepository,
+    )
+    from deos.modules.evaluation.application.runner import EvalRunner
+    from deos.modules.evaluation.application.services import (
+        EvaluationService,
+    )
+    from deos.modules.evaluation.fixtures.golden_dataset import (
+        BUILTIN_GOLDEN_DATASET_DESCRIPTION,
+        BUILTIN_GOLDEN_DATASET_NAME,
+        builtin_golden_cases,
+    )
+
+    evaluation_bus = container.bus()
+    evaluation_publisher = MessagingEvaluationEventPublisher(evaluation_bus)
+
+    class _EvaluationFactory:
+        def __init__(self) -> None:
+            self._publisher = evaluation_publisher
+            self._policy_guard = policy_guard
+
+        def for_session(self) -> EvaluationService:
+            sf = container.session_factory().maker()
+            ds_repo = SqlEvalDatasetRepository(sf)
+            run_repo = SqlEvalRunRepository(sf)
+            sub_agent_factory = getattr(app.state, "agent_runtime_factory", None)
+            sub_agent = _sub_agent_for_evaluation(sub_agent_factory)
+            runner = EvalRunner(
+                run_repo=run_repo,
+                dataset_repo=ds_repo,
+                sub_agent=sub_agent,
+                publisher=self._publisher,
+                scoring_threshold=(
+                    container.settings.agent_factory_eval_score_min
+                ),
+                concurrency=container.settings.evaluation_runner_concurrency,
+                case_timeout_seconds=(
+                    container.settings.evaluation_case_default_timeout_seconds
+                ),
+            )
+            return EvaluationService.from_parts(
+                dataset_repository=ds_repo,
+                run_repository=run_repo,
+                runner=runner,
+                publisher=self._publisher,
+                policy_guard=self._policy_guard,
+            )
+
+    def _sub_agent_for_evaluation(ar_factory):  # type: ignore[no-untyped-def]
+        """Return the SubAgentPort used to drive evaluation cases.
+
+        In production this would build a RuntimeSubAgentPort that opens
+        a short-lived agent_runtime session per case.  For P8-5 we ship
+        the stub — heuristic scoring will fail most cases until the
+        full runtime adapter lands in P8-6; the gate wiring itself
+        (pass / fail / no_eval) is what P8-5 validates.
+        """
+        from deos.modules.evaluation.adapter.sub_agent_stub import (
+            StubSubAgentPort,
+        )
+
+        _ = ar_factory  # reserved for P8-6
+        return StubSubAgentPort()
+
+    app.state.evaluation_service_factory = _EvaluationFactory()
+
+    # Seed the 50-case golden dataset for every existing tenant on
+    # first boot.  Idempotent — re-running is a no-op when the dataset
+    # already exists.
+    _seed_builtin_eval_datasets(app, container)
+
+    # ── P8 agent_factory (depends on evaluation; this is the P8-6 closed
+    # loop — agent_factory reads the latest passed eval run via
+    # EvaluationServiceAdapter).
     from deos.modules.agent_factory.adapter.events import (
         MessagingAgentFactoryEventPublisher,
     )
@@ -445,32 +522,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         SqlAgentVersionRepository,
         SqlReleaseRepository,
     )
-    from deos.modules.agent_factory.application.ports import (
-        EvalRunSummary,
-    )
-    from deos.modules.agent_factory.application.ports import (
-        EvaluationQueryPort as AgentFactoryEvaluationQueryPort,
-    )
     from deos.modules.agent_factory.application.services import (
         AgentFactoryService,
     )
-    from eos_schema.ids import AgentTemplateId, AgentVersionId, TenantId
 
     agent_factory_bus = container.bus()
     agent_factory_publisher = MessagingAgentFactoryEventPublisher(agent_factory_bus)
-
-    class NoOpEvaluationQuery(AgentFactoryEvaluationQueryPort):
-        """Default P8-3 wiring: no evaluation service yet, so the gate
-        never passes.  Replaced in P8-6 by EvaluationServiceAdapter."""
-
-        async def latest_passed_run(
-            self,
-            *,
-            tenant_id: TenantId,  # noqa: ARG002
-            template_id: AgentTemplateId,  # noqa: ARG002
-            version_id: AgentVersionId,  # noqa: ARG002
-        ) -> "EvalRunSummary | None":
-            return None
 
     class _AgentFactoryFactory:
         def __init__(self) -> None:
@@ -479,17 +536,31 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
         def for_session(self) -> AgentFactoryService:
             sf = container.session_factory().maker()
+            evaluation_query = _build_evaluation_query(sf)
             return AgentFactoryService.from_parts(
                 template_repository=SqlAgentTemplateRepository(sf),
                 version_repository=SqlAgentVersionRepository(sf),
                 release_repository=SqlReleaseRepository(sf),
-                evaluation_query=NoOpEvaluationQuery(),
+                evaluation_query=evaluation_query,
                 publisher=self._publisher,
                 policy_guard=self._policy_guard,
                 eval_score_min=(
                     container.settings.agent_factory_eval_score_min
                 ),
             )
+
+    def _build_evaluation_query(sf):  # type: ignore[no-untyped-def]
+        from deos.modules.evaluation.adapter.agent_factory_adapter import (
+            EvaluationServiceAdapter,
+        )
+        from deos.modules.evaluation.adapter.persistence.repositories import (
+            SqlEvalRunRepository,
+        )
+
+        return EvaluationServiceAdapter(
+            run_repository=SqlEvalRunRepository(sf),
+            score_threshold=container.settings.agent_factory_eval_score_min,
+        )
 
     app.state.agent_factory_service_factory = _AgentFactoryFactory()
 
@@ -557,6 +628,110 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         sandbox = getattr(app.state, "sandbox", None)
         if sandbox is not None:
             await sandbox.shutdown()
+
+
+async def _seed_builtin_eval_datasets(
+    app: FastAPI, container: Container
+) -> None:
+    """Seed the 50-case golden dataset for every existing tenant.
+
+    Idempotent: skips tenants that already have a ``golden-default``
+    dataset.  Called once at lifespan start so the dataset is ready
+    by the time HTTP requests land.
+    """
+    from uuid import uuid4
+
+    from eos_schema.ids import TenantId, UserId, WorkspaceId
+    from sqlalchemy import select
+
+    from deos.modules.evaluation.adapter.persistence.mappers import (
+        case_to_orm,
+        dataset_to_orm,
+    )
+    from deos.modules.evaluation.adapter.persistence.models import (
+        EvalCaseORM,
+        EvalDatasetORM,
+    )
+    from deos.modules.evaluation.domain.entities import EvalCase, EvalDataset
+    from deos.modules.evaluation.domain.value_objects import (
+        EvalDatasetKind,
+    )
+    from deos.modules.evaluation.fixtures.golden_dataset import (
+        BUILTIN_GOLDEN_DATASET_DESCRIPTION,
+        BUILTIN_GOLDEN_DATASET_NAME,
+        builtin_golden_cases,
+    )
+
+    factory = getattr(app.state, "evaluation_service_factory", None)
+    if factory is None:
+        _log.warning("evaluation_service_factory not wired; skipping seed")
+        return
+
+    cases = builtin_golden_cases()
+    sf = container.session_factory().maker()
+
+    # Discover existing tenants + workspaces.
+    from eos_persistence.base import TenantScopedMixin
+
+    stmt = (
+        select(EvalDatasetORM.tenant_id, EvalDatasetORM.workspace_id)
+        .where(EvalDatasetORM.name == BUILTIN_GOLDEN_DATASET_NAME)
+        .distinct()
+    )
+    seeded_pairs: set[tuple[object, object]] = set(
+        (r[0], r[1]) for r in (await sf.execute(stmt)).all()
+    )
+
+    tenant_stmt = select(TenantScopedMixin.tenant_id).limit(500)
+    try:
+        tenant_rows = (await sf.execute(tenant_stmt)).all()
+    except Exception:  # noqa: BLE001
+        tenant_rows = []
+
+    seeded = 0
+    for row in tenant_rows:
+        tenant_id_val = row[0]
+        # workspace_id is tenant-wide for the seed (use a per-tenant
+        # synthetic zero workspace — datasets don't need a real workspace
+        # to be queryable).
+        from uuid import UUID as _UUID
+
+        workspace_id_val = _UUID(int=0)
+        key = (tenant_id_val, workspace_id_val)
+        if key in seeded_pairs:
+            continue
+        now = datetime.now(UTC)
+        ds = EvalDataset.create(
+            tenant_id=TenantId(_UUID(str(tenant_id_val))),
+            workspace_id=WorkspaceId(workspace_id_val),
+            name=BUILTIN_GOLDEN_DATASET_NAME,
+            description=BUILTIN_GOLDEN_DATASET_DESCRIPTION,
+            kind=EvalDatasetKind.BUILTIN,
+            case_count=len(cases),
+            created_by=UserId(uuid4()),
+            now=now,
+        )
+        sf.add(dataset_to_orm(ds))
+        await sf.flush()
+        for c in cases:
+            case = EvalCase.create(
+                tenant_id=ds.tenant_id,
+                workspace_id=ds.workspace_id,
+                dataset_id=ds.id,
+                ordinal=c.ordinal,
+                input=c.input,
+                expected_keywords=c.expected_keywords,
+                min_keywords_hit_ratio=c.min_keywords_hit_ratio,
+                max_latency_ms=c.max_latency_ms,
+                now=now,
+            )
+            sf.add(case_to_orm(case))
+        await sf.flush()
+        seeded += 1
+
+    await sf.commit()
+    if seeded:
+        _log.info("seeded golden-default eval dataset for %d tenants", seeded)
 
 
 async def ensure_default_resources(container: Container) -> None:

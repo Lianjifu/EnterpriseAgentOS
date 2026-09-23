@@ -62,5 +62,9 @@ data/
 .docker-data/
 
 # Skill pack trust store — priv keys never enter the repo
-.eos/*.priv.pem
-.eos/*.priv
+# `**/.eos/...` matches anywhere in the tree (backend/.eos/, frontend/.eos/,
+# or a future top-level .eos/). The inner `**` then matches nested
+# trust subdirs (e.g. backend/.eos/skill-trust/*.priv.pem). Public keys
+# (*.pub.pem) remain trackable so shared dev trust stores can be committed.
+**/.eos/**/*.priv.pem
+**/.eos/**/*.priv

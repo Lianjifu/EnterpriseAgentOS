@@ -121,6 +121,11 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
 
+    # P8 agent_factory + evaluation
+    agent_factory_eval_score_min: float = 0.6
+    evaluation_runner_concurrency: int = 4
+    evaluation_case_default_timeout_seconds: float = 60.0
+
     # P6 model
     model_master_key: str = ""
     model_master_key_version: int = 1

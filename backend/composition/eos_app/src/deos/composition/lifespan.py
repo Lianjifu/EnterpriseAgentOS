@@ -434,6 +434,65 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     app.state.orchestration_service_factory = _OrchestrationFactory()
 
+    # ── P8 agent_factory (depends on evaluation; evaluation is wired
+    # separately at P8-6 and the EvaluationServiceAdapter replaces the
+    # NoOpEvalQuery below at that point). For now the gate fails closed.
+    from deos.modules.agent_factory.adapter.events import (
+        MessagingAgentFactoryEventPublisher,
+    )
+    from deos.modules.agent_factory.adapter.persistence.repositories import (
+        SqlAgentTemplateRepository,
+        SqlAgentVersionRepository,
+        SqlReleaseRepository,
+    )
+    from deos.modules.agent_factory.application.ports import (
+        EvalRunSummary,
+    )
+    from deos.modules.agent_factory.application.ports import (
+        EvaluationQueryPort as AgentFactoryEvaluationQueryPort,
+    )
+    from deos.modules.agent_factory.application.services import (
+        AgentFactoryService,
+    )
+    from eos_schema.ids import AgentTemplateId, AgentVersionId, TenantId
+
+    agent_factory_bus = container.bus()
+    agent_factory_publisher = MessagingAgentFactoryEventPublisher(agent_factory_bus)
+
+    class NoOpEvaluationQuery(AgentFactoryEvaluationQueryPort):
+        """Default P8-3 wiring: no evaluation service yet, so the gate
+        never passes.  Replaced in P8-6 by EvaluationServiceAdapter."""
+
+        async def latest_passed_run(
+            self,
+            *,
+            tenant_id: TenantId,  # noqa: ARG002
+            template_id: AgentTemplateId,  # noqa: ARG002
+            version_id: AgentVersionId,  # noqa: ARG002
+        ) -> "EvalRunSummary | None":
+            return None
+
+    class _AgentFactoryFactory:
+        def __init__(self) -> None:
+            self._publisher = agent_factory_publisher
+            self._policy_guard = policy_guard
+
+        def for_session(self) -> AgentFactoryService:
+            sf = container.session_factory().maker()
+            return AgentFactoryService.from_parts(
+                template_repository=SqlAgentTemplateRepository(sf),
+                version_repository=SqlAgentVersionRepository(sf),
+                release_repository=SqlReleaseRepository(sf),
+                evaluation_query=NoOpEvaluationQuery(),
+                publisher=self._publisher,
+                policy_guard=self._policy_guard,
+                eval_score_min=(
+                    container.settings.agent_factory_eval_score_min
+                ),
+            )
+
+    app.state.agent_factory_service_factory = _AgentFactoryFactory()
+
     # ── bus (must be available before subscribers install) ──────────────
     bus = container.bus()
     await bus.start()

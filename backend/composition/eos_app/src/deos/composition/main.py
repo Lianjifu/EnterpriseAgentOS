@@ -89,6 +89,13 @@ def create_app() -> FastAPI:
 
     app.include_router(orchestration_router())
 
+    # P8 agent_factory module — /v1/agents templates/versions/releases
+    from deos.modules.agent_factory.adapter.http.router import (
+        build_router as agent_factory_router,
+    )
+
+    app.include_router(agent_factory_router())
+
     # Governance module — /v1/policies + /v1/approvals
     from deos.modules.governance.adapter.http.factory import (
         make_approval_service,

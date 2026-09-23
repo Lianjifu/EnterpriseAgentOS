@@ -132,7 +132,7 @@ class EvaluationQueryPort(Protocol):
         tenant_id: TenantId,
         template_id: AgentTemplateId,
         version_id: AgentVersionId,
-    ) -> "EvalRunSummary | None": ...
+    ) -> EvalRunSummary | None: ...
 
 
 class EvalRunSummary:
@@ -142,7 +142,7 @@ class EvalRunSummary:
     — the gate only needs id + status + mean_score + completed_at.
     """
 
-    __slots__ = ("id", "status", "mean_score", "completed_at")
+    __slots__ = ("completed_at", "id", "mean_score", "status")
 
     def __init__(
         self,

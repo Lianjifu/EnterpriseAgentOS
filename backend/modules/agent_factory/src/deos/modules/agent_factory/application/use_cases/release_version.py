@@ -41,8 +41,6 @@ from deos.modules.agent_factory.application.ports import (
     ReleaseRepository,
 )
 from deos.modules.agent_factory.domain.entities import (
-    AgentTemplate,
-    AgentVersion,
     Release,
 )
 from deos.modules.agent_factory.domain.errors import (

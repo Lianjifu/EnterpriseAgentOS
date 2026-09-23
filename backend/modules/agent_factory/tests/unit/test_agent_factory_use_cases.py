@@ -5,7 +5,14 @@ from __future__ import annotations
 from uuid import uuid4
 
 import pytest
-
+from _agent_factory_unit_in_memory import (  # type: ignore[import-not-found]
+    InMemoryAgentTemplateRepository,
+    InMemoryAgentVersionRepository,
+    InMemoryEvaluationQuery,
+    InMemoryReleaseRepository,
+    RecordingPublisher,
+    make_eval_summary,
+)
 from eos_kernel.errors import BusinessRuleError
 from eos_schema.ids import (
     AgentTemplateId,
@@ -26,18 +33,8 @@ from deos.modules.agent_factory.domain.errors import (
     AgentVersionTagConflict,
 )
 from deos.modules.agent_factory.domain.value_objects import (
-    AgentTemplateStatus,
     AgentVersionStatus,
 )
-from _agent_factory_unit_in_memory import (  # type: ignore[import-not-found]
-    InMemoryAgentTemplateRepository,
-    InMemoryAgentVersionRepository,
-    InMemoryEvaluationQuery,
-    InMemoryReleaseRepository,
-    RecordingPublisher,
-    make_eval_summary,
-)
-
 
 _TENANT = TenantId(uuid4())
 _WORKSPACE = WorkspaceId(uuid4())
@@ -77,7 +74,7 @@ async def test_create_template_persists_and_publishes_event() -> None:
     )
     assert tpl.name == "sales-bot"
     assert len(_service()[5].published) == 0  # not used
-    _, _, _, _, _, pub = _service()  # fresh publisher above wouldn't have event
+    _, _, _, _, _, _pub = _service()  # fresh publisher above wouldn't have event
     # Re-run to assert publisher side-effect:
     svc2, *_ = _service()
     await svc2.create_template.execute(
@@ -119,7 +116,7 @@ async def test_create_template_name_conflict_409() -> None:
 
 @pytest.mark.asyncio
 async def test_create_version_inherits_template_defaults() -> None:
-    svc, tpl_repo, *_ = _service()
+    svc, _tpl_repo, *_ = _service()
     tpl = await svc.create_template.execute(
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
@@ -143,7 +140,7 @@ async def test_create_version_inherits_template_defaults() -> None:
 
 @pytest.mark.asyncio
 async def test_create_version_tag_conflict_409() -> None:
-    svc, tpl_repo, *_ = _service()
+    svc, _tpl_repo, *_ = _service()
     tpl = await svc.create_template.execute(
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,

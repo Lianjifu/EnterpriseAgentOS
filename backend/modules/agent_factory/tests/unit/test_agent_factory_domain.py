@@ -3,15 +3,13 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
-
 from eos_schema.ids import (
     AgentTemplateId,
     AgentVersionId,
     EvalRunId,
-    ReleaseId,
     TenantId,
     UserId,
     WorkspaceId,
@@ -31,7 +29,6 @@ from deos.modules.agent_factory.domain.value_objects import (
     AgentVersionStatus,
     ReleaseStatus,
 )
-
 
 _TENANT = TenantId(uuid4())
 _WORKSPACE = WorkspaceId(uuid4())

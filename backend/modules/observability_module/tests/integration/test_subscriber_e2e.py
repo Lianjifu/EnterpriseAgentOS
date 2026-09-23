@@ -88,9 +88,9 @@ def recorder(pricing: PricingCatalog):
 
 
 @pytest.fixture
-def bus_with_recorder(recorder: ObservabilityRecorder):
+async def bus_with_recorder(recorder: ObservabilityRecorder):
     bus = InProcessBus()
-    install(bus, recorder)
+    await install(bus, recorder)
     return bus, recorder
 
 
@@ -115,7 +115,7 @@ def test_install_subscribes_all_10_events(bus_with_recorder) -> None:
     assert expected.issubset(subs)
 
 
-def test_install_dedupes_within_one_call(recorder) -> None:
+async def test_install_dedupes_within_one_call(recorder) -> None:
     """Each install() call dedupes internally; two separate calls
     register two handlers (matches audit_subscriber semantics).
     """
@@ -124,7 +124,7 @@ def test_install_dedupes_within_one_call(recorder) -> None:
     # to verify install() keeps only one entry per topic per call.
     bus.subscribe("ModelInvoked", recorder.handle)
     bus.subscribe("ModelInvoked", recorder.handle)
-    install(bus, recorder)
+    await install(bus, recorder)
     # install() added 9 unique topics; the pre-existing 2 on ModelInvoked stay.
     assert bus._subs["ModelInvoked"][:2] == [recorder.handle, recorder.handle]  # type: ignore[attr-defined]
     # but install only added 1 more handler for ModelInvoked
@@ -411,7 +411,7 @@ async def test_handler_swallows_repo_errors_without_raising(
         pricing=recorder.pricing,
     )
     bus_2 = InProcessBus()
-    install(bus_2, boom_recorder)
+    await install(bus_2, boom_recorder)
 
     tenant_id = TenantId(uuid4())
     workspace_id = WorkspaceId(uuid4())

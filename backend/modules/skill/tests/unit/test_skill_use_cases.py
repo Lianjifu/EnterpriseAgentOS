@@ -6,19 +6,16 @@ without hitting the DB.
 
 from __future__ import annotations
 
+from uuid import UUID
+
 import pytest
-from _in_memory import (  # type: ignore[import-not-found]
+from _skill_unit_in_memory import (  # type: ignore[import-not-found]
     FakeRunTokenIssuer,
     InMemoryArtifactStore,
     InMemoryUnitOfWork,
     RecordingSkillEventPublisher,
 )
-from conftest import (  # type: ignore[import-not-found]
-    make_skill_id,
-    make_tenant,
-    make_user,
-    make_workspace,
-)
+from eos_schema.ids import SkillId, TenantId, UserId, WorkspaceId
 
 from deos.modules.skill.application.invocation_runner import InvocationRunner
 from deos.modules.skill.application.services import SkillService
@@ -33,6 +30,25 @@ from deos.modules.skill.domain.errors import (
     SkillNotFound,
     SkillVersionMismatch,
 )
+
+
+# Inline test-id helpers (replaces the legacy `from conftest import`
+# which collides with other modules' conftest under
+# `--import-mode=importlib` + multi-module pythonpath).
+def make_tenant() -> TenantId:
+    return TenantId(UUID("00000000-0000-0000-0000-000000000001"))
+
+
+def make_workspace() -> WorkspaceId:
+    return WorkspaceId(UUID("00000000-0000-0000-0000-000000000002"))
+
+
+def make_user() -> UserId:
+    return UserId(UUID("00000000-0000-0000-0000-000000000010"))
+
+
+def make_skill_id() -> SkillId:
+    return SkillId(UUID("00000000-0000-0000-0000-0000000000aa"))
 
 
 class FakeSandbox:

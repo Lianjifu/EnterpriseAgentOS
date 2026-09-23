@@ -4,19 +4,17 @@ from __future__ import annotations
 
 import asyncio
 import sys
+from uuid import UUID
 
 import pytest
-from _in_memory import (  # type: ignore[import-not-found]
+from _skill_unit_in_memory import (  # type: ignore[import-not-found]
     InMemoryArtifactStore,
     InMemoryInvocationRepository,
     InMemoryUnitOfWork,
     RecordingSkillEventPublisher,
 )
-from conftest import (  # type: ignore[import-not-found]
-    make_tenant,
-    make_workspace,
-)
 from eos_sandbox.sandbox import SandboxEvent, SandboxRunStatus
+from eos_schema.ids import TenantId, WorkspaceId
 
 from deos.modules.skill.application.invocation_runner import (
     InvocationRunner,
@@ -28,6 +26,16 @@ from deos.modules.skill.domain.entities import (
     SkillInvocationStatus,
     SkillPackage,
 )
+
+
+# Inline test-id helpers (replaces the legacy `from conftest import`
+# which collides under `--import-mode=importlib`).
+def make_tenant() -> TenantId:
+    return TenantId(UUID("00000000-0000-0000-0000-000000000001"))
+
+
+def make_workspace() -> WorkspaceId:
+    return WorkspaceId(UUID("00000000-0000-0000-0000-000000000002"))
 from deos.modules.skill.domain.errors import SandboxTimeout
 
 

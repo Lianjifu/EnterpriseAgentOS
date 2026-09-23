@@ -5,18 +5,15 @@ from __future__ import annotations
 import sys
 import time
 from typing import Any
+from uuid import UUID
 
-from _in_memory import (  # type: ignore[import-not-found]
+from _skill_unit_in_memory import (  # type: ignore[import-not-found]
     FakeRunTokenIssuer,
     InMemoryArtifactStore,
     InMemoryUnitOfWork,
     RecordingSkillEventPublisher,
 )
-from conftest import (  # type: ignore[import-not-found]
-    make_tenant,
-    make_user,
-    make_workspace,
-)
+from eos_schema.ids import TenantId, UserId, WorkspaceId
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -24,6 +21,20 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from deos.modules.skill.adapter.http.router import build_router
 from deos.modules.skill.application.invocation_runner import InvocationRunner
 from deos.modules.skill.application.services import SkillService
+
+
+# Inline test-id helpers (replaces the legacy `from conftest import`
+# which collides under `--import-mode=importlib`).
+def make_tenant() -> TenantId:
+    return TenantId(UUID("00000000-0000-0000-0000-000000000001"))
+
+
+def make_user() -> UserId:
+    return UserId(UUID("00000000-0000-0000-0000-000000000010"))
+
+
+def make_workspace() -> WorkspaceId:
+    return WorkspaceId(UUID("00000000-0000-0000-0000-000000000002"))
 
 
 class FastSandbox:

@@ -114,11 +114,11 @@ async def test_migration_created_three_tables(engine: AsyncEngine) -> None:
                 text(
                     "SELECT tablename FROM pg_tables "
                     "WHERE schemaname='public' "
-                    "AND tablename IN ('plans','workflow_runs','workflow_step_runs')"
+                    "AND tablename IN ('orch_plans','workflow_runs','workflow_step_runs')"
                 )
             )
         ).scalars().all()
-    assert set(rows) == {"plans", "workflow_runs", "workflow_step_runs"}
+    assert set(rows) == {"orch_plans", "workflow_runs", "workflow_step_runs"}
 
 
 async def test_plan_repo_round_trip(repos) -> None:
@@ -187,12 +187,22 @@ async def test_plan_repo_cross_tenant_isolation(repos) -> None:
 
 
 async def test_workflow_run_repo_round_trip(repos) -> None:
-    _, run_repo, _, _ = repos
-    tid, wid, _ = _ids()
+    plan_repo, run_repo, _, _ = repos
+    tid, wid, uid = _ids()
+    plan = Plan.create(
+        tenant_id=tid,
+        workspace_id=wid,
+        name=f"p-{uuid4()}",
+        description="",
+        entry_dsl={"name": "p", "entry": _agent_entry()},
+        max_total_steps=10,
+        created_by=uid,
+    )
+    saved_plan = await plan_repo.add(plan)
     run = WorkflowRun.create(
         tenant_id=tid,
         workspace_id=wid,
-        plan_id=PlanId(uuid4()),
+        plan_id=PlanId(saved_plan.id),
         plan_dsl_snapshot={"entry": _agent_entry()},
         variables={"a": 1},
     )
@@ -211,12 +221,22 @@ async def test_workflow_run_repo_round_trip(repos) -> None:
 
 
 async def test_workflow_run_idempotency_partial_uq(repos) -> None:
-    _, run_repo, _, _ = repos
-    tid, wid, _ = _ids()
+    plan_repo, run_repo, _, _ = repos
+    tid, wid, uid = _ids()
+    plan = Plan.create(
+        tenant_id=tid,
+        workspace_id=wid,
+        name=f"p-{uuid4()}",
+        description="",
+        entry_dsl={"name": "p", "entry": _agent_entry()},
+        max_total_steps=10,
+        created_by=uid,
+    )
+    saved_plan = await plan_repo.add(plan)
     run_a = WorkflowRun.create(
         tenant_id=tid,
         workspace_id=wid,
-        plan_id=PlanId(uuid4()),
+        plan_id=PlanId(saved_plan.id),
         plan_dsl_snapshot={"entry": _agent_entry()},
         idempotency_key=f"k-{uuid4()}",
     )
@@ -224,7 +244,7 @@ async def test_workflow_run_idempotency_partial_uq(repos) -> None:
     run_b = WorkflowRun.create(
         tenant_id=tid,
         workspace_id=wid,
-        plan_id=PlanId(uuid4()),
+        plan_id=PlanId(saved_plan.id),
         plan_dsl_snapshot={"entry": _agent_entry()},
         idempotency_key=run_a.idempotency_key,
     )
@@ -235,9 +255,19 @@ async def test_workflow_run_idempotency_partial_uq(repos) -> None:
 async def test_workflow_run_anonymous_no_idempotency_conflict(repos) -> None:
     """Without idempotency_key, two runs can coexist even when other
     fields (plan_id) match — the partial UQ excludes NULL keys."""
-    _, run_repo, _, _ = repos
-    tid, wid, _ = _ids()
-    plan_id = PlanId(uuid4())
+    plan_repo, run_repo, _, _ = repos
+    tid, wid, uid = _ids()
+    plan = Plan.create(
+        tenant_id=tid,
+        workspace_id=wid,
+        name=f"p-{uuid4()}",
+        description="",
+        entry_dsl={"name": "p", "entry": _agent_entry()},
+        max_total_steps=10,
+        created_by=uid,
+    )
+    saved_plan = await plan_repo.add(plan)
+    plan_id = PlanId(saved_plan.id)
     run_a = WorkflowRun.create(
         tenant_id=tid,
         workspace_id=wid,
@@ -256,12 +286,22 @@ async def test_workflow_run_anonymous_no_idempotency_conflict(repos) -> None:
 
 
 async def test_workflow_run_repo_lookup_by_idempotency(repos) -> None:
-    _, run_repo, _, _ = repos
-    tid, wid, _ = _ids()
+    plan_repo, run_repo, _, _ = repos
+    tid, wid, uid = _ids()
+    plan = Plan.create(
+        tenant_id=tid,
+        workspace_id=wid,
+        name=f"p-{uuid4()}",
+        description="",
+        entry_dsl={"name": "p", "entry": _agent_entry()},
+        max_total_steps=10,
+        created_by=uid,
+    )
+    saved_plan = await plan_repo.add(plan)
     run = WorkflowRun.create(
         tenant_id=tid,
         workspace_id=wid,
-        plan_id=PlanId(uuid4()),
+        plan_id=PlanId(saved_plan.id),
         plan_dsl_snapshot={"entry": _agent_entry()},
         idempotency_key=f"key-{uuid4()}",
     )
@@ -274,9 +314,31 @@ async def test_workflow_run_repo_lookup_by_idempotency(repos) -> None:
 
 
 async def test_step_run_repo_round_trip(repos) -> None:
-    _, _, step_repo, _ = repos
+    _, _, step_repo, session = repos
     tid = TenantId(uuid4())
+    wid = WorkspaceId(uuid4())
+    plan_id = uuid4()
     run_id = WorkflowRunId(uuid4())
+    # Insert stub orch_plans + workflow_runs rows so the FKs on
+    # workflow_runs.plan_id → orch_plans.id and
+    # workflow_step_runs.run_id → workflow_runs.id are satisfied —
+    # this test exercises step_repo, not plan/run repos.
+    await session.execute(
+        text(
+            "INSERT INTO orch_plans (id, tenant_id, workspace_id, name, "
+            "description, entry_dsl, max_total_steps, metadata) "
+            "VALUES (:id, :tid, :wid, 'stub', '', '{}'::jsonb, 64, '{}'::jsonb)"
+        ),
+        {"id": plan_id, "tid": tid, "wid": wid},
+    )
+    await session.execute(
+        text(
+            "INSERT INTO workflow_runs (id, tenant_id, workspace_id, plan_id, "
+            "plan_dsl_snapshot, status, variables, input) "
+            "VALUES (:id, :tid, :wid, :pid, :snap, 'pending', '{}'::jsonb, '{}'::jsonb)"
+        ),
+        {"id": run_id, "tid": tid, "wid": wid, "pid": plan_id, "snap": "{}"},
+    )
     step = StepRun.start(
         tenant_id=tid,
         run_id=run_id,
@@ -293,10 +355,28 @@ async def test_step_run_repo_round_trip(repos) -> None:
 
 
 async def test_step_run_repo_cross_tenant_isolation(repos) -> None:
-    _, _, step_repo, _ = repos
+    _, _, step_repo, session = repos
     tid_a = TenantId(uuid4())
     tid_b = TenantId(uuid4())
+    wid_a = WorkspaceId(uuid4())
+    plan_id = uuid4()
     run_id = WorkflowRunId(uuid4())
+    await session.execute(
+        text(
+            "INSERT INTO orch_plans (id, tenant_id, workspace_id, name, "
+            "description, entry_dsl, max_total_steps, metadata) "
+            "VALUES (:id, :tid, :wid, 'stub', '', '{}'::jsonb, 64, '{}'::jsonb)"
+        ),
+        {"id": plan_id, "tid": tid_a, "wid": wid_a},
+    )
+    await session.execute(
+        text(
+            "INSERT INTO workflow_runs (id, tenant_id, workspace_id, plan_id, "
+            "plan_dsl_snapshot, status, variables, input) "
+            "VALUES (:id, :tid, :wid, :pid, :snap, 'pending', '{}'::jsonb, '{}'::jsonb)"
+        ),
+        {"id": run_id, "tid": tid_a, "wid": wid_a, "pid": plan_id, "snap": "{}"},
+    )
     step = StepRun.start(
         tenant_id=tid_a,
         run_id=run_id,

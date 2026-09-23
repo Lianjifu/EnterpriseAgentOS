@@ -2,8 +2,11 @@
 
 Adds three tables:
 
-- ``plans``               — persisted, named, version-pinned Plan DSL.
+- ``orch_plans``          — persisted, named, version-pinned Plan DSL.
                           Owns its ``entry_dsl`` JSONB + max_total_steps.
+                          (Renamed from ``plans`` in 2026-09 burn-in F1 fix
+                          to avoid collision with the platform/billing
+                          ``plans`` table added in 0014_platform.)
 - ``workflow_runs``       — one execution of a plan.  Carries a snapshot
                           of the DSL so historical runs survive later
                           edits to the plan.
@@ -11,7 +14,7 @@ Adds three tables:
 
 Indexes / constraints:
 
-- UQ (tenant_id, name) on ``plans`` — name uniqueness within tenant
+- UQ (tenant_id, name) on ``orch_plans`` — name uniqueness within tenant
 - partial UQ (tenant_id, idempotency_key) on ``workflow_runs`` —
   enforced only when ``idempotency_key IS NOT NULL`` so anonymous
   runs (no key) do not collide
@@ -38,15 +41,18 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision: str = "0010_orchestration"
-down_revision: str | None | Sequence[str] = "0009_knowledge"
+down_revision: str | Sequence[str] | None = "0009_knowledge"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    # ── plans ─────────────────────────────────────────────────────────────
+    # ── orch_plans ────────────────────────────────────────────────────────
+    # NOTE: table named ``orch_plans`` to avoid collision with the
+    # platform/billing ``plans`` table added later in 0014_platform
+    # (burn-in F1 fix 2026-09).
     op.create_table(
-        "plans",
+        "orch_plans",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column("tenant_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("workspace_id", postgresql.UUID(as_uuid=True), nullable=False),
@@ -89,22 +95,22 @@ def upgrade() -> None:
         ),
         sa.CheckConstraint(
             "max_total_steps BETWEEN 1 AND 256",
-            name="ck_plans_max_total_steps_range",
+            name="ck_orch_plans_max_total_steps_range",
         ),
     )
     op.create_index(
-        "ix_plans_tenant_id",
-        "plans",
+        "ix_orch_plans_tenant_id",
+        "orch_plans",
         ["tenant_id"],
     )
     op.create_index(
-        "ix_plans_tenant_id_workspace_id_created_at",
-        "plans",
+        "ix_orch_plans_tenant_id_workspace_id_created_at",
+        "orch_plans",
         ["tenant_id", "workspace_id", "created_at"],
     )
     op.create_unique_constraint(
-        "uq_plans_tenant_id_name",
-        "plans",
+        "uq_orch_plans_tenant_id_name",
+        "orch_plans",
         ["tenant_id", "name"],
     )
 
@@ -117,7 +123,7 @@ def upgrade() -> None:
         sa.Column(
             "plan_id",
             postgresql.UUID(as_uuid=True),
-            sa.ForeignKey("plans.id", ondelete="RESTRICT"),
+            sa.ForeignKey("orch_plans.id", ondelete="RESTRICT"),
             nullable=False,
         ),
         sa.Column(
@@ -321,10 +327,10 @@ def downgrade() -> None:
     )
     op.drop_table("workflow_runs")
 
-    op.drop_constraint("uq_plans_tenant_id_name", "plans", type_="unique")
+    op.drop_constraint("uq_orch_plans_tenant_id_name", "orch_plans", type_="unique")
     op.drop_index(
-        "ix_plans_tenant_id_workspace_id_created_at",
-        table_name="plans",
+        "ix_orch_plans_tenant_id_workspace_id_created_at",
+        table_name="orch_plans",
     )
-    op.drop_index("ix_plans_tenant_id", table_name="plans")
-    op.drop_table("plans")
+    op.drop_index("ix_orch_plans_tenant_id", table_name="orch_plans")
+    op.drop_table("orch_plans")

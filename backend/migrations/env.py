@@ -21,6 +21,16 @@ if TYPE_CHECKING:
 # Import the global Base; every model attaches itself on import.
 from eos_persistence.base import Base
 import eos_persistence.pgvector
+from eos_persistence.pgvector import register_pgvector
+from pgvector.sqlalchemy import Vector
+
+register_pgvector()
+# Pre-0009 migrations (0006_memory) reference ``postgresql.VECTOR(N)``;
+# pgvector only exposes ``Vector``. Expose the uppercase alias so old
+# migrations resolve without a schema rewrite.
+from sqlalchemy.dialects import postgresql as _pg
+
+_pg.VECTOR = Vector  # type: ignore[attr-defined]
 
 # Import each module's models so they register on Base.metadata.
 from deos.modules.identity.adapter.persistence import models as identity_models

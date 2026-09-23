@@ -40,7 +40,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 
 class PlanORM(TenantScopedMixin, Base):
-    __tablename__ = "plans"
+    __tablename__ = "orch_plans"
 
     workspace_id: Mapped[UUID] = mapped_column(
         PgUUID(as_uuid=True), nullable=False, index=True
@@ -66,7 +66,7 @@ class PlanORM(TenantScopedMixin, Base):
     __table_args__ = (
         CheckConstraint(
             "max_total_steps BETWEEN 1 AND 256",
-            name="ck_plans_max_total_steps_range",
+            name="ck_orch_plans_max_total_steps_range",
         ),
         make_composite_index("workspace_id", "created_at"),
     )
@@ -80,7 +80,7 @@ class WorkflowRunORM(TenantScopedMixin, Base):
     )
     plan_id: Mapped[UUID] = mapped_column(
         PgUUID(as_uuid=True),
-        ForeignKey("plans.id", ondelete="RESTRICT"),
+        ForeignKey("orch_plans.id", ondelete="RESTRICT"),
         nullable=False,
     )
     plan_dsl_snapshot: Mapped[dict[str, Any]] = mapped_column(

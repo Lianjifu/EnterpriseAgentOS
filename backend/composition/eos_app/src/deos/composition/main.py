@@ -103,6 +103,13 @@ def create_app() -> FastAPI:
 
     app.include_router(evaluation_router())
 
+    # P9 observability module — /v1/observability/runs + /costs + /quality
+    from deos.modules.observability_module.adapter.http.router import (
+        build_router as observability_router,
+    )
+
+    app.include_router(observability_router())
+
     # Governance module — /v1/policies + /v1/approvals
     from deos.modules.governance.adapter.http.factory import (
         make_approval_service,

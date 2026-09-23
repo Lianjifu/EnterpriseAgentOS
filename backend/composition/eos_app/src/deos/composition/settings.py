@@ -126,6 +126,19 @@ class Settings(BaseSettings):
     evaluation_runner_concurrency: int = 4
     evaluation_case_default_timeout_seconds: float = 60.0
 
+    # P9 observability — pricing source (JSON; fallback to defaults if malformed)
+    model_pricing_json: str = (
+        '{"default":{"input":"0.00015","output":"0.0006"},'
+        '"gpt-4o-mini":{"input":"0.00015","output":"0.0006"},'
+        '"gpt-4o":{"input":"0.0025","output":"0.01"}}'
+    )
+    tool_unit_cost_json: str = '{"echo":"0","reverse":"0","clock":"0"}'
+    skill_unit_cost_json: str = "{}"
+    memory_write_unit_cost_usd: float = 0.00001
+    knowledge_ingest_unit_cost_usd: float = 0.001
+    channel_send_unit_cost_usd: float = 0.0005
+    default_currency: str = "USD"
+
     # P6 model
     model_master_key: str = ""
     model_master_key_version: int = 1

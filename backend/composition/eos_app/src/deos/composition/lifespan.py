@@ -559,10 +559,51 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     app.state.agent_factory_service_factory = _AgentFactoryFactory()
 
+    # ── P9 observability_module (per-request service factory + subscriber) ──
+    from deos.modules.observability_module.adapter.persistence.repositories import (
+        SqlCostRecordRepository,
+        SqlRunRecordRepository,
+    )
+    from deos.modules.observability_module.application.pricing import (
+        PricingCatalog,
+    )
+    from deos.modules.observability_module.application.recorder import (
+        ObservabilityRecorder,
+        install as obs_install,
+    )
+    from deos.modules.observability_module.application.services import (
+        ObservabilityService,
+    )
+
+    obs_pricing_catalog = PricingCatalog.from_settings(container.settings)
+    obs_session_factory = container.session_factory().maker
+
+    class _ObservabilityFactory:
+        def __init__(self) -> None:
+            self._pricing = obs_pricing_catalog
+
+        def for_session(self) -> ObservabilityService:
+            sf = obs_session_factory()
+            return ObservabilityService.from_parts(
+                run_repo=SqlRunRecordRepository(sf),
+                cost_repo=SqlCostRecordRepository(sf),
+                pricing=self._pricing,
+            )
+
+    app.state.observability_service_factory = _ObservabilityFactory()
+
     # ── bus (must be available before subscribers install) ──────────────
     bus = container.bus()
     await bus.start()
     app.state.bus = bus
+
+    # ── P9 observability subscriber (passive; never raises back) ────────
+    obs_recorder = ObservabilityRecorder(
+        run_repo=SqlRunRecordRepository(obs_session_factory()),
+        cost_repo=SqlCostRecordRepository(obs_session_factory()),
+        pricing=obs_pricing_catalog,
+    )
+    obs_install(bus, obs_recorder, logger=_log)
 
     # ── P5 audit subscriber (governance events → audit_log) ─────────────
     from deos.modules.governance.adapter.subscribers import audit_subscriber

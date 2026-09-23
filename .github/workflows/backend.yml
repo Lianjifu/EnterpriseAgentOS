@@ -1,0 +1,213 @@
+name: backend
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_LINK_MODE: copy
+
+jobs:
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: '0.11.7'
+      - run: uv sync --all-extras
+      - run: make lint
+
+  import-lint:
+    name: Import-linter (architecture)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: '0.11.7'
+      - run: uv sync --all-extras
+      - run: make import-lint
+
+  type-check:
+    name: Type-check (mypy strict)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: '0.11.7'
+      - run: uv sync --all-extras
+      - run: make type-check
+
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  audit:
+    name: Dependency audit (pip-audit)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: '0.11.7'
+      - run: uv sync --all-extras
+      - run: uv run pip-audit --strict
+
+  test:
+    name: Test (unit + integration + contract)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: eos_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      EOS_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/eos_test
+      EOS_REDIS_URL: redis://localhost:6379/0
+      EOS_ENV: ci
+      EOS_BAN_MOCK_TOKEN: '1'
+      EOS_ALLOW_DEMO_TOKEN: '0'
+      EOS_LLM_PROVIDER: mock
+      EOS_LLM_MOCK_LATENCY_MS: '50'
+      EOS_JWT_SECRET: ci-test-secret-not-for-production-use
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: '0.11.7'
+      - run: uv sync --all-extras
+      - name: Wait for services
+        run: |
+          until pg_isready -h localhost -p 5432; do sleep 1; done
+          until redis-cli -h localhost ping; do sleep 1; done
+      - name: Apply migrations
+        run: EOS_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/eos_test uv run alembic -c migrations/alembic.ini upgrade head
+      - name: Run tests
+        run: EOS_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/eos_test uv run pytest --cov-fail-under=70
+
+  smoke:
+    name: Smoke (end-to-end)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: eos_smoke
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      minio:
+        image: minio/minio:latest
+        env:
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
+        ports: ['9000:9000', '9001:9001']
+    env:
+      EOS_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/eos_smoke
+      EOS_REDIS_URL: redis://localhost:6379/0
+      EOS_OBJECT_STORAGE_ENDPOINT: http://localhost:9000
+      EOS_OBJECT_STORAGE_ACCESS_KEY: minioadmin
+      EOS_OBJECT_STORAGE_SECRET_KEY: minioadmin
+      EOS_ENV: ci
+      EOS_BAN_MOCK_TOKEN: '1'
+      EOS_ALLOW_DEMO_TOKEN: '0'
+      EOS_LLM_PROVIDER: mock
+      EOS_JWT_SECRET: ci-smoke-secret-not-for-production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: '0.11.7'
+      - run: uv sync --all-extras
+      - name: Wait for services
+        run: |
+          until pg_isready -h localhost -p 5432; do sleep 1; done
+          until redis-cli -h localhost ping; do sleep 1; done
+      - name: Apply migrations
+        run: uv run alembic -c migrations/alembic.ini upgrade head
+      - name: Start app
+        run: uv run uvicorn deos.composition.main:create_app --host 127.0.0.1 --port 8100 --factory &
+      - name: Wait for app
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8100/healthz; then break; fi
+            sleep 1
+          done
+      - name: Run smoke tests
+        run: uv run python tests/e2e/smoke.py

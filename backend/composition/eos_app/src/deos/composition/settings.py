@@ -76,6 +76,20 @@ class Settings(BaseSettings):
     event_redis_block_ms: int = 1000
     event_redis_count: int = 10
 
+    # audit pipeline (A5)
+    # ``direct`` keeps the synchronous SqlAuditLogAdapter (default —
+    # backward compatible). ``kafka`` routes audit events through
+    # KafkaAuditPublisher → topic → KafkaAuditConsumer → audit_log SQL.
+    audit_mode: Literal["direct", "kafka"] = "direct"
+    audit_consumer_enabled: bool = True  # set false on N-1 k8s replicas
+    audit_kafka_bootstrap_servers: str = "localhost:9092"
+    audit_kafka_topic: str = "eos.audit.events"
+    audit_kafka_dlq_topic: str = "eos.audit.events.dlq"
+    audit_kafka_consumer_group: str = ""  # env/hostname fallback
+    audit_kafka_max_retries: int = 3
+    audit_kafka_block_ms: int = 1000
+    audit_kafka_request_timeout_ms: int = 5000
+
     # rate limit
     rate_limit_per_tenant_per_min: int = 1000
     rate_limit_per_api_key_per_min: int = 1000

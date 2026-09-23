@@ -61,3 +61,9 @@ ReleaseId = NewType("ReleaseId", UUID)
 EvalDatasetId = NewType("EvalDatasetId", UUID)
 EvalCaseId = NewType("EvalCaseId", UUID)
 EvalRunId = NewType("EvalRunId", UUID)
+
+# ── Observability / Platform (P9) ──────────────────────────────────────────
+RunRecordId = NewType("RunRecordId", UUID)
+CostRecordId = NewType("CostRecordId", UUID)
+SubscriptionId = NewType("SubscriptionId", UUID)
+TenantSettingId = NewType("TenantSettingId", UUID)

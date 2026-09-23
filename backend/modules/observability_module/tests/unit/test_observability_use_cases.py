@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from decimal import Decimal
 from types import SimpleNamespace
 from uuid import uuid4
@@ -28,7 +28,6 @@ from deos.modules.observability_module.domain.entities import (
 )
 from deos.modules.observability_module.domain.value_objects import (
     CostType,
-    RunStatus,
     RunType,
 )
 
@@ -55,7 +54,7 @@ def service(pricing):
 def test_record_run_creates_row(service: ObservabilityService) -> None:
     tid = TenantId(uuid4())
     wid = WorkspaceId(uuid4())
-    rec = asyncio.get_event_loop().run_until_complete(
+    rec = asyncio.run(
         service.record_run(
             cmd={
                 "tenant_id": tid,
@@ -74,7 +73,7 @@ def test_record_run_creates_row(service: ObservabilityService) -> None:
 
 def test_record_run_rejects_bad_run_type(service: ObservabilityService) -> None:
     with pytest.raises(BusinessRuleError):
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             service.record_run(
                 cmd={
                     "tenant_id": TenantId(uuid4()),
@@ -92,7 +91,7 @@ def test_record_cost_creates_row(service: ObservabilityService) -> None:
     tid = TenantId(uuid4())
     wid = WorkspaceId(uuid4())
     rid = uuid4()
-    rec = asyncio.get_event_loop().run_until_complete(
+    rec = asyncio.run(
         service.record_cost(
             cmd={
                 "tenant_id": tid,
@@ -110,14 +109,14 @@ def test_record_cost_creates_row(service: ObservabilityService) -> None:
 
 def test_record_cost_rejects_negative(service: ObservabilityService) -> None:
     with pytest.raises(BusinessRuleError):
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             service.record_cost(
                 cmd={
                     "tenant_id": TenantId(uuid4()),
                     "workspace_id": WorkspaceId(uuid4()),
                     "run_id": uuid4(),
                     "cost_type": "tool",
-                    "amount_usd": Decimal("-1"),
+                    "amount_usd": Decimal(-1),
                 }
             )
         )
@@ -131,7 +130,7 @@ def test_list_runs_filters_by_workspace(service: ObservabilityService) -> None:
     wid_a = WorkspaceId(uuid4())
     wid_b = WorkspaceId(uuid4())
     for wid in (wid_a, wid_a, wid_b):
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             service.record_run(
                 cmd={
                     "tenant_id": tid,
@@ -141,7 +140,7 @@ def test_list_runs_filters_by_workspace(service: ObservabilityService) -> None:
                 }
             )
         )
-    rows = asyncio.get_event_loop().run_until_complete(
+    rows = asyncio.run(
         service.list_runs(tenant_id=tid, workspace_id=wid_a)
     )
     assert len(rows) == 2
@@ -153,7 +152,7 @@ def test_list_costs_tenant_isolation(service: ObservabilityService) -> None:
     wid = WorkspaceId(uuid4())
     rid = uuid4()
     for tid in (tid_a, tid_b):
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             service.record_cost(
                 cmd={
                     "tenant_id": tid,
@@ -164,10 +163,10 @@ def test_list_costs_tenant_isolation(service: ObservabilityService) -> None:
                 }
             )
         )
-    rows_a = asyncio.get_event_loop().run_until_complete(
+    rows_a = asyncio.run(
         service.list_costs(tenant_id=tid_a, workspace_id=wid)
     )
-    rows_b = asyncio.get_event_loop().run_until_complete(
+    rows_b = asyncio.run(
         service.list_costs(tenant_id=tid_b, workspace_id=wid)
     )
     assert len(rows_a) == 1
@@ -188,7 +187,7 @@ def test_aggregate_by_cost_type(service: ObservabilityService) -> None:
         (CostType.LLM_INPUT, Decimal("0.02")),
         (CostType.TOOL, Decimal("0.005")),
     ]:
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             service.record_cost(
                 cmd={
                     "tenant_id": tid,
@@ -199,7 +198,7 @@ def test_aggregate_by_cost_type(service: ObservabilityService) -> None:
                 }
             )
         )
-    rows = asyncio.get_event_loop().run_until_complete(
+    rows = asyncio.run(
         service.aggregate_costs(tenant_id=tid, group_by="cost_type")
     )
     by_type = {r["cost_type"]: r["total_usd"] for r in rows}
@@ -213,7 +212,7 @@ def test_aggregate_by_workspace(service: ObservabilityService) -> None:
     wid_b = WorkspaceId(uuid4())
     rid = uuid4()
     for wid, amount in [(wid_a, Decimal("0.01")), (wid_a, Decimal("0.02")), (wid_b, Decimal("0.05"))]:
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             service.record_cost(
                 cmd={
                     "tenant_id": tid,
@@ -224,7 +223,7 @@ def test_aggregate_by_workspace(service: ObservabilityService) -> None:
                 }
             )
         )
-    rows = asyncio.get_event_loop().run_until_complete(
+    rows = asyncio.run(
         service.aggregate_costs(tenant_id=tid, group_by="workspace")
     )
     by_ws = {r["workspace_id"]: r["total_usd"] for r in rows}
@@ -241,7 +240,7 @@ def test_aggregate_by_model(service: ObservabilityService) -> None:
         ("gpt-4o", Decimal("0.02")),
         ("other", Decimal("0.005")),
     ]:
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             service.record_cost(
                 cmd={
                     "tenant_id": tid,
@@ -253,7 +252,7 @@ def test_aggregate_by_model(service: ObservabilityService) -> None:
                 }
             )
         )
-    rows = asyncio.get_event_loop().run_until_complete(
+    rows = asyncio.run(
         service.aggregate_costs(tenant_id=tid, group_by="model")
     )
     by_mid = {r["model_id"]: r["total_usd"] for r in rows}
@@ -263,7 +262,7 @@ def test_aggregate_by_model(service: ObservabilityService) -> None:
 
 def test_aggregate_rejects_invalid_group_by(service: ObservabilityService) -> None:
     with pytest.raises(BusinessRuleError):
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             service.aggregate_costs(
                 tenant_id=TenantId(uuid4()), group_by="nonsense"
             )
@@ -275,7 +274,7 @@ def test_aggregate_rejects_invalid_group_by(service: ObservabilityService) -> No
 
 def test_quality_score_returns_none_for_missing(service: dict) -> None:
     tid = TenantId(uuid4())
-    score = asyncio.get_event_loop().run_until_complete(
+    score = asyncio.run(
         service.get_quality_score(
             tenant_id=tid,
             template_id=uuid4(),
@@ -296,7 +295,7 @@ def test_quality_score_returns_aggregate(service: ObservabilityService) -> None:
     service.eval_query = FakeEvalRunQueryPort(
         runs={(str(tid), str(tpl), str(ver)): fake_run}
     )
-    score = asyncio.get_event_loop().run_until_complete(
+    score = asyncio.run(
         service.get_quality_score(
             tenant_id=tid, template_id=tpl, version_id=ver
         )
@@ -315,13 +314,13 @@ def test_quality_score_no_port_returns_none() -> None:
             llm_pricing=dict(DEFAULT_LLM_PRICING),
             tool_unit_cost={},
             skill_unit_cost={},
-            memory_write_unit_cost_usd=Decimal("0"),
-            knowledge_ingest_unit_cost_usd=Decimal("0"),
-            channel_send_unit_cost_usd=Decimal("0"),
+            memory_write_unit_cost_usd=Decimal(0),
+            knowledge_ingest_unit_cost_usd=Decimal(0),
+            channel_send_unit_cost_usd=Decimal(0),
         ),
         eval_query=None,
     )
-    score = asyncio.get_event_loop().run_until_complete(
+    score = asyncio.run(
         svc.get_quality_score(
             tenant_id=TenantId(uuid4()),
             template_id=uuid4(),

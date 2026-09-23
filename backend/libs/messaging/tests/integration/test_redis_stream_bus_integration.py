@@ -23,7 +23,7 @@ import pytest
 from eos_messaging.domain_event import EventEnvelope
 from eos_messaging.redis_stream import RedisStreamBus
 
-pytestmark = pytest.mark.asyncio
+pytestmark = [pytest.mark.asyncio, pytest.mark.integration]
 
 
 async def _envelope(tenant_id: UUID, name: str = "test.event") -> EventEnvelope:

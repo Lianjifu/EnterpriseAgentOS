@@ -26,7 +26,7 @@ from eos_messaging.kafka_audit import (
     resolve_consumer_group,
 )
 
-pytestmark = pytest.mark.asyncio
+pytestmark = [pytest.mark.asyncio, pytest.mark.integration]
 
 
 class _RecordingAuditPort:

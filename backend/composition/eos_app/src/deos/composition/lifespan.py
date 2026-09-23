@@ -507,7 +507,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Seed the 50-case golden dataset for every existing tenant on
     # first boot.  Idempotent — re-running is a no-op when the dataset
     # already exists.
-    _seed_builtin_eval_datasets(app, container)
+    await _seed_builtin_eval_datasets(app, container)
 
     # Seed the 3 default Plans (free / pro / enterprise) on first
     # boot.  Idempotent — re-running is a no-op when plans already

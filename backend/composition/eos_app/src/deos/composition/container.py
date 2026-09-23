@@ -184,11 +184,9 @@ class Container:
 
             return EnvVaultSecretsResolver()
         if mode == "file":
-            from pathlib import Path
-
             from eos_vault.file_vault import FileVaultSecretsResolver
 
-            return FileVaultSecretsResolver(root=Path(self.settings.vault_file_root))
+            return FileVaultSecretsResolver(allowed_root=self.settings.vault_file_root)
         raise RuntimeError(f"unknown vault_mode: {mode}")
 
     # ── P4 memory + P5 governance clock / id generator ─────────────────────

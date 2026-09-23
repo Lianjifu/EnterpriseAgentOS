@@ -87,7 +87,7 @@ def test_unknown_event_ignored(recorder: ObservabilityRecorder) -> None:
     # Should be a coroutine; await it and check side effect free.
     import asyncio
 
-    asyncio.get_event_loop().run_until_complete(awaitable)
+    asyncio.run(awaitable)
     assert len(recorder.run_repo._store) == 0
 
 
@@ -102,7 +102,7 @@ def test_record_llm_produces_two_costs(recorder: ObservabilityRecorder) -> None:
     import asyncio
 
     tid, wid = _tenant_ws()
-    asyncio.get_event_loop().run_until_complete(
+    asyncio.run(
         recorder.handle(
             _envelope(
                 "ModelInvoked",
@@ -131,7 +131,7 @@ def test_record_tool_completed(recorder: ObservabilityRecorder) -> None:
     import asyncio
 
     tid, wid = _tenant_ws()
-    asyncio.get_event_loop().run_until_complete(
+    asyncio.run(
         recorder.handle(
             _envelope(
                 "ToolCompleted",
@@ -157,7 +157,7 @@ def test_record_tool_failed(recorder: ObservabilityRecorder) -> None:
     import asyncio
 
     tid, wid = _tenant_ws()
-    asyncio.get_event_loop().run_until_complete(
+    asyncio.run(
         recorder.handle(
             _envelope(
                 "ToolFailed",
@@ -177,7 +177,7 @@ def test_record_skill(recorder: ObservabilityRecorder) -> None:
     import asyncio
 
     tid, wid = _tenant_ws()
-    asyncio.get_event_loop().run_until_complete(
+    asyncio.run(
         recorder.handle(
             _envelope(
                 "SkillInvocationCompleted",
@@ -200,7 +200,7 @@ def test_record_memory(recorder: ObservabilityRecorder) -> None:
     import asyncio
 
     tid, wid = _tenant_ws()
-    asyncio.get_event_loop().run_until_complete(
+    asyncio.run(
         recorder.handle(
             _envelope(
                 "MemoryWritten",
@@ -220,7 +220,7 @@ def test_record_knowledge_ingested(recorder: ObservabilityRecorder) -> None:
     import asyncio
 
     tid, wid = _tenant_ws()
-    asyncio.get_event_loop().run_until_complete(
+    asyncio.run(
         recorder.handle(
             _envelope(
                 "KnowledgeAssetIngested",
@@ -243,7 +243,7 @@ def test_record_workflow_completed(recorder: ObservabilityRecorder) -> None:
     import asyncio
 
     tid, wid = _tenant_ws()
-    asyncio.get_event_loop().run_until_complete(
+    asyncio.run(
         recorder.handle(
             _envelope(
                 "WorkflowRunCompleted",
@@ -265,7 +265,7 @@ def test_record_channel_reply(recorder: ObservabilityRecorder) -> None:
     import asyncio
 
     tid, wid = _tenant_ws()
-    asyncio.get_event_loop().run_until_complete(
+    asyncio.run(
         recorder.handle(
             _envelope(
                 "ChannelReplySent",
@@ -285,7 +285,7 @@ def test_record_eval_run_completed(recorder: ObservabilityRecorder) -> None:
     import asyncio
 
     tid, wid = _tenant_ws()
-    asyncio.get_event_loop().run_until_complete(
+    asyncio.run(
         recorder.handle(
             _envelope(
                 "EvalRunCompleted",
@@ -305,7 +305,7 @@ def test_record_decision_recorded(recorder: ObservabilityRecorder) -> None:
     import asyncio
 
     tid, wid = _tenant_ws()
-    asyncio.get_event_loop().run_until_complete(
+    asyncio.run(
         recorder.handle(
             _envelope(
                 "DecisionRecorded",
@@ -334,7 +334,7 @@ def test_handle_never_raises_on_bad_payload(recorder: ObservabilityRecorder) -> 
         )
         await recorder.handle(_envelope("ModelInvoked", {}))
 
-    asyncio.get_event_loop().run_until_complete(go())
+    asyncio.run(go())
     # No runs recorded for either.
     assert len(recorder.run_repo._store) == 0
 
@@ -368,7 +368,7 @@ def test_handle_never_raises_when_repo_errors(recorder: ObservabilityRecorder) -
             )
         )
 
-    asyncio.get_event_loop().run_until_complete(go())  # must not raise
+    asyncio.run(go())  # must not raise
 
 
 def test_handle_falls_back_workspace_id(recorder: ObservabilityRecorder) -> None:
@@ -381,7 +381,7 @@ def test_handle_falls_back_workspace_id(recorder: ObservabilityRecorder) -> None
             _envelope("ToolCompleted", {"tenant_id": tid, "tool_name": "echo"})
         )
 
-    asyncio.get_event_loop().run_until_complete(go())
+    asyncio.run(go())
     runs = list(recorder.run_repo._store.values())
     assert len(runs) == 1
     from uuid import UUID as _UUID

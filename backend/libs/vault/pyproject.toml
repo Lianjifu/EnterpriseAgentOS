@@ -1,13 +1,16 @@
 [project]
 name = "eos-vault"
 version = "0.1.0"
-description = "Secrets resolution — env/file backed placeholders for P5; real Vault in P10"
+description = "Secrets resolution — env/file/noop backends + optional HashiCorp Vault / Vault CSI"
 requires-python = ">=3.12"
 dependencies = [
     "cryptography>=42.0.0",
     "eos-kernel",
     "pydantic>=2.9",
 ]
+
+[project.optional-dependencies]
+hashicorp = ["hvac>=2.3.0"]
 
 [build-system]
 requires = ["hatchling"]

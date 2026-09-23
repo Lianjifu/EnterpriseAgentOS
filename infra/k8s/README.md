@@ -49,16 +49,21 @@ kubectl logs -l ring=canary --tail=5
 ## Secret handling
 
 The committed `secret.example.yaml` is a template with placeholder
-values. In production use one of:
+values. In production use one of two pipelines — both are wired in
+`libs/vault` so the application code never sees the difference:
 
-- **External Secrets Operator (ESO)** — sync from Vault path
-  `vault://prod/eos/*` to k8s Secret.
-- **Sealed Secrets** — sealed-secrets-controller decrypts on apply.
-- **HashiCorp Vault CSI Provider** — mounts secrets as ephemeral
-  volumes.
+| Pipeline | Resolver | When to use |
+|---|---|---|
+| **External Secrets Operator (ESO)** → k8s `Secret` → env | `HashicorpVaultSecretsResolver` (refs like `vault:secret/data/<path>`) | standard; secret becomes an env var |
+| **HashiCorp Vault CSI Provider** → file mount under `/vault/secrets/` | `CSIVaultSecretsResolver` (refs like `csi:<KEY>`) | compliance / FIPS; secret **never** appears as env |
+
+`secret.example.yaml` ships both an ESO-friendly k8s `Secret` template
+**and** a `SecretProviderClass` for the CSI path.  The matching
+`deploy/env.prod.example` uses `vault:` refs for non-sensitive items
+and `csi:` refs for material that must never hit the process env.
 
 `gitleaks` (configured in `.gitleaks.toml`) catches accidental commits
-of real secrets.
+of real secret values.
 
 ## Rollout
 

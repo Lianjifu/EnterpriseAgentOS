@@ -2,9 +2,12 @@
 
 ``ref`` strings look like ``"<scheme>:<address>"``:
 
-- ``env:KEY_NAME``          — read ``os.environ["KEY_NAME"]``
-- ``file:/absolute/path``   — read the file at the given path
-- ``noop:anything``         — always returns an empty dict (test/dev)
+- ``env:KEY_NAME``            — read ``os.environ["KEY_NAME"]``
+- ``file:/absolute/path``     — read the file at the given path
+- ``noop:anything``           — always returns an empty dict (test/dev)
+- ``vault:secret/data/PATH``  — HashiCorp Vault KV v2 lookup (requires ``hvac``)
+- ``csi:MY_SECRET``           — read ``/vault/secrets/MY_SECRET`` mounted by the
+                                Vault CSI driver (k8s)
 
 Each resolver returns a ``dict[str, str]`` so a single ``ref`` can carry
 multiple values (e.g. ``env:API_KEY`` → ``{"api_key": "..."}`` — the env
@@ -22,11 +25,14 @@ from typing import Protocol, runtime_checkable
 from eos_vault.actor import ActorContext
 from eos_vault.errors import InvalidSecretRef, SecretNotFound
 
-__all__ = ["SecretRef", "VaultSecretsResolver", "parse_ref"]
+__all__ = ["SecretRef", "VaultSecretsResolver", "parse_ref", "resolve_value"]
 
 
 class SecretRef(str):
     """Validated reference string.  Construct via :func:`parse_ref`."""
+
+
+_SUPPORTED_SCHEMES: frozenset[str] = frozenset({"env", "file", "noop", "vault", "csi"})
 
 
 def parse_ref(ref: str) -> tuple[str, str]:
@@ -39,7 +45,7 @@ def parse_ref(ref: str) -> tuple[str, str]:
     scheme, _, address = ref.partition(":")
     if not scheme or not address:
         raise InvalidSecretRef(f"empty scheme or address: {ref!r}")
-    if scheme not in {"env", "file", "noop"}:
+    if scheme not in _SUPPORTED_SCHEMES:
         raise InvalidSecretRef(f"unsupported scheme: {scheme!r}")
     return scheme, address
 

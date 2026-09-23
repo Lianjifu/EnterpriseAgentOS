@@ -30,7 +30,7 @@
     memory / knowledge）。
   - 出错处置：**立即停上线**；参考 [runbook.md §R-CrossTenant 泄漏](./runbook.md)。
 
-- [ ] **G5. secret 全部走 `*_SECRET_REF`（无明文）**
+- [ ] **G5. secret 全部走 `*_REF`（无明文）**
   - 命令：`gitleaks detect --no-git --source .`
   - 阈值：0 finding；`infra/k8s/secret.example.yaml` 不含明文 secret。
   - 出错处置：把所有 secret 改为 `EOS_*_REF=<vault-path>`；

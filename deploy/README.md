@@ -38,7 +38,16 @@ a local nginx sidecar.
 ## Secrets
 
 All credentials live in `.env.prod` which is `.gitignore`d. Reference
-`EOS_*_SECRET_REF` env vars only — never inline raw secrets.
+`EOS_*_REF` env vars only — never inline raw secrets.  Two ref schemes
+are accepted (both implemented in `libs/vault`):
+
+| Scheme | Resolver | Source |
+|---|---|---|
+| `vault:secret/data/<path>` | `HashicorpVaultSecretsResolver` | HashiCorp Vault KV v2 (env `EOS_VAULT_URL` / `EOS_VAULT_TOKEN`) |
+| `csi:<KEY_NAME>` | `CSIVaultSecretsResolver` | Vault CSI driver mount at `/vault/secrets/<KEY>` |
+
+See `infra/k8s/secret.example.yaml` for the matching k8s SecretProviderClass
+when running under k8s.
 
 ## Scaling
 

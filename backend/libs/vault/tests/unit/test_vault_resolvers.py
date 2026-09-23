@@ -38,6 +38,17 @@ def test_parse_ref_file() -> None:
     assert parse_ref("file:/etc/secrets/key") == ("file", "/etc/secrets/key")
 
 
+def test_parse_ref_vault() -> None:
+    assert parse_ref("vault:secret/data/api/token") == (
+        "vault",
+        "secret/data/api/token",
+    )
+
+
+def test_parse_ref_csi() -> None:
+    assert parse_ref("csi:API_TOKEN") == ("csi", "API_TOKEN")
+
+
 def test_parse_ref_rejects_empty() -> None:
     with pytest.raises(InvalidSecretRef):
         parse_ref("")
@@ -50,7 +61,7 @@ def test_parse_ref_rejects_no_colon() -> None:
 
 def test_parse_ref_rejects_unknown_scheme() -> None:
     with pytest.raises(InvalidSecretRef):
-        parse_ref("vault:KEY")
+        parse_ref("aws:KEY")
 
 
 # EnvVaultSecretsResolver ---------------------------------------------------

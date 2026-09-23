@@ -73,5 +73,6 @@
 
 - [runbook.md](./runbook.md) — on-call 故障处置
 - [slo.md](./slo.md) — SLI/SLO 目标
+- [burn-in-preflight.md](./burn-in-preflight.md) — 从代码到 100% 流量的执行剧本（Stage A/B/C + 灰度 + 回滚）
 - [adr/0016-gray-rollout.md](./adr/0016-gray-rollout.md) — 上线决策
 - [doc/backend/13-风险与验收.md §13.10](../../doc/backend/13-风险与验收.md) — P10 上线验收小节

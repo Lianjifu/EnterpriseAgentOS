@@ -107,6 +107,13 @@ class Settings(BaseSettings):
     skill_runtime_mounted: bool = False
     skill_run_token_ttl_seconds: int = 300
 
+    # skill signing (A6) — ``disabled`` = NoOpSkillVetter (dev/test
+    # opt-out, NEVER in prod); ``local`` = LocalTrustStoreSkillVetter
+    # with a fail-loud boot if the trust dir is missing/empty;
+    # ``vault`` = VaultBackedSkillVetter (Tier B, not implemented here).
+    skill_signing_mode: Literal["disabled", "local", "vault"] = "disabled"
+    skill_trust_dir: str = "./.eos/skill-trust"
+
     # cors
     cors_allow_origins: str = "http://localhost:5173,http://localhost:3000"
     cors_allow_credentials: bool = True
@@ -160,6 +167,12 @@ class Settings(BaseSettings):
     # P9 platform — default catalog + seed
     platform_default_plan_code: str = "free"
     platform_seed_default_plans: bool = True
+
+    # A6 — office skill pack seeder (walks platform_office_skill_packs_root
+    # at lifespan boot; requires skill_signing_mode=local unless
+    # platform_seed_office_skill_packs=false).
+    platform_seed_office_skill_packs: bool = True
+    platform_office_skill_packs_root: str = "packs/office/skills"
 
     # P6 model
     model_master_key: str = ""

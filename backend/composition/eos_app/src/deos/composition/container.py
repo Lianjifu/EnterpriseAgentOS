@@ -32,6 +32,7 @@ class Container:
         self.settings = settings
         self._services: dict[type, Any] = {}
         self._kafka_audit_producer: object | None = None
+        self._skill_vetter: object | None = None
 
     # ── infra ───────────────────────────────────────────────────────────────
     def engine(self):
@@ -135,6 +136,38 @@ class Container:
         )
 
         return LocalDiskSkillArtifactStore(Path(self.settings.skill_artifact_root))
+
+    def skill_vetter(self):
+        """Singleton skill vetter.
+
+        Resolves ``EOS_SKILL_SIGNING_MODE`` to a concrete implementation:
+
+        * ``disabled`` → :class:`NoOpSkillVetter` (explicit dev/test opt-out).
+        * ``local``    → :class:`LocalTrustStoreSkillVetter`; construction
+          itself fails-loud if the trust dir is missing/empty.
+        * ``vault``    → not implemented in A6; raises ``NotImplementedError``.
+        """
+        if self._skill_vetter is None:
+            from deos.modules.skill.application.vetter import (
+                LocalTrustStoreSkillVetter,
+                NoOpSkillVetter,
+            )
+
+            mode = self.settings.skill_signing_mode
+            if mode == "disabled":
+                self._skill_vetter = NoOpSkillVetter()
+            elif mode == "local":
+                self._skill_vetter = LocalTrustStoreSkillVetter(
+                    trust_dir=self.settings.skill_trust_dir,
+                )
+            elif mode == "vault":
+                raise NotImplementedError(
+                    "skill_signing_mode='vault' requires VaultBackedSkillVetter "
+                    "(Tier B follow-up)"
+                )
+            else:
+                raise ValueError(f"unknown skill_signing_mode={mode!r}")
+        return self._skill_vetter
 
     # ── P5 secrets ──────────────────────────────────────────────────────────
     def secrets_resolver(self) -> VaultSecretsResolver | None:

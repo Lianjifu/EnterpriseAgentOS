@@ -60,3 +60,7 @@ data/
 
 # Docker volumes
 .docker-data/
+
+# Skill pack trust store — priv keys never enter the repo
+.eos/*.priv.pem
+.eos/*.priv

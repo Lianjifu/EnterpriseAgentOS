@@ -112,6 +112,7 @@ class SkillService:
         invocation_repository: SkillInvocationRepository,
         artifacts: SkillArtifactStore,
         run_token_ttl_seconds: int = 300,
+        vetter: SkillVetter | None = None,
     ) -> SkillService:
         return cls(
             uow_factory=uow_factory,
@@ -123,6 +124,7 @@ class SkillService:
             invocation_repository=invocation_repository,
             artifacts=artifacts,
             run_token_ttl_seconds=run_token_ttl_seconds,
+            vetter=vetter,
         )
 
 

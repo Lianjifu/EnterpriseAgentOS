@@ -65,6 +65,18 @@ class SkillPackageORM(TenantScopedMixin, Base):
     version_lock: Mapped[int] = mapped_column(
         Integer, nullable=False, default=1, server_default=text("1")
     )
+    # Signing triple (A2 + A6 wire-up). NOT NULL DEFAULT '' so existing
+    # rows satisfy the constraint; the partial-triple invariant is
+    # enforced in ``SkillPackage.create()`` / ``.update()``.
+    signature: Mapped[str] = mapped_column(
+        Text, nullable=False, default="", server_default=text("''")
+    )
+    signer_key_id: Mapped[str] = mapped_column(
+        String(64), nullable=False, default="", server_default=text("''")
+    )
+    image_digest: Mapped[str] = mapped_column(
+        String(128), nullable=False, default="", server_default=text("''")
+    )
 
     __table_args__ = (
         UniqueConstraint(

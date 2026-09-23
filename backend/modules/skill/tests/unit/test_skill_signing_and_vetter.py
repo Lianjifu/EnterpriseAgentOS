@@ -273,19 +273,18 @@ async def test_local_trust_store_vetter_accepts(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_local_trust_store_rejects_wrong_filename(tmp_path: Path) -> None:
     key = _new_key()
-    # write the key with a wrong filename
+    # write the key with a wrong filename — vetter rejects at
+    # construction (filename must match key content).
     (tmp_path / "deadbeef.pub.pem").write_bytes(public_key_to_pem(key.public_key()))
-    vetter = LocalTrustStoreSkillVetter(trust_dir=str(tmp_path))
     with pytest.raises(SkillSignerUntrusted):
-        await vetter.vet(_signed_package(key))
+        LocalTrustStoreSkillVetter(trust_dir=str(tmp_path))
 
 
 @pytest.mark.asyncio
 async def test_local_trust_store_rejects_missing_key(tmp_path: Path) -> None:
-    key = _new_key()
-    vetter = LocalTrustStoreSkillVetter(trust_dir=str(tmp_path))
+    # Empty trust dir — vetter rejects at construction.
     with pytest.raises(SkillSignerUntrusted):
-        await vetter.vet(_signed_package(key))
+        LocalTrustStoreSkillVetter(trust_dir=str(tmp_path))
 
 
 # NoOpSkillVetter --------------------------------------------------------------

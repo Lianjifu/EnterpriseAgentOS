@@ -42,6 +42,9 @@ class UpdateSkillUseCase:
         memory_bytes: int | None = None,
         timeout_seconds: int | None = None,
         enabled: bool | None = None,
+        signature: str | None = None,
+        signer_key_id: str | None = None,
+        image_digest: str | None = None,
     ) -> SkillPackage:
         async with self.uow_factory() as uow:
             pkg = await uow.skills.get(tenant_id=tenant_id, skill_id=skill_id)
@@ -67,6 +70,9 @@ class UpdateSkillUseCase:
                 memory_bytes=memory_bytes,
                 timeout_seconds=timeout_seconds,
                 enabled=enabled,
+                signature=signature,
+                signer_key_id=signer_key_id,
+                image_digest=image_digest,
             )
             await uow.skills.update(updated)
             await uow.commit()

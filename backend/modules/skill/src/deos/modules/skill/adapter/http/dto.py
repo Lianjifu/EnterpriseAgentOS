@@ -32,6 +32,11 @@ class RegisterSkillRequest(BaseModel):
     cpu_quota: float | None = None
     memory_bytes: int | None = None
     timeout_seconds: int = Field(default=30, ge=1, le=30)
+    # A2 signing triple — all three must be set together (enforced in
+    # ``SkillPackage.create()``).
+    signature: str = ""
+    signer_key_id: str = ""
+    image_digest: str = ""
 
 
 class UpdateSkillRequest(BaseModel):
@@ -48,6 +53,9 @@ class UpdateSkillRequest(BaseModel):
     memory_bytes: int | None = None
     timeout_seconds: int | None = Field(default=None, ge=1, le=30)
     enabled: bool | None = None
+    signature: str | None = None
+    signer_key_id: str | None = None
+    image_digest: str | None = None
 
 
 class SkillResponse(BaseModel):
@@ -69,6 +77,9 @@ class SkillResponse(BaseModel):
     timeout_seconds: int
     enabled: bool
     version_lock: int
+    signature: str
+    signer_key_id: str
+    image_digest: str
     created_at: str
     updated_at: str
 

@@ -34,6 +34,9 @@ def skill_to_dto(p: SkillPackage) -> SkillResponse:
         timeout_seconds=p.timeout_seconds,
         enabled=p.enabled,
         version_lock=p.version_lock,
+        signature=p.signature,
+        signer_key_id=p.signer_key_id,
+        image_digest=p.image_digest,
         created_at=p.created_at.isoformat(),
         updated_at=p.updated_at.isoformat(),
     )

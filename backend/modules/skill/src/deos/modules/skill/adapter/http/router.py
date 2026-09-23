@@ -89,6 +89,9 @@ def build_router() -> APIRouter:
             cpu_quota=body.cpu_quota,
             memory_bytes=body.memory_bytes,
             timeout_seconds=body.timeout_seconds,
+            signature=body.signature,
+            signer_key_id=body.signer_key_id,
+            image_digest=body.image_digest,
         )
         return skill_to_dto(pkg)
 
@@ -154,6 +157,9 @@ def build_router() -> APIRouter:
             memory_bytes=body.memory_bytes,
             timeout_seconds=body.timeout_seconds,
             enabled=body.enabled,
+            signature=body.signature,
+            signer_key_id=body.signer_key_id,
+            image_digest=body.image_digest,
         )
         return skill_to_dto(pkg)
 

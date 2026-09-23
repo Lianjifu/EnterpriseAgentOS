@@ -46,6 +46,9 @@ def skill_package_orm_to_domain(o: SkillPackageORM) -> SkillPackage:
         timeout_seconds=o.timeout_seconds,
         enabled=o.enabled,
         version_lock=o.version_lock,
+        signature=o.signature,
+        signer_key_id=o.signer_key_id,
+        image_digest=o.image_digest,
         created_at=o.created_at,
         updated_at=o.updated_at,
     )
@@ -69,6 +72,9 @@ def skill_package_domain_to_orm(p: SkillPackage) -> SkillPackageORM:
         timeout_seconds=p.timeout_seconds,
         enabled=p.enabled,
         version_lock=p.version_lock,
+        signature=p.signature,
+        signer_key_id=p.signer_key_id,
+        image_digest=p.image_digest,
         created_at=p.created_at,
         updated_at=p.updated_at,
     )

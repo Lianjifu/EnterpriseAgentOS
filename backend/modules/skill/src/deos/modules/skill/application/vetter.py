@@ -96,12 +96,22 @@ class LocalTrustStoreSkillVetter(SkillVetter):
     Used in dev / staging.  Production uses
     :class:`VaultBackedSkillVetter` (separate adapter).
 
+    The trust directory is scanned once at construction: every
+    ``*.pub.pem`` file is parsed into an :class:`Ed25519PublicKey` and
+    cached by ``key_id`` (= ``public_key_id(key)``). An empty / missing
+    directory is treated as a hard failure — callers cannot
+    accidentally run an unconfigured trust store.
+
     Parameters
     ----------
     trust_dir:
         Directory holding ``<key_id>.pub.pem`` files.  ``key_id`` is
         the SHA-256 of the PEM, hex-encoded (see
         :func:`public_key_id`).
+    require_signature:
+        If ``False`` the vetter becomes a no-op for unsigned packs
+        (still rejects on a known-bad signature).  Defaults to ``True``
+        so production wiring never silently accepts unsigned packs.
     """
 
     def __init__(
@@ -112,6 +122,45 @@ class LocalTrustStoreSkillVetter(SkillVetter):
     ) -> None:
         self._trust_dir = Path(trust_dir)
         self._require_signature = require_signature
+        # Eager scan — fail-loud if no keys are present.
+        self._keys: dict[str, Ed25519PublicKey] = self._scan_trust_dir()
+
+    @property
+    def trust_dir(self) -> Path:
+        return self._trust_dir
+
+    @property
+    def trust_key_count(self) -> int:
+        return len(self._keys)
+
+    def _scan_trust_dir(self) -> dict[str, Ed25519PublicKey]:
+        if not self._trust_dir.is_dir():
+            raise SkillSignerUntrusted(
+                f"skill trust dir {self._trust_dir} does not exist or is not "
+                f"a directory (set EOS_SKILL_SIGNING_MODE=disabled for dev)"
+            )
+        keys: dict[str, Ed25519PublicKey] = {}
+        for path in sorted(self._trust_dir.glob("*.pub.pem")):
+            pem = path.read_bytes()
+            try:
+                key = load_public_key_pem(pem)
+            except (TypeError, ValueError) as exc:
+                raise SkillSignerUntrusted(
+                    f"trust store key {path.name!r} is not a valid Ed25519 PEM"
+                ) from exc
+            key_id = public_key_id(key)
+            if key_id != path.stem.removesuffix(".pub"):
+                raise SkillSignerUntrusted(
+                    f"trust store key {path.name!r} filename does not match "
+                    f"key content (expected {key_id}.pub.pem)"
+                )
+            keys[key_id] = key
+        if not keys:
+            raise SkillSignerUntrusted(
+                f"skill trust dir {self._trust_dir} is empty — refusing to "
+                f"run LocalTrustStoreSkillVetter with zero trusted keys"
+            )
+        return keys
 
     async def vet(self, package: SkillPackage) -> None:
         if not package.signature:
@@ -131,21 +180,10 @@ class LocalTrustStoreSkillVetter(SkillVetter):
             ) from exc
 
     def _lookup_key(self, key_id: str) -> Ed25519PublicKey:
-        path = self._trust_dir / f"{key_id}.pub.pem"
-        if not path.is_file():
+        key = self._keys.get(key_id)
+        if key is None:
             raise SkillSignerUntrusted(
                 f"signing key {key_id!r} not in trust store {self._trust_dir}"
-            )
-        pem = path.read_bytes()
-        try:
-            key = load_public_key_pem(pem)
-        except (TypeError, ValueError) as exc:
-            raise SkillSignerUntrusted(
-                f"trust store key {key_id!r} is not a valid Ed25519 PEM"
-            ) from exc
-        if public_key_id(key) != key_id:
-            raise SkillSignerUntrusted(
-                f"trust store key {key_id!r} filename does not match key content"
             )
         return key
 

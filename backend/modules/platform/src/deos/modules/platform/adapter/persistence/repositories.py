@@ -52,17 +52,13 @@ class SqlPlanRepository(PlanRepository):
 
     async def get(self, *, plan_id: PlanId) -> Plan | None:
         row = (
-            await self._session.execute(
-                select(PlanORM).where(PlanORM.id == plan_id)
-            )
+            await self._session.execute(select(PlanORM).where(PlanORM.id == plan_id))
         ).scalar_one_or_none()
         return plan_to_domain(row) if row is not None else None
 
     async def get_by_code(self, *, code: str) -> Plan | None:
         row = (
-            await self._session.execute(
-                select(PlanORM).where(PlanORM.code == code)
-            )
+            await self._session.execute(select(PlanORM).where(PlanORM.code == code))
         ).scalar_one_or_none()
         return plan_to_domain(row) if row is not None else None
 
@@ -88,16 +84,12 @@ class SqlPlanRepository(PlanRepository):
             await self._session.flush()
         except IntegrityError as exc:
             await self._session.rollback()
-            raise PlanAlreadyExists(
-                f"plan code {plan.code!r} already exists"
-            ) from exc
+            raise PlanAlreadyExists(f"plan code {plan.code!r} already exists") from exc
         return plan
 
     async def update(self, plan: Plan) -> Plan:
         row = (
-            await self._session.execute(
-                select(PlanORM).where(PlanORM.id == plan.id)
-            )
+            await self._session.execute(select(PlanORM).where(PlanORM.id == plan.id))
         ).scalar_one()
         row.code = plan.code
         row.display_name = plan.display_name
@@ -129,23 +121,15 @@ class SqlSubscriptionRepository(SubscriptionRepository):
                 )
             )
         ).scalar_one_or_none()
-        return (
-            subscription_to_domain(row) if row is not None else None
-        )
+        return subscription_to_domain(row) if row is not None else None
 
-    async def get_for_tenant(
-        self, *, tenant_id: TenantId
-    ) -> Subscription | None:
+    async def get_for_tenant(self, *, tenant_id: TenantId) -> Subscription | None:
         row = (
             await self._session.execute(
-                select(SubscriptionORM).where(
-                    SubscriptionORM.tenant_id == tenant_id
-                )
+                select(SubscriptionORM).where(SubscriptionORM.tenant_id == tenant_id)
             )
         ).scalar_one_or_none()
-        return (
-            subscription_to_domain(row) if row is not None else None
-        )
+        return subscription_to_domain(row) if row is not None else None
 
     async def add(self, subscription: Subscription) -> Subscription:
         try:
@@ -159,9 +143,7 @@ class SqlSubscriptionRepository(SubscriptionRepository):
     async def update(self, subscription: Subscription) -> Subscription:
         row = (
             await self._session.execute(
-                select(SubscriptionORM).where(
-                    SubscriptionORM.id == subscription.id
-                )
+                select(SubscriptionORM).where(SubscriptionORM.id == subscription.id)
             )
         ).scalar_one()
         row.plan_id = subscription.plan_id
@@ -183,9 +165,7 @@ class SqlTenantSettingRepository(TenantSettingRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def get(
-        self, *, tenant_id: TenantId, key: str
-    ) -> TenantSetting | None:
+    async def get(self, *, tenant_id: TenantId, key: str) -> TenantSetting | None:
         row = (
             await self._session.execute(
                 select(TenantSettingORM).where(
@@ -194,13 +174,9 @@ class SqlTenantSettingRepository(TenantSettingRepository):
                 )
             )
         ).scalar_one_or_none()
-        return (
-            tenant_setting_to_domain(row) if row is not None else None
-        )
+        return tenant_setting_to_domain(row) if row is not None else None
 
-    async def list_for_tenant(
-        self, *, tenant_id: TenantId
-    ) -> list[TenantSetting]:
+    async def list_for_tenant(self, *, tenant_id: TenantId) -> list[TenantSetting]:
         rows = (
             (
                 await self._session.execute(

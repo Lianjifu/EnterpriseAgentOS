@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from decimal import Decimal
 from types import SimpleNamespace
 
@@ -23,7 +22,7 @@ def catalog() -> PricingCatalog:
             "default": ModelPricing(Decimal("0.00015"), Decimal("0.0006")),
             "gpt-4o": ModelPricing(Decimal("0.0025"), Decimal("0.01")),
         },
-        tool_unit_cost={"echo": Decimal("0"), "premium_tool": Decimal("0.01")},
+        tool_unit_cost={"echo": Decimal(0), "premium_tool": Decimal("0.01")},
         skill_unit_cost={"echo_skill": Decimal("0.005")},
         memory_write_unit_cost_usd=Decimal("0.00001"),
         knowledge_ingest_unit_cost_usd=Decimal("0.001"),
@@ -36,14 +35,18 @@ def catalog() -> PricingCatalog:
 
 
 def test_llm_cost_known(catalog: PricingCatalog) -> None:
-    in_c, out_c = catalog.llm_cost(model_id="gpt-4o", input_tokens=1000, output_tokens=500)
+    in_c, out_c = catalog.llm_cost(
+        model_id="gpt-4o", input_tokens=1000, output_tokens=500
+    )
     assert in_c == Decimal("0.0025")
     assert out_c == Decimal("0.01") * Decimal("0.5")
 
 
 def test_llm_cost_falls_back_to_default(catalog: PricingCatalog) -> None:
-    in_c, out_c = catalog.llm_cost(model_id="unknown-model", input_tokens=2000, output_tokens=1000)
-    assert in_c == Decimal("0.00015") * Decimal("2")
+    in_c, out_c = catalog.llm_cost(
+        model_id="unknown-model", input_tokens=2000, output_tokens=1000
+    )
+    assert in_c == Decimal("0.00015") * Decimal(2)
     assert out_c == Decimal("0.0006")
 
 
@@ -56,16 +59,16 @@ def test_llm_cost_rejects_negative_tokens(catalog: PricingCatalog) -> None:
 
 def test_llm_cost_zero_tokens() -> None:
     cat = PricingCatalog(
-        llm_pricing={"default": ModelPricing(Decimal("1"), Decimal("1"))},
+        llm_pricing={"default": ModelPricing(Decimal(1), Decimal(1))},
         tool_unit_cost={},
         skill_unit_cost={},
-        memory_write_unit_cost_usd=Decimal("0"),
-        knowledge_ingest_unit_cost_usd=Decimal("0"),
-        channel_send_unit_cost_usd=Decimal("0"),
+        memory_write_unit_cost_usd=Decimal(0),
+        knowledge_ingest_unit_cost_usd=Decimal(0),
+        channel_send_unit_cost_usd=Decimal(0),
     )
     in_c, out_c = cat.llm_cost(model_id="default", input_tokens=0, output_tokens=0)
-    assert in_c == Decimal("0")
-    assert out_c == Decimal("0")
+    assert in_c == Decimal(0)
+    assert out_c == Decimal(0)
 
 
 # ── tool / skill / memory / knowledge / channel ───────────────────────────
@@ -76,7 +79,7 @@ def test_tool_cost_known(catalog: PricingCatalog) -> None:
 
 
 def test_tool_cost_unknown(catalog: PricingCatalog) -> None:
-    assert catalog.tool_cost(tool_name="nope") == Decimal("0")
+    assert catalog.tool_cost(tool_name="nope") == Decimal(0)
 
 
 def test_skill_cost_known(catalog: PricingCatalog) -> None:
@@ -84,7 +87,7 @@ def test_skill_cost_known(catalog: PricingCatalog) -> None:
 
 
 def test_skill_cost_unknown(catalog: PricingCatalog) -> None:
-    assert catalog.skill_cost(skill_name="whatever") == Decimal("0")
+    assert catalog.skill_cost(skill_name="whatever") == Decimal(0)
 
 
 def test_memory_cost(catalog: PricingCatalog) -> None:
@@ -142,7 +145,7 @@ def test_from_settings_bad_json_falls_back() -> None:
     in_c, _ = cat.llm_cost(model_id="x", input_tokens=1000, output_tokens=0)
     assert in_c == DEFAULT_LLM_PRICING["default"].input_usd_per_1k
     # tool empty fallback when JSON malformed
-    assert cat.tool_cost(tool_name="anything") == Decimal("0")
+    assert cat.tool_cost(tool_name="anything") == Decimal(0)
 
 
 def test_from_settings_skips_malformed_entries() -> None:
@@ -164,4 +167,4 @@ def test_from_settings_skips_malformed_entries() -> None:
 
 def test_default_tool_unit_cost_shipped() -> None:
     assert "echo" in DEFAULT_TOOL_UNIT_COST
-    assert DEFAULT_TOOL_UNIT_COST["echo"] == Decimal("0")
+    assert DEFAULT_TOOL_UNIT_COST["echo"] == Decimal(0)

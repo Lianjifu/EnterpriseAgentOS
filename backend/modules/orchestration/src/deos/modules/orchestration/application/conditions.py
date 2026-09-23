@@ -84,9 +84,7 @@ def _tokenize(expr: str) -> list[_Tok]:
             # string literal
             end = expr.find(ch, i + 1)
             if end == -1:
-                raise InvalidConditionExpression(
-                    f"unterminated string at position {i}"
-                )
+                raise InvalidConditionExpression(f"unterminated string at position {i}")
             tokens.append(_Tok(kind="str", value=expr[i + 1 : end], pos=i))
             i = end + 1
             continue
@@ -112,9 +110,7 @@ def _tokenize(expr: str) -> list[_Tok]:
             tokens.append(_Tok(kind="ident", value=word, pos=i))
             i = j
             continue
-        raise InvalidConditionExpression(
-            f"unexpected character {ch!r} at position {i}"
-        )
+        raise InvalidConditionExpression(f"unexpected character {ch!r} at position {i}")
     tokens.append(_Tok(kind="eof", pos=n))
     return tokens
 
@@ -190,11 +186,7 @@ class _Parser:
                 if depth == 0:
                     return
                 depth -= 1
-            elif (
-                depth == 0
-                and tok.kind == "ident"
-                and tok.value in {"or", "and"}
-            ):
+            elif depth == 0 and tok.kind == "ident" and tok.value in {"or", "and"}:
                 return
             self._advance()
 
@@ -211,11 +203,7 @@ class _Parser:
                 if depth == 0:
                     return
                 depth -= 1
-            elif (
-                depth == 0
-                and tok.kind == "ident"
-                and tok.value == "or"
-            ):
+            elif depth == 0 and tok.kind == "ident" and tok.value == "or":
                 return
             self._advance()
 

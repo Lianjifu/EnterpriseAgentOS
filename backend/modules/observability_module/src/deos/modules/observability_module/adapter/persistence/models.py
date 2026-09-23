@@ -42,12 +42,8 @@ class RunRecordORM(TenantScopedMixin, Base):
         PgUUID(as_uuid=True), nullable=False, index=True
     )
     run_type: Mapped[str] = mapped_column(String(16), nullable=False)
-    source_id: Mapped[UUID | None] = mapped_column(
-        PgUUID(as_uuid=True), nullable=True
-    )
-    actor_id: Mapped[UUID | None] = mapped_column(
-        PgUUID(as_uuid=True), nullable=True
-    )
+    source_id: Mapped[UUID | None] = mapped_column(PgUUID(as_uuid=True), nullable=True)
+    actor_id: Mapped[UUID | None] = mapped_column(PgUUID(as_uuid=True), nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -121,12 +117,8 @@ class CostRecordORM(TenantScopedMixin, Base):
         ),
         CheckConstraint("amount_usd >= 0", name="amount_nonneg"),
         CheckConstraint("currency = 'USD'", name="currency_usd"),
-        CheckConstraint(
-            "length(unit) BETWEEN 1 AND 16", name="unit_length"
-        ),
-        CheckConstraint(
-            "quantity IS NULL OR quantity >= 0", name="quantity_nonneg"
-        ),
+        CheckConstraint("length(unit) BETWEEN 1 AND 16", name="unit_length"),
+        CheckConstraint("quantity IS NULL OR quantity >= 0", name="quantity_nonneg"),
         make_composite_index("workspace_id", "created_at"),
         make_composite_index("run_id"),
     )

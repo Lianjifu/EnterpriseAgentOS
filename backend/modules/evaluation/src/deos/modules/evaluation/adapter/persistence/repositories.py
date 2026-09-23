@@ -120,9 +120,7 @@ class SqlEvalDatasetRepository(EvalDatasetRepository):
         if existing is None or existing.tenant_id != dataset.tenant_id:
             from deos.modules.evaluation.domain.errors import EvalDatasetNotFound
 
-            raise EvalDatasetNotFound(
-                f"eval dataset {dataset.id} not found"
-            )
+            raise EvalDatasetNotFound(f"eval dataset {dataset.id} not found")
         existing.name = dataset.name
         existing.description = dataset.description
         existing.kind = dataset.kind.value
@@ -141,7 +139,7 @@ class SqlEvalDatasetRepository(EvalDatasetRepository):
 
     async def list_cases(
         self, *, tenant_id: TenantId, dataset_id: EvalDatasetId
-    ) -> list[EvalCase]:
+    ) -> list[EvalCase]:  # type: ignore[valid-type]
         result = await self._session.execute(
             select(EvalCaseORM)
             .where(
@@ -160,9 +158,7 @@ class SqlEvalRunRepository(EvalRunRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def get(
-        self, *, tenant_id: TenantId, run_id: EvalRunId
-    ) -> EvalRun | None:
+    async def get(self, *, tenant_id: TenantId, run_id: EvalRunId) -> EvalRun | None:
         result = await self._session.execute(
             select(EvalRunORM).where(
                 EvalRunORM.tenant_id == tenant_id,

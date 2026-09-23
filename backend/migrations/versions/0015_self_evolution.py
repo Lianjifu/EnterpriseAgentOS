@@ -43,9 +43,7 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.text("'{}'::jsonb"),
         ),
-        sa.Column(
-            "confidence", sa.Float, nullable=False, server_default=sa.text("0")
-        ),
+        sa.Column("confidence", sa.Float, nullable=False, server_default=sa.text("0")),
         sa.Column(
             "trigger_reason",
             sa.String(256),
@@ -63,9 +61,7 @@ def upgrade() -> None:
         sa.Column("approver_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("reviewed_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("applied_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column(
-            "correlation_id", postgresql.UUID(as_uuid=True), nullable=True
-        ),
+        sa.Column("correlation_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column(
             "created_at",
@@ -106,12 +102,8 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index(
-        "ix_evolve_candidates_tenant_created", table_name="evolve_candidates"
-    )
-    op.drop_index(
-        "ix_evolve_candidates_tenant_status", table_name="evolve_candidates"
-    )
+    op.drop_index("ix_evolve_candidates_tenant_created", table_name="evolve_candidates")
+    op.drop_index("ix_evolve_candidates_tenant_status", table_name="evolve_candidates")
     op.drop_table("evolve_candidates")
 
 

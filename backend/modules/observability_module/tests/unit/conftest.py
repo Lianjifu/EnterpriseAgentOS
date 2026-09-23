@@ -65,7 +65,7 @@ def cost_repo() -> InMemoryCostRecordRepository:
 def pricing() -> PricingCatalog:
     return PricingCatalog(
         llm_pricing=dict(DEFAULT_LLM_PRICING),
-        tool_unit_cost={"echo": Decimal("0"), "reverse": Decimal("0")},
+        tool_unit_cost={"echo": Decimal(0), "reverse": Decimal(0)},
         skill_unit_cost={},
         memory_write_unit_cost_usd=Decimal("0.00001"),
         knowledge_ingest_unit_cost_usd=Decimal("0.001"),
@@ -78,7 +78,7 @@ def pricing() -> PricingCatalog:
 def pricing_with_skill() -> PricingCatalog:
     return PricingCatalog(
         llm_pricing={"default": ModelPricing(Decimal("0.01"), Decimal("0.03"))},
-        tool_unit_cost={"echo": Decimal("0")},
+        tool_unit_cost={"echo": Decimal(0)},
         skill_unit_cost={"echo_skill": Decimal("0.005")},
         memory_write_unit_cost_usd=Decimal("0.00001"),
         knowledge_ingest_unit_cost_usd=Decimal("0.001"),

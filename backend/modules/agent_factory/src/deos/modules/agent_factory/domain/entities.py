@@ -125,7 +125,9 @@ class AgentTemplate:
             updated_at=ts,
         )
 
-    def with_status(self, status: AgentTemplateStatus, *, now: datetime | None = None) -> AgentTemplate:
+    def with_status(
+        self, status: AgentTemplateStatus, *, now: datetime | None = None
+    ) -> AgentTemplate:
         ts = now or _utcnow()
         return AgentTemplate(
             id=self.id,
@@ -165,7 +167,9 @@ class AgentVersion:
     model_id: str
     allowed_tools: tuple[str, ...]
     allowed_skills: tuple[str, ...]
-    knowledge_package_ids: tuple[str, ...]   # stored as str to avoid UUID NewType in tuple
+    knowledge_package_ids: tuple[
+        str, ...
+    ]  # stored as str to avoid UUID NewType in tuple
     plan_dsl_snapshot: dict[str, Any] | None
     max_total_steps: int | None
     release_notes: str
@@ -251,7 +255,9 @@ class AgentVersion:
             updated_at=ts,
         )
 
-    def with_release_notes(self, release_notes: str, *, now: datetime | None = None) -> AgentVersion:
+    def with_release_notes(
+        self, release_notes: str, *, now: datetime | None = None
+    ) -> AgentVersion:
         if self.status is not AgentVersionStatus.DRAFT:
             from deos.modules.agent_factory.domain.errors import AgentVersionImmutable
 
@@ -429,9 +435,7 @@ class Release:
         now: datetime | None = None,
     ) -> Release:
         if len(notes) > MAX_REVIEW_LEN:
-            raise ValueError(
-                f"Release.notes must be <= {MAX_REVIEW_LEN} chars"
-            )
+            raise ValueError(f"Release.notes must be <= {MAX_REVIEW_LEN} chars")
         ts = now or _utcnow()
         return cls(
             id=release_id or ReleaseId(uuid4()),

@@ -10,7 +10,7 @@ that to 404 QUALITY_NOT_FOUND.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from eos_schema.ids import (
@@ -59,7 +59,7 @@ def build(service: ObservabilityService) -> Any:
             version_id=version_id,
             latest_eval_run_id=getattr(run, "id", None),
             mean_score=float(getattr(run, "mean_score", 0.0)),
-            completed_at=getattr(run, "completed_at", datetime.now()),
+            completed_at=getattr(run, "completed_at", datetime.now(UTC)),
             sample_count=int(getattr(run, "sample_count", 0)),
         )
 

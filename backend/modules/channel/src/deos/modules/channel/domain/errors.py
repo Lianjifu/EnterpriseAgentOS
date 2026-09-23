@@ -20,26 +20,26 @@ class ChannelError(AppError):
     """Base for every channel-domain failure."""
 
 
-class ChannelNotFound(ChannelError, NotFoundError):
+class ChannelNotFound(ChannelError, NotFoundError):  # noqa: N818
     code = "CHANNEL_NOT_FOUND"
 
 
-class ChannelDisabled(ChannelError, ForbiddenError):
+class ChannelDisabled(ChannelError, ForbiddenError):  # noqa: N818
     code = "CHANNEL_DISABLED"
     status = 403
 
 
-class WebhookSignatureInvalid(ChannelError, AuthenticationError):
+class WebhookSignatureInvalid(ChannelError, AuthenticationError):  # noqa: N818
     code = "WEBHOOK_SIGNATURE_INVALID"
     status = 401
 
 
-class WebhookTimestampSkew(ChannelError, AuthenticationError):
+class WebhookTimestampSkew(ChannelError, AuthenticationError):  # noqa: N818
     code = "WEBHOOK_TIMESTAMP_SKEW"
     status = 401
 
 
-class ChannelDeliveryFailed(ChannelError, AppError):
+class ChannelDeliveryFailed(ChannelError, AppError):  # noqa: N818
     code = "CHANNEL_DELIVERY_FAILED"
     status = 502
 

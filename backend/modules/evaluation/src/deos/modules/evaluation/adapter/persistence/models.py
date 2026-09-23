@@ -75,9 +75,7 @@ class EvalDatasetORM(TenantScopedMixin, Base):
         nullable=False,
         server_default=text("'{}'::jsonb"),
     )
-    created_by: Mapped[UUID | None] = mapped_column(
-        PgUUID(as_uuid=True), nullable=True
-    )
+    created_by: Mapped[UUID | None] = mapped_column(PgUUID(as_uuid=True), nullable=True)
 
     __table_args__ = (
         CheckConstraint(
@@ -153,12 +151,8 @@ class EvalRunORM(TenantScopedMixin, Base):
         ForeignKey("eval_datasets.id", ondelete="RESTRICT"),
         nullable=False,
     )
-    template_id: Mapped[UUID] = mapped_column(
-        PgUUID(as_uuid=True), nullable=False
-    )
-    version_id: Mapped[UUID] = mapped_column(
-        PgUUID(as_uuid=True), nullable=False
-    )
+    template_id: Mapped[UUID] = mapped_column(PgUUID(as_uuid=True), nullable=False)
+    version_id: Mapped[UUID] = mapped_column(PgUUID(as_uuid=True), nullable=False)
     status: Mapped[str] = mapped_column(
         String(16),
         nullable=False,

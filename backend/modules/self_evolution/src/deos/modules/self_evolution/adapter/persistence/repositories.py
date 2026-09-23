@@ -45,9 +45,7 @@ class SqlEvolutionCandidateRepository(EvolutionCandidateRepository):
             stmt = (
                 update(EvolveCandidateORM)
                 .where(EvolveCandidateORM.id == UUID(str(candidate.id)))
-                .where(
-                    EvolveCandidateORM.tenant_id == UUID(str(candidate.tenant_id))
-                )
+                .where(EvolveCandidateORM.tenant_id == UUID(str(candidate.tenant_id)))
                 .values(
                     status=candidate.status.value,
                     approver_id=UUID(str(candidate.approver_id))

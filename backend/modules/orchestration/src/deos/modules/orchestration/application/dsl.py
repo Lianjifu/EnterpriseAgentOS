@@ -66,7 +66,9 @@ class _DSLBase(BaseModel):
 # reference it via ``${steps.<step_id>.output.*}``.
 _STEP_ID = Annotated[
     str,
-    StringConstraints(min_length=1, max_length=128, pattern=r"^[A-Za-z_][A-Za-z0-9_]*$"),
+    StringConstraints(
+        min_length=1, max_length=128, pattern=r"^[A-Za-z_][A-Za-z0-9_]*$"
+    ),
 ]
 
 
@@ -137,7 +139,9 @@ class ConditionalStepDSL(_DSLBase):
     kind: Literal["conditional"]
     step_id: _STEP_ID
     when: ConditionalWhenSpec
-    branches: dict[Annotated[str, StringConstraints(min_length=1, max_length=64)], PlanStepDSL]
+    branches: dict[
+        Annotated[str, StringConstraints(min_length=1, max_length=64)], PlanStepDSL
+    ]
     default_branch: str | None = Field(default=None, max_length=64)
 
     @model_validator(mode="after")
@@ -152,7 +156,13 @@ class ConditionalStepDSL(_DSLBase):
 
 
 PlanStepDSL = Annotated[
-    AgentStepDSL | ToolStepDSL | SkillStepDSL | SubPlanStepDSL | SequenceStepDSL | ParallelStepDSL | ConditionalStepDSL,
+    AgentStepDSL
+    | ToolStepDSL
+    | SkillStepDSL
+    | SubPlanStepDSL
+    | SequenceStepDSL
+    | ParallelStepDSL
+    | ConditionalStepDSL,
     Field(discriminator="kind"),
 ]
 """Discriminated union over the seven step kinds, keyed on ``kind``."""

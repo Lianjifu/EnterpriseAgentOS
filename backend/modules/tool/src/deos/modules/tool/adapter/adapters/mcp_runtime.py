@@ -18,6 +18,7 @@ from itertools import count
 from typing import Any
 
 import httpx
+from eos_vault.actor import ActorContext
 
 from deos.modules.tool.adapter.adapters.openapi_runtime import (
     SecretsResolver,
@@ -25,7 +26,6 @@ from deos.modules.tool.adapter.adapters.openapi_runtime import (
     _no_op_secrets_resolver,
 )
 from deos.modules.tool.domain import AuthConfig, AuthConfigType
-from eos_vault.actor import ActorContext
 
 
 def _parse_sse_jsonrpc(text: str) -> dict[str, Any]:
@@ -131,7 +131,9 @@ class MCPRuntimeAdapter:
             "Accept": "application/json, text/event-stream",
         }
         if auth is not None:
-            ctx = actor or ActorContext.anonymous(tenant_id=__import__("uuid").UUID(int=0))
+            ctx = actor or ActorContext.anonymous(
+                tenant_id=__import__("uuid").UUID(int=0)
+            )
             headers.update(await self._inject_auth(auth, ctx))
 
         resp = await self._http.post(

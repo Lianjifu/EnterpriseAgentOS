@@ -53,8 +53,7 @@ class StringTemplateRenderer:
             if parts[0] == "steps":
                 if len(parts) < 4 or parts[2] != "output":
                     raise PlanValidationError(
-                        f"placeholder ${{{token}}} must be "
-                        f"steps.<id>.output.<key>"
+                        f"placeholder ${{{token}}} must be steps.<id>.output.<key>"
                     )
                 step_id = parts[1]
                 output_key = parts[3]
@@ -99,7 +98,10 @@ class StringTemplateRenderer:
                 for k, v in template_obj.items()
             }
         if isinstance(template_obj, list):
-            return [self.render_object(template_obj=v, context=context) for v in template_obj]
+            return [
+                self.render_object(template_obj=v, context=context)
+                for v in template_obj
+            ]
         if isinstance(template_obj, (int, float, bool)) or template_obj is None:
             return template_obj
         raise PlanValidationError(

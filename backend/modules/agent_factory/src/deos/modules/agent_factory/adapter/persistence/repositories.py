@@ -120,9 +120,7 @@ class SqlAgentTemplateRepository(AgentTemplateRepository):
         if existing is None or existing.tenant_id != template.tenant_id:
             from deos.modules.agent_factory.domain.errors import AgentTemplateNotFound
 
-            raise AgentTemplateNotFound(
-                f"agent template {template.id} not found"
-            )
+            raise AgentTemplateNotFound(f"agent template {template.id} not found")
         existing.name = template.name
         existing.description = template.description
         existing.default_model_id = template.default_model_id
@@ -209,9 +207,7 @@ class SqlAgentVersionRepository(AgentVersionRepository):
         if existing is None or existing.tenant_id != version.tenant_id:
             from deos.modules.agent_factory.domain.errors import AgentVersionNotFound
 
-            raise AgentVersionNotFound(
-                f"agent version {version.id} not found"
-            )
+            raise AgentVersionNotFound(f"agent version {version.id} not found")
         existing.status = version.status.value
         existing.system_prompt = version.system_prompt
         existing.model_id = version.model_id
@@ -219,7 +215,9 @@ class SqlAgentVersionRepository(AgentVersionRepository):
         existing.allowed_skills = list(version.allowed_skills)
         existing.knowledge_package_ids = list(version.knowledge_package_ids)
         existing.plan_dsl_snapshot = (
-            dict(version.plan_dsl_snapshot) if version.plan_dsl_snapshot is not None else None
+            dict(version.plan_dsl_snapshot)
+            if version.plan_dsl_snapshot is not None
+            else None
         )
         existing.max_total_steps = version.max_total_steps
         existing.release_notes = version.release_notes

@@ -8,7 +8,7 @@ use case layer is responsible for transaction boundaries.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -82,7 +82,7 @@ class SqlPolicyRepository(PolicyRepository):
             rows = (await session.execute(stmt)).scalars().all()
             return [policy_to_domain(r) for r in rows]
 
-    async def list_enabled(self, *, tenant_id: UUID) -> list[PolicyRule]:
+    async def list_enabled(self, *, tenant_id: UUID) -> list[PolicyRule]:  # type: ignore[valid-type]
         async with self._sf() as session:
             stmt = (
                 select(PolicyORM)
@@ -241,7 +241,7 @@ class SqlAuditLogAdapter(AuditLogPort):
             actor_id=actor_id,  # type: ignore[arg-type]
             event_type=event_type,
             payload=payload,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
         )
         async with self._sf() as session:
             session.add(audit_to_orm(entry))

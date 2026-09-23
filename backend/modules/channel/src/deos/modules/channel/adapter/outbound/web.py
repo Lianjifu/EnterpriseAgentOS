@@ -7,13 +7,14 @@ failure if the response status is not 2xx.
 
 from __future__ import annotations
 
-from typing import Any
-
-import httpx
+from typing import TYPE_CHECKING, Any
 
 from deos.modules.channel.application.ports import OutboundAdapter
 from deos.modules.channel.domain.errors import ChannelDeliveryFailed
 from deos.modules.channel.domain.value_objects import ChannelType
+
+if TYPE_CHECKING:
+    import httpx
 
 
 class WebOutboundAdapter(OutboundAdapter):

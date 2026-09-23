@@ -90,9 +90,7 @@ class PricingCatalog:
         """
         if input_tokens < 0 or output_tokens < 0:
             raise ValueError("token counts must be non-negative")
-        pricing = self.llm_pricing.get(model_id) or self.llm_pricing.get(
-            "default"
-        )
+        pricing = self.llm_pricing.get(model_id) or self.llm_pricing.get("default")
         if pricing is None:
             pricing = ModelPricing(
                 input_usd_per_1k=Decimal(0),
@@ -135,16 +133,31 @@ class PricingCatalog:
         tool_unit_cost = _parse_unit_map(tool_raw)
         skill_unit_cost = _parse_unit_map(skill_raw)
         memory_cost = Decimal(
-            str(_getattr_float(settings, "memory_write_unit_cost_usd",
-                               float(DEFAULT_MEMORY_WRITE_COST_USD)))
+            str(
+                _getattr_float(
+                    settings,
+                    "memory_write_unit_cost_usd",
+                    float(DEFAULT_MEMORY_WRITE_COST_USD),
+                )
+            )
         )
         knowledge_cost = Decimal(
-            str(_getattr_float(settings, "knowledge_ingest_unit_cost_usd",
-                               float(DEFAULT_KNOWLEDGE_INGEST_COST_USD)))
+            str(
+                _getattr_float(
+                    settings,
+                    "knowledge_ingest_unit_cost_usd",
+                    float(DEFAULT_KNOWLEDGE_INGEST_COST_USD),
+                )
+            )
         )
         channel_cost = Decimal(
-            str(_getattr_float(settings, "channel_send_unit_cost_usd",
-                               float(DEFAULT_CHANNEL_SEND_COST_USD)))
+            str(
+                _getattr_float(
+                    settings,
+                    "channel_send_unit_cost_usd",
+                    float(DEFAULT_CHANNEL_SEND_COST_USD),
+                )
+            )
         )
         currency = _getattr_str(settings, "default_currency", "USD")
 
@@ -181,9 +194,11 @@ def _parse_llm_pricing(raw: str) -> dict[str, ModelPricing]:
     try:
         data = json.loads(raw)
         if not isinstance(data, dict):
-            raise ValueError("not a dict")
-    except (json.JSONDecodeError, ValueError) as exc:
-        _log.warning("model_pricing_json parse failed, falling back to defaults: %s", exc)
+            raise TypeError("not a dict")
+    except (json.JSONDecodeError, TypeError, ValueError) as exc:
+        _log.warning(
+            "model_pricing_json parse failed, falling back to defaults: %s", exc
+        )
         return dict(DEFAULT_LLM_PRICING)
     out: dict[str, ModelPricing] = {}
     for model_id, pair in data.items():
@@ -213,8 +228,8 @@ def _parse_unit_map(raw: str) -> dict[str, Decimal]:
     try:
         data = json.loads(raw)
         if not isinstance(data, dict):
-            raise ValueError("not a dict")
-    except (json.JSONDecodeError, ValueError) as exc:
+            raise TypeError("not a dict")
+    except (json.JSONDecodeError, TypeError, ValueError) as exc:
         _log.warning("unit cost JSON parse failed: %s", exc)
         return {}
     out: dict[str, Decimal] = {}

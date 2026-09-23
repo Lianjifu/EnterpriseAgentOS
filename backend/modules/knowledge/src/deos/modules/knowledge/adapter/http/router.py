@@ -316,9 +316,7 @@ def build_router() -> APIRouter:
         x_workspace_id: UUID = Header(..., alias="X-Workspace-Id"),  # noqa: B008
         svc: KnowledgeService = Depends(knowledge_service_dependency),  # noqa: B008
     ) -> SearchKnowledgeResponse:
-        asset_kind = (
-            KnowledgeAssetKind(body.asset_kind) if body.asset_kind else None
-        )
+        asset_kind = KnowledgeAssetKind(body.asset_kind) if body.asset_kind else None
         rows = await svc.search_query(
             tenant_id=x_tenant_id,
             workspace_id=x_workspace_id,
@@ -343,9 +341,7 @@ def build_router() -> APIRouter:
         x_workspace_id: UUID = Header(..., alias="X-Workspace-Id"),  # noqa: B008
         svc: KnowledgeService = Depends(knowledge_service_dependency),  # noqa: B008
     ) -> SearchKnowledgeResponse:
-        asset_kind = (
-            KnowledgeAssetKind(body.asset_kind) if body.asset_kind else None
-        )
+        asset_kind = KnowledgeAssetKind(body.asset_kind) if body.asset_kind else None
         rows = await svc.search_query(
             tenant_id=x_tenant_id,
             workspace_id=x_workspace_id,

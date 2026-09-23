@@ -72,14 +72,14 @@ class CostRecordRepository(Protocol):
         workspace_id: WorkspaceId | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
-    ) -> list[dict[str, Any]]: ...
+    ) -> list[dict[str, Any]]: ...  # type: ignore[valid-type]
     async def sum_by_workspace(
         self,
         *,
         tenant_id: TenantId,
         since: datetime | None = None,
         until: datetime | None = None,
-    ) -> list[dict[str, Any]]: ...
+    ) -> list[dict[str, Any]]: ...  # type: ignore[valid-type]
     async def sum_by_model(
         self,
         *,
@@ -87,7 +87,7 @@ class CostRecordRepository(Protocol):
         workspace_id: WorkspaceId | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
-    ) -> list[dict[str, Any]]: ...
+    ) -> list[dict[str, Any]]: ...  # type: ignore[valid-type]
 
 
 # ── Event publisher (internal — emitted when we record an event) ────────

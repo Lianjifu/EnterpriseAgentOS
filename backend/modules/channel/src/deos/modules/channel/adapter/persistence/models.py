@@ -7,8 +7,7 @@ session-scoped repositories.
 
 from __future__ import annotations
 
-from datetime import datetime
-from uuid import UUID
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     JSON,
@@ -22,6 +21,10 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from eos_persistence.base import TenantScopedMixin
+
+if TYPE_CHECKING:
+    from datetime import datetime
+    from uuid import UUID
 
 
 class _Base(DeclarativeBase):
@@ -39,9 +42,7 @@ class ChannelORM(TenantScopedMixin, _Base):
     webhook_secret_id: Mapped[UUID | None] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
     status: Mapped[str] = mapped_column(String(16), nullable=False, server_default="active")
     inbound_path: Mapped[str] = mapped_column(String(512), nullable=False)
-    outbound_config: Mapped[dict] = mapped_column(
-        JSON, nullable=False, server_default="{}"
-    )
+    outbound_config: Mapped[dict] = mapped_column(JSON, nullable=False, server_default="{}")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -61,17 +62,13 @@ class ChannelDeliveryORM(TenantScopedMixin, _Base):
     direction: Mapped[str] = mapped_column(String(16), nullable=False)
     external_message_id: Mapped[str | None] = mapped_column(String(256), nullable=True)
     session_id: Mapped[UUID | None] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
-    payload_summary: Mapped[dict] = mapped_column(
-        JSON, nullable=False, server_default="{}"
-    )
+    payload_summary: Mapped[dict] = mapped_column(JSON, nullable=False, server_default="{}")
     status: Mapped[str] = mapped_column(String(16), nullable=False, server_default="pending")
     error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    delivered_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class ChannelSecretORM(TenantScopedMixin, _Base):
@@ -85,9 +82,7 @@ class ChannelSecretORM(TenantScopedMixin, _Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    rotated_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    rotated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 __all__ = [

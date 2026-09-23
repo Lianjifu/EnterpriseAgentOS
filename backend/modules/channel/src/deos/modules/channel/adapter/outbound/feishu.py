@@ -7,13 +7,14 @@ returns a 2-hour token. P6: simple LRU with 90-min TTL.
 from __future__ import annotations
 
 import time
-from typing import Any
-
-import httpx
+from typing import TYPE_CHECKING, Any
 
 from deos.modules.channel.application.ports import OutboundAdapter
 from deos.modules.channel.domain.errors import ChannelDeliveryFailed
 from deos.modules.channel.domain.value_objects import ChannelType
+
+if TYPE_CHECKING:
+    import httpx
 
 
 class FeishuOutboundAdapter(OutboundAdapter):
@@ -67,9 +68,7 @@ class FeishuOutboundAdapter(OutboundAdapter):
         token = await self._token()
         msg_type = str(metadata.get("msg_type", "text"))
         receive_id_type = str(metadata.get("receive_id_type", "chat_id"))
-        content = (
-            {"text": text} if msg_type == "text" else {"text": text}
-        )
+        content = {"text": text}
         resp = await self._http.post(
             f"{self.BASE_URL}/im/v1/messages",
             params={"receive_id_type": receive_id_type},

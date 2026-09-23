@@ -132,11 +132,7 @@ class ReleaseAgentVersionUseCase:
 
         # ── 5. require mean_score ≥ threshold + completed_at ───────────
         if not run.is_gate_passed(self.eval_score_min):
-            score_str = (
-                f"{run.mean_score:.2f}"
-                if run.mean_score is not None
-                else "n/a"
-            )
+            score_str = f"{run.mean_score:.2f}" if run.mean_score is not None else "n/a"
             raise EvalGateFailed(
                 f"eval run {run.id} score={score_str} < "
                 f"threshold={self.eval_score_min:.2f} or not completed",

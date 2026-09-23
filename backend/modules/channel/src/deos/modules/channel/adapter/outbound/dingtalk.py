@@ -10,13 +10,14 @@ Two integration modes:
 
 from __future__ import annotations
 
-from typing import Any
-
-import httpx
+from typing import TYPE_CHECKING, Any
 
 from deos.modules.channel.application.ports import OutboundAdapter
 from deos.modules.channel.domain.errors import ChannelDeliveryFailed
 from deos.modules.channel.domain.value_objects import ChannelType
+
+if TYPE_CHECKING:
+    import httpx
 
 
 class DingTalkOutboundAdapter(OutboundAdapter):
@@ -48,15 +49,17 @@ class DingTalkOutboundAdapter(OutboundAdapter):
         }
         if at_mobiles:
             payload["at"] = {"atMobiles": list(at_mobiles), "isAtAll": False}
-        resp = await self._http.post(
-            self._webhook_url, json=payload, timeout=self._timeout
-        )
+        resp = await self._http.post(self._webhook_url, json=payload, timeout=self._timeout)
         if resp.status_code >= 400:
             raise ChannelDeliveryFailed(
                 f"dingtalk send failed: {resp.status_code} {resp.text}",
                 code="CHANNEL_DELIVERY_FAILED",
             )
-        body = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
+        body = (
+            resp.json()
+            if resp.headers.get("content-type", "").startswith("application/json")
+            else {}
+        )
         if isinstance(body, dict) and body.get("errcode") not in (None, 0):
             raise ChannelDeliveryFailed(
                 f"dingtalk send rejected: {body.get('errmsg', 'unknown')}",

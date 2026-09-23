@@ -42,7 +42,7 @@ class AgentVersionStatus(StrEnum):
 class ReleaseStatus(StrEnum):
     """Lifecycle of a :class:`Release`."""
 
-    RELEASED = "released"   # final state
+    RELEASED = "released"  # final state
 
 
 @dataclass(slots=True, frozen=True)

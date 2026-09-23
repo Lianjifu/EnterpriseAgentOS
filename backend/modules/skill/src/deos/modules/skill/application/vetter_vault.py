@@ -153,8 +153,7 @@ class VaultBackedSkillVetter(SkillVetter):
                 ) from exc
         if len(keys) < self._min_keys:
             raise SkillSignerUntrusted(
-                f"vault trust store returned {len(keys)} keys, need >= "
-                f"{self._min_keys}"
+                f"vault trust store returned {len(keys)} keys, need >= {self._min_keys}"
             )
         self._keys = keys
         self._last_refresh = self._clock()

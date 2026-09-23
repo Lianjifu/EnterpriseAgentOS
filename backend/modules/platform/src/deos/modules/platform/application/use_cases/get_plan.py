@@ -13,19 +13,17 @@ if TYPE_CHECKING:
 
 
 def build(service: PlatformService) -> Any:
-    async def execute(
-        *, plan_id: str | None = None, code: str | None = None
-    ) -> Plan:
+    async def execute(*, plan_id: str | None = None, code: str | None = None) -> Plan:
         if code:
-                plan = await service.plan_repo.get_by_code(code=code)
-                if plan is not None:
-                    return plan
+            plan = await service.plan_repo.get_by_code(code=code)
+            if plan is not None:
+                return plan
         if plan_id:
-                from eos_schema.ids import PlanId
+            from eos_schema.ids import PlanId
 
-                plan = await service.plan_repo.get(plan_id=PlanId(UUID(plan_id)))
-                if plan is not None:
-                    return plan
+            plan = await service.plan_repo.get(plan_id=PlanId(UUID(plan_id)))
+            if plan is not None:
+                return plan
         raise PlanNotFound("plan not found by id or code")
 
     return execute

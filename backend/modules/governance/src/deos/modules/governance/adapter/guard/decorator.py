@@ -17,12 +17,12 @@ Designed to be applied to ``XxxUseCase.execute()`` methods:
 from __future__ import annotations
 
 import functools
-from typing import Any, Awaitable, Callable, ParamSpec, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import Any, ParamSpec, TypeVar
 
 from eos_vault.actor import ActorContext
 
 from deos.modules.governance.adapter.guard.policy_guard import PolicyGuard
-
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -53,7 +53,7 @@ def policy_check(
                 await guard.check(actor=actor, action=action_str, resource=res)
             return await fn(self, *args, **kwargs)
 
-        return wrapper
+        return wrapper  # type: ignore[return-value]
 
     return decorator
 

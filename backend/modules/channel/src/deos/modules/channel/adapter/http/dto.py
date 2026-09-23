@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any
-from uuid import UUID
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, ConfigDict, Field
+
+if TYPE_CHECKING:
+    from uuid import UUID
 
 
 class RegisterChannelRequest(BaseModel):

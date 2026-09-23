@@ -85,9 +85,7 @@ class InMemorySubscriptionRepository(SubscriptionRepository):
             return None
         return row
 
-    async def get_for_tenant(
-        self, *, tenant_id: TenantId
-    ) -> Subscription | None:
+    async def get_for_tenant(self, *, tenant_id: TenantId) -> Subscription | None:
         sid = self._by_tenant.get(tenant_id)
         if sid is None:
             return None
@@ -111,21 +109,21 @@ class InMemoryTenantSettingRepository(TenantSettingRepository):
         self._by_id: dict[TenantSettingId, TenantSetting] = {}
         self._by_tenant_key: dict[tuple[TenantId, str], TenantSettingId] = {}
 
-    async def get(
-        self, *, tenant_id: TenantId, key: str
-    ) -> TenantSetting | None:
+    async def get(self, *, tenant_id: TenantId, key: str) -> TenantSetting | None:
         sid = self._by_tenant_key.get((tenant_id, key))
         if sid is None:
             return None
         return self._by_id.get(sid)
 
-    async def list_for_tenant(
-        self, *, tenant_id: TenantId
-    ) -> list[TenantSetting]:
-        rows = [
-            r for r in self._by_id.values() if r.tenant_id == tenant_id
-        ]
-        return sorted(rows, key=lambda r: (r.workspace_id or WorkspaceId(int.from_bytes(b"\x00" * 16, "big")), r.key))
+    async def list_for_tenant(self, *, tenant_id: TenantId) -> list[TenantSetting]:
+        rows = [r for r in self._by_id.values() if r.tenant_id == tenant_id]
+        return sorted(
+            rows,
+            key=lambda r: (
+                r.workspace_id or WorkspaceId(int.from_bytes(b"\x00" * 16, "big")),
+                r.key,
+            ),
+        )
 
     async def upsert(self, setting: TenantSetting) -> TenantSetting:
         prev_id = self._by_tenant_key.get((setting.tenant_id, setting.key))

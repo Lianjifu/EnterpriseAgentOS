@@ -61,6 +61,7 @@ class RecallMemoryUseCase:
         effective_scope = query.scope_filter or MemoryScope.WORKSPACE
         if self.policy_guard is not None:
             from eos_vault.actor import ActorContext
+
             await self.policy_guard.check(  # type: ignore[attr-defined]
                 actor=ActorContext(
                     tenant_id=tenant_id,

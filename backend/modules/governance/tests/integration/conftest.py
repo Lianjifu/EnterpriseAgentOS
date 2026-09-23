@@ -17,6 +17,7 @@ import socket
 import uuid
 from collections.abc import AsyncIterator
 
+import eos_persistence.pgvector  # noqa: F401
 import pytest
 import pytest_asyncio
 from sqlalchemy import event, text
@@ -28,10 +29,9 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.pool import NullPool
 
-from deos.modules.governance.adapter.persistence import models as gov_models  # noqa: F401
-from eos_persistence.base import Base
-import eos_persistence.pgvector  # noqa: F401
-
+from deos.modules.governance.adapter.persistence import (
+    models as gov_models,  # noqa: F401
+)
 
 _GOVERNANCE_DDL = """
 CREATE TABLE IF NOT EXISTS policies (
@@ -120,7 +120,7 @@ def _db_reachable(url: str) -> bool:
         host, port = host_port.rsplit(":", 1)
         with socket.create_connection((host, int(port)), timeout=1.0):
             return True
-    except Exception:
+    except OSError:
         return False
 
 
@@ -146,8 +146,9 @@ def schema_name() -> str:
 
 def _register_search_path(engine: AsyncEngine, schema: str) -> None:
     """Set ``search_path`` on every new connection from this engine."""
+
     @event.listens_for(engine.sync_engine, "connect")
-    def _on_connect(dbapi_conn, _):  # noqa: ANN001
+    def _on_connect(dbapi_conn, _):
         cur = dbapi_conn.cursor()
         try:
             cur.execute(f'SET search_path TO "{schema}"')

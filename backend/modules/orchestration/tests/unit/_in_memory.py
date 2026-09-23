@@ -45,14 +45,10 @@ class InMemoryPlanRepository(PlanRepository):
         self._by_id: dict[tuple[TenantId, PlanId], Plan] = {}
         self._by_name: dict[tuple[TenantId, str], PlanId] = {}
 
-    async def get(
-        self, *, tenant_id: TenantId, plan_id: PlanId
-    ) -> Plan | None:
+    async def get(self, *, tenant_id: TenantId, plan_id: PlanId) -> Plan | None:
         return self._by_id.get((tenant_id, plan_id))
 
-    async def get_by_name(
-        self, *, tenant_id: TenantId, name: str
-    ) -> Plan | None:
+    async def get_by_name(self, *, tenant_id: TenantId, name: str) -> Plan | None:
         pid = self._by_name.get((tenant_id, name))
         if pid is None:
             return None
@@ -82,9 +78,7 @@ class InMemoryPlanRepository(PlanRepository):
         if key in self._by_name:
             from deos.modules.orchestration.domain.errors import PlanNameConflict
 
-            raise PlanNameConflict(
-                f"plan name {plan.name!r} already exists in tenant"
-            )
+            raise PlanNameConflict(f"plan name {plan.name!r} already exists in tenant")
         self._by_id[(plan.tenant_id, plan.id)] = plan
         self._by_name[key] = plan.id
         return plan
@@ -131,7 +125,8 @@ class InMemoryWorkflowRunRepository(WorkflowRunRepository):
             (
                 r
                 for (tid, _), r in self._by_id.items()
-                if tid == tenant_id and r.workspace_id == workspace_id
+                if tid == tenant_id
+                and r.workspace_id == workspace_id
                 and (plan_id is None or r.plan_id == plan_id)
             ),
             key=lambda r: r.created_at,
@@ -164,9 +159,9 @@ class InMemoryWorkflowRunRepository(WorkflowRunRepository):
 
 class InMemoryStepRunRepository(StepRunRepository):
     def __init__(self) -> None:
-        self._by_run: dict[
-            tuple[TenantId, WorkflowRunId], list[StepRun]
-        ] = defaultdict(list)
+        self._by_run: dict[tuple[TenantId, WorkflowRunId], list[StepRun]] = defaultdict(
+            list
+        )
 
     async def add(self, step: StepRun) -> StepRun:
         self._by_run[(step.tenant_id, step.run_id)].append(step)

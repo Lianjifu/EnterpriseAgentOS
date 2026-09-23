@@ -17,20 +17,8 @@ from __future__ import annotations
 import hashlib
 import hmac
 from dataclasses import dataclass
-from typing import Any
-from uuid import UUID
+from typing import TYPE_CHECKING, Any
 
-from deos.modules.channel.application.ports import (
-    ChannelDeliveryRepository,
-    ChannelEventPublisher,
-    ChannelRepository,
-    ClockPort,
-    IdGeneratorPort,
-    InboundAdapter,
-    OutboundAdapter,
-    WebhookSecretCipher,
-    WebhookSecretRepository,
-)
 from deos.modules.channel.domain.entities import (
     Channel,
     ChannelDelivery,
@@ -56,7 +44,22 @@ from deos.modules.channel.domain.value_objects import (
     ChannelType,
     DeliveryStatus,
 )
-from eos_schema.ids import ChannelId, TenantId
+
+if TYPE_CHECKING:
+    from uuid import UUID
+
+    from deos.modules.channel.application.ports import (
+        ChannelDeliveryRepository,
+        ChannelEventPublisher,
+        ChannelRepository,
+        ClockPort,
+        IdGeneratorPort,
+        InboundAdapter,
+        OutboundAdapter,
+        WebhookSecretCipher,
+        WebhookSecretRepository,
+    )
+    from eos_schema.ids import ChannelId, TenantId
 
 DEFAULT_TIMESTAMP_TOLERANCE_SECONDS = 300
 
@@ -307,7 +310,6 @@ class ChannelService:
                     tenant_id=tenant_id,
                     workspace_id=channel.workspace_id,
                 )
-            return updated
         except ChannelDeliveryFailed:
             # Persist the failure then re-raise the original error so
             # callers still see ChannelDeliveryFailed, not bare Exception.
@@ -318,14 +320,14 @@ class ChannelService:
             await self.delivery_repo.update(failed)
             raise
         except Exception as exc:
-            failed = delivery.with_status(
-                DeliveryStatus.FAILED, error_code=type(exc).__name__
-            )
+            failed = delivery.with_status(DeliveryStatus.FAILED, error_code=type(exc).__name__)
             await self.delivery_repo.update(failed)
             raise ChannelDeliveryFailed(
                 f"outbound send failed: {exc}",
                 code="CHANNEL_DELIVERY_FAILED",
             ) from exc
+        else:
+            return updated
 
     # ── Signature verification ─────────────────────────────────────────────
 
@@ -338,10 +340,7 @@ class ChannelService:
         tolerance_seconds: int,
     ) -> None:
         ts_raw = headers.get("x-webhook-timestamp") or headers.get("X-Webhook-Timestamp")
-        sig_raw = (
-            headers.get("x-webhook-signature")
-            or headers.get("X-Webhook-Signature")
-        )
+        sig_raw = headers.get("x-webhook-signature") or headers.get("X-Webhook-Signature")
         if not ts_raw or not sig_raw:
             raise WebhookSignatureInvalid(
                 "missing X-Webhook-Timestamp / X-Webhook-Signature",
@@ -349,11 +348,11 @@ class ChannelService:
             )
         try:
             ts = int(ts_raw)
-        except ValueError:
+        except ValueError as exc:
             raise WebhookSignatureInvalid(
                 "X-Webhook-Timestamp must be an integer",
                 code="WEBHOOK_SIGNATURE_INVALID",
-            )
+            ) from exc
 
         now = int(self.clock.now().timestamp())
         if abs(now - ts) > tolerance_seconds:

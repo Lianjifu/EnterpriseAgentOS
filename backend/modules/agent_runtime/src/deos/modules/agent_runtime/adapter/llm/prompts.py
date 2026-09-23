@@ -70,9 +70,7 @@ def build_system_prompt_with_memory(session: Session, memories: list[dict]) -> s
     )
 
 
-def build_system_prompt_with_knowledge(
-    session: Session, chunks: list[dict]
-) -> str:
+def build_system_prompt_with_knowledge(session: Session, chunks: list[dict]) -> str:
     formatted = "\n".join(
         f"- ({c.get('score', 0):.3f}) [package:{c.get('package_name', '?')}:"
         f"{c.get('ordinal', '?')}] {c.get('content', '')}"

@@ -50,7 +50,9 @@ def _candidate(
 
 
 @pytest.fixture
-def repo(postgres_session_factory: async_sessionmaker[AsyncSession]) -> SqlEvolutionCandidateRepository:
+def repo(
+    postgres_session_factory: async_sessionmaker[AsyncSession],
+) -> SqlEvolutionCandidateRepository:
     return SqlEvolutionCandidateRepository(postgres_session_factory)
 
 
@@ -62,7 +64,8 @@ async def test_add_and_get_roundtrip(
     cand = _candidate()
     await repo.add(cand)
     fetched = await repo.get(
-        tenant_id=TENANT, candidate_id=cand.id  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=cand.id,  # type: ignore[arg-type]
     )
     assert fetched is not None
     assert fetched.id == cand.id
@@ -79,7 +82,8 @@ async def test_get_returns_none_for_cross_tenant(
     cand = _candidate()
     await repo.add(cand)
     fetched = await repo.get(
-        tenant_id=TENANT_OTHER, candidate_id=cand.id  # type: ignore[arg-type]
+        tenant_id=TENANT_OTHER,
+        candidate_id=cand.id,  # type: ignore[arg-type]
     )
     assert fetched is None
 
@@ -94,7 +98,8 @@ async def test_update_persists_status_change(
     approved = cand.approve(approver_id=USER_ADMIN)  # type: ignore[arg-type]
     await repo.update(approved)
     fetched = await repo.get(
-        tenant_id=TENANT, candidate_id=cand.id  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=cand.id,  # type: ignore[arg-type]
     )
     assert fetched is not None
     assert fetched.status is EvolveStatus.APPROVED
@@ -205,7 +210,8 @@ async def test_update_isolated_by_tenant(
     )
     await repo.update(foreign)
     fetched = await repo.get(
-        tenant_id=TENANT, candidate_id=cand.id  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=cand.id,  # type: ignore[arg-type]
     )
     assert fetched is not None
     assert fetched.status is EvolveStatus.PENDING

@@ -14,9 +14,7 @@ from deos.modules.orchestration.domain.entities import Plan
 class GetPlanUseCase:
     repository: PlanRepository
 
-    async def execute(
-        self, *, tenant_id: TenantId, plan_id: PlanId
-    ) -> Plan | None:
+    async def execute(self, *, tenant_id: TenantId, plan_id: PlanId) -> Plan | None:
         return await self.repository.get(tenant_id=tenant_id, plan_id=plan_id)
 
 

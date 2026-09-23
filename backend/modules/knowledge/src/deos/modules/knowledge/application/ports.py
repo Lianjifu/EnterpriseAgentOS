@@ -25,7 +25,6 @@ from deos.modules.knowledge.domain.entities import (
 )
 from deos.modules.knowledge.domain.value_objects import KnowledgeAssetKind
 
-
 __all__ = [
     "ChunkerPort",
     "EmbeddingPort",
@@ -67,13 +66,9 @@ class StoragePort(Protocol):
     with the skill module's ``skill-artifact://`` scheme.
     """
 
-    async def put(
-        self, *, tenant_id: TenantId, key: str, data: bytes
-    ) -> str: ...
+    async def put(self, *, tenant_id: TenantId, key: str, data: bytes) -> str: ...
 
-    async def get(
-        self, *, tenant_id: TenantId, uri: str
-    ) -> bytes: ...
+    async def get(self, *, tenant_id: TenantId, uri: str) -> bytes: ...
 
     async def delete(self, *, tenant_id: TenantId, uri: str) -> None: ...
 

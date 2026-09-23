@@ -32,7 +32,9 @@ PID = PolicyId(UUID("00000000-0000-0000-0000-000000000003"))
 USER = UUID("00000000-0000-0000-0000-00000000000a")
 
 
-def _actor(*, roles=("workspace_member",), workspace_id=None, principal_id=USER) -> ActorContext:
+def _actor(
+    *, roles=("workspace_member",), workspace_id=None, principal_id=USER
+) -> ActorContext:
     return ActorContext(
         tenant_id=TID,
         workspace_id=workspace_id,
@@ -149,7 +151,9 @@ def test_resource_match_workspace_scoped_miss():
 def test_match_full_positive():
     actor = _actor(roles={"workspace_member"})
     rule = _rule()
-    assert match(actor, rule, "tool:execute:reverse", {"workspace_id": str(WID)}) is True
+    assert (
+        match(actor, rule, "tool:execute:reverse", {"workspace_id": str(WID)}) is True
+    )
 
 
 def test_match_disabled_rule_excluded():

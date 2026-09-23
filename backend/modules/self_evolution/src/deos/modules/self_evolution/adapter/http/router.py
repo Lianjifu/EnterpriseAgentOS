@@ -100,9 +100,7 @@ async def list_candidates(
     items = await svc.list_by_status(
         tenant_id=actor.tenant_id, status=parsed, limit=limit
     )
-    return CandidateListResponse(
-        items=[candidate_to_response(c) for c in items]
-    )
+    return CandidateListResponse(items=[candidate_to_response(c) for c in items])
 
 
 @router.get(

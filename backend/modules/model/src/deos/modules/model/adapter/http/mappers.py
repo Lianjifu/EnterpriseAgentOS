@@ -43,7 +43,9 @@ def model_to_response(m: Model) -> ModelResponse:
         upstream_model=m.upstream_model,
         enabled=m.enabled,
         credential_id=UUID(str(m.credential_id)) if m.credential_id else None,
-        routing_policy_id=UUID(str(m.routing_policy_id)) if m.routing_policy_id else None,
+        routing_policy_id=UUID(str(m.routing_policy_id))
+        if m.routing_policy_id
+        else None,
         created_at=m.created_at.isoformat(),
         updated_at=m.updated_at.isoformat(),
     )

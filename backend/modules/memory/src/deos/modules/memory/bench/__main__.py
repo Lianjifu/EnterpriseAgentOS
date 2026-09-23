@@ -158,9 +158,7 @@ async def _amain(args: argparse.Namespace) -> int:
     # Wipe any prior bench rows for this tenant.
     async with engine.begin() as conn:
         await conn.execute(
-            text(
-                "DELETE FROM memory_embeddings_vec WHERE tenant_id = :t"
-            ),
+            text("DELETE FROM memory_embeddings_vec WHERE tenant_id = :t"),
             {"t": str(tenant)},
         )
         await conn.execute(
@@ -174,9 +172,7 @@ async def _amain(args: argparse.Namespace) -> int:
         )
         vs = PgMemoryVectorAdapter(store=store)
         print(f"populating {args.rows} rows…", flush=True)
-        await _populate(
-            session, vs, rows=args.rows, tenant=tenant, ws=ws, owner=owner
-        )
+        await _populate(session, vs, rows=args.rows, tenant=tenant, ws=ws, owner=owner)
         await session.commit()
 
     # ANALYZE so the planner picks HNSW.

@@ -16,6 +16,7 @@ from typing import Any, Self
 from uuid import UUID
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from eos_pack_signing import public_key_id
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -31,7 +32,6 @@ from deos.modules.skill.domain.signing import (
     SkillPackPayload,
     sign_payload,
 )
-from eos_pack_signing import public_key_id
 
 
 def _tenant() -> UUID:
@@ -87,9 +87,8 @@ class _InMemoryUoW:
                 skill_id: Any,
             ) -> SkillPackage | None:
                 for row in self_inner._parent._skills.values():
-                    if (
-                        str(row.tenant_id) == str(tenant_id)
-                        and str(row.id) == str(skill_id)
+                    if str(row.tenant_id) == str(tenant_id) and str(row.id) == str(
+                        skill_id
                     ):
                         return row
                 return None
@@ -166,7 +165,9 @@ class _Container:
         return _Null()
 
 
-def _build_app_and_vetter() -> tuple[FastAPI, InMemoryTrustStoreSkillVetter, Ed25519PrivateKey]:
+def _build_app_and_vetter() -> tuple[
+    FastAPI, InMemoryTrustStoreSkillVetter, Ed25519PrivateKey
+]:
     """Wire a FastAPI app + per-session service using a fresh
     ``InMemoryTrustStoreSkillVetter`` seeded with one dev key."""
     app = FastAPI()
@@ -209,20 +210,28 @@ def _build_app_and_vetter() -> tuple[FastAPI, InMemoryTrustStoreSkillVetter, Ed2
     async def _on_signature_invalid(_request: Any, exc: SkillSignatureInvalid) -> Any:
         return JSONResponse(
             status_code=400,
-            content={"code": getattr(exc, "code", "SKILL_SIGNATURE_INVALID"), "message": str(exc)},
+            content={
+                "code": getattr(exc, "code", "SKILL_SIGNATURE_INVALID"),
+                "message": str(exc),
+            },
         )
 
     @app.exception_handler(SkillSignerUntrusted)
     async def _on_signer_untrusted(_request: Any, exc: SkillSignerUntrusted) -> Any:
         return JSONResponse(
             status_code=400,
-            content={"code": getattr(exc, "code", "SKILL_SIGNER_UNTRUSTED"), "message": str(exc)},
+            content={
+                "code": getattr(exc, "code", "SKILL_SIGNER_UNTRUSTED"),
+                "message": str(exc),
+            },
         )
 
     return app, vetter, key
 
 
-def _sign_payload(key: Ed25519PrivateKey, *, name: str = "echo", version: str = "1.0.0") -> tuple[str, str]:
+def _sign_payload(
+    key: Ed25519PrivateKey, *, name: str = "echo", version: str = "1.0.0"
+) -> tuple[str, str]:
     """Sign a fixed canonical payload and return (signature_b64, key_id)."""
     payload = SkillPackPayload(
         name=name,

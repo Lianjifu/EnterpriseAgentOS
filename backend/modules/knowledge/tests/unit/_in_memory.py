@@ -183,7 +183,9 @@ class InMemoryVectorSearch(VectorSearchPort):
     ) -> int:
         target = str(asset_id)
         remove = [
-            cid for cid, row in self._rows.items() if row.payload.get("asset_id") == target
+            cid
+            for cid, row in self._rows.items()
+            if row.payload.get("asset_id") == target
         ]
         for cid in remove:
             self._rows.pop(cid, None)
@@ -223,14 +225,16 @@ class InMemoryVectorSearch(VectorSearchPort):
                 continue
             if package_ids and row.payload.get("package_id") not in package_ids:
                 continue
-            if asset_kind_filter is not None and row.payload.get("asset_kind") != asset_kind_filter.value:
+            if (
+                asset_kind_filter is not None
+                and row.payload.get("asset_kind") != asset_kind_filter.value
+            ):
                 continue
             score = _cosine(query_embedding, row.embedding)
             scored.append((score, row.chunk_id))
         scored.sort(key=lambda x: x[0], reverse=True)
         return [
-            VectorSearchHit(chunk_id=cid, score=score)
-            for score, cid in scored[:top_k]
+            VectorSearchHit(chunk_id=cid, score=score) for score, cid in scored[:top_k]
         ]
 
 
@@ -263,7 +267,7 @@ class InMemoryKnowledgeRepository(KnowledgeRepository):
     ) -> list[KnowledgePackage]:
         out: list[KnowledgePackage] = []
         ws = UUID(str(workspace_id))
-        for (_t, _), pkg in self._pkgs.items():
+        for pkg in self._pkgs.values():
             if pkg.workspace_id != ws:
                 continue
             out.append(pkg)
@@ -290,11 +294,7 @@ class InMemoryKnowledgeRepository(KnowledgeRepository):
         tenant_id: TenantId,
         package_id: KnowledgePackageId,
     ) -> list[KnowledgeAsset]:
-        return [
-            a
-            for (_t, _), a in self._assets.items()
-            if a.package_id == package_id
-        ]
+        return [a for (_t, _), a in self._assets.items() if a.package_id == package_id]
 
     async def update_asset(self, asset: KnowledgeAsset) -> KnowledgeAsset:
         self._assets[(UUID(str(asset.tenant_id)), asset.id)] = asset
@@ -312,18 +312,12 @@ class InMemoryKnowledgeRepository(KnowledgeRepository):
         tenant_id: TenantId,
         asset_id: KnowledgeAssetId,
     ) -> list[KnowledgeChunk]:
-        return [
-            c
-            for (_t, _), c in self._chunks.items()
-            if c.asset_id == asset_id
-        ]
+        return [c for (_t, _), c in self._chunks.items() if c.asset_id == asset_id]
 
     async def delete_chunks_for_asset(
         self, *, tenant_id: TenantId, asset_id: KnowledgeAssetId
     ) -> int:
-        remove = [
-            k for k, c in self._chunks.items() if c.asset_id == asset_id
-        ]
+        remove = [k for k, c in self._chunks.items() if c.asset_id == asset_id]
         for k in remove:
             self._chunks.pop(k, None)
         return len(remove)
@@ -331,9 +325,7 @@ class InMemoryKnowledgeRepository(KnowledgeRepository):
     async def delete_chunks_for_package(
         self, *, tenant_id: TenantId, package_id: KnowledgePackageId
     ) -> int:
-        remove = [
-            k for k, c in self._chunks.items() if c.package_id == package_id
-        ]
+        remove = [k for k, c in self._chunks.items() if c.package_id == package_id]
         for k in remove:
             self._chunks.pop(k, None)
         return len(remove)

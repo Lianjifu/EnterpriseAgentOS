@@ -75,9 +75,7 @@ class EvalRunner:
             tenant_id=tenant_id, dataset_id=run.dataset_id
         )
         if not cases:
-            await self._mark_errored(
-                run, error_message="dataset has no cases"
-            )
+            await self._mark_errored(run, error_message="dataset has no cases")
             return
 
         # ── QUEUED → RUNNING ──────────────────────────────────────────
@@ -121,27 +119,38 @@ class EvalRunner:
                         timeout=self.case_timeout_seconds,
                     )
                 except TimeoutError:
-                    return (case, 0.0, False, int((time.monotonic() - t0) * 1000),
-                            f"timeout after {self.case_timeout_seconds:.1f}s")
+                    return (
+                        case,
+                        0.0,
+                        False,
+                        int((time.monotonic() - t0) * 1000),
+                        f"timeout after {self.case_timeout_seconds:.1f}s",
+                    )
                 except AppError as exc:
-                    return (case, 0.0, False, int((time.monotonic() - t0) * 1000),
-                            f"{exc.__class__.__name__}: {exc}")
+                    return (
+                        case,
+                        0.0,
+                        False,
+                        int((time.monotonic() - t0) * 1000),
+                        f"{exc.__class__.__name__}: {exc}",
+                    )
                 except Exception as exc:  # noqa: BLE001
-                    return (case, 0.0, False, int((time.monotonic() - t0) * 1000),
-                            f"unexpected: {exc}")
+                    return (
+                        case,
+                        0.0,
+                        False,
+                        int((time.monotonic() - t0) * 1000),
+                        f"unexpected: {exc}",
+                    )
                 output = str(result.get("final_message") or "")
                 latency_ms = int((time.monotonic() - t0) * 1000)
-                score = score_case(
-                    case=case, output=output, latency_ms=latency_ms
-                )
+                score = score_case(case=case, output=output, latency_ms=latency_ms)
                 return (case, score.hit_ratio, score.passed, latency_ms, None)
 
         try:
             raw = await asyncio.gather(*(_one(c) for c in cases))
         except Exception as exc:  # noqa: BLE001 - total runner failure
-            await self._mark_errored(
-                running, error_message=f"runner crashed: {exc}"
-            )
+            await self._mark_errored(running, error_message=f"runner crashed: {exc}")
             return
 
         # ── aggregate ─────────────────────────────────────────────────
@@ -165,7 +174,7 @@ class EvalRunner:
         # ── emit EvalRunCompleted with serialised score records ───────
         if self.publisher is not None:
             score_dicts = []
-            for (case, hit, passed, latency, err) in raw:
+            for case, hit, passed, latency, err in raw:
                 score_dicts.append(
                     {
                         "case_id": str(case.id),
@@ -195,13 +204,9 @@ class EvalRunner:
                     )
                 )
             except Exception:  # pragma: no cover - defensive
-                logger.exception(
-                    "publish EvalRunCompleted failed for %s", completed.id
-                )
+                logger.exception("publish EvalRunCompleted failed for %s", completed.id)
 
-    async def _mark_errored(
-        self, run: EvalRun, *, error_message: str
-    ) -> None:
+    async def _mark_errored(self, run: EvalRun, *, error_message: str) -> None:
         errored = run.mark_errored(error_message=error_message)
         try:
             await self.run_repo.update(errored)

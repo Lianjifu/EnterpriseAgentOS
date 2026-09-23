@@ -48,7 +48,9 @@ def version_to_dto(entity: AgentVersion) -> VersionResponse:
         allowed_tools=list(entity.allowed_tools),
         allowed_skills=list(entity.allowed_skills),
         knowledge_package_ids=list(entity.knowledge_package_ids),
-        plan_dsl_snapshot=dict(entity.plan_dsl_snapshot) if entity.plan_dsl_snapshot is not None else None,
+        plan_dsl_snapshot=dict(entity.plan_dsl_snapshot)
+        if entity.plan_dsl_snapshot is not None
+        else None,
         max_total_steps=entity.max_total_steps,
         release_notes=entity.release_notes,
         published_at=_iso(entity.published_at),

@@ -9,6 +9,12 @@ from __future__ import annotations
 
 from uuid import uuid4
 
+from _memory_unit_in_memory import (
+    DeterministicEmbedding,
+    InMemoryMemoryRepository,
+    InMemoryVectorSearch,
+    RecordingPublisher,
+)
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -16,13 +22,6 @@ from deos.modules.memory.adapter.http.factory import MemoryServiceFactory
 from deos.modules.memory.adapter.http.router import build_router
 from deos.modules.memory.application.services import MemoryService
 from deos.modules.memory.domain.entities import EMBEDDING_DIM
-
-from _memory_unit_in_memory import (
-    DeterministicEmbedding,
-    InMemoryMemoryRepository,
-    InMemoryVectorSearch,
-    RecordingPublisher,
-)
 
 
 def _build_app() -> tuple[FastAPI, MemoryService]:
@@ -119,10 +118,14 @@ def test_recall_returns_hits() -> None:
 
     # write 3 entries
     for c in ["alpha bravo", "alpha charlie", "delta echo"]:
-        r = client.post("/v1/memories", headers=hdr, json={"scope": "workspace", "content": c})
+        r = client.post(
+            "/v1/memories", headers=hdr, json={"scope": "workspace", "content": c}
+        )
         assert r.status_code == 201
 
-    resp = client.post("/v1/memories/recall", headers=hdr, json={"query": "alpha", "top_k": 2})
+    resp = client.post(
+        "/v1/memories/recall", headers=hdr, json={"query": "alpha", "top_k": 2}
+    )
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert body["query"] == "alpha"
@@ -183,7 +186,9 @@ def test_list_returns_items_and_total() -> None:
         "X-User-Id": str(uuid4()),
     }
     for c in ["a", "b", "c"]:
-        client.post("/v1/memories", headers=hdr, json={"scope": "workspace", "content": c})
+        client.post(
+            "/v1/memories", headers=hdr, json={"scope": "workspace", "content": c}
+        )
 
     resp = client.get("/v1/memories", headers=hdr)
     assert resp.status_code == 200
@@ -201,7 +206,9 @@ def test_list_filters_by_scope() -> None:
         "X-User-Id": str(uuid4()),
     }
     client.post("/v1/memories", headers=hdr, json={"scope": "user", "content": "u1"})
-    client.post("/v1/memories", headers=hdr, json={"scope": "workspace", "content": "w1"})
+    client.post(
+        "/v1/memories", headers=hdr, json={"scope": "workspace", "content": "w1"}
+    )
 
     resp = client.get("/v1/memories?scope=user", headers=hdr)
     assert resp.status_code == 200

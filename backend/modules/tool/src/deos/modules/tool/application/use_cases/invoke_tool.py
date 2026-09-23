@@ -95,6 +95,7 @@ class InvokeToolUseCase:
         # P5: gate sensitive tool calls behind the policy engine
         if self._policy_guard is not None:
             from eos_vault.actor import ActorContext
+
             await self._policy_guard.check(  # type: ignore[attr-defined]
                 actor=ActorContext(
                     tenant_id=tenant_id,

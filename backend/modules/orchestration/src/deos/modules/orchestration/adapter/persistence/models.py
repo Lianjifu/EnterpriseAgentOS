@@ -59,9 +59,7 @@ class PlanORM(TenantScopedMixin, Base):
         nullable=False,
         server_default=text("'{}'::jsonb"),
     )
-    created_by: Mapped[UUID | None] = mapped_column(
-        PgUUID(as_uuid=True), nullable=True
-    )
+    created_by: Mapped[UUID | None] = mapped_column(PgUUID(as_uuid=True), nullable=True)
     # Tier B signing triple — mirrors ``skill_packages.signature``.
     # NOT NULL DEFAULT '' so existing rows satisfy the constraint;
     # partial-triple invariant is enforced in ``Plan.create()``.
@@ -95,9 +93,7 @@ class WorkflowRunORM(TenantScopedMixin, Base):
         ForeignKey("orch_plans.id", ondelete="RESTRICT"),
         nullable=False,
     )
-    plan_dsl_snapshot: Mapped[dict[str, Any]] = mapped_column(
-        JSONB, nullable=False
-    )
+    plan_dsl_snapshot: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     status: Mapped[str] = mapped_column(
         String(16),
         nullable=False,

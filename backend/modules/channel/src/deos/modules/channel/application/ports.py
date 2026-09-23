@@ -8,13 +8,15 @@ inbound/outbound adapters) live in ``adapter/``.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Any, Protocol, runtime_checkable
-from uuid import UUID
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
-from deos.modules.channel.domain.entities import Channel, ChannelDelivery
-from deos.modules.channel.domain.value_objects import ChannelType
-from eos_schema.ids import ChannelId, TenantId
+if TYPE_CHECKING:
+    from datetime import datetime
+    from uuid import UUID
+
+    from deos.modules.channel.domain.entities import Channel, ChannelDelivery
+    from deos.modules.channel.domain.value_objects import ChannelType
+    from eos_schema.ids import ChannelId, TenantId
 
 # ── Persistence ───────────────────────────────────────────────────────────
 
@@ -22,9 +24,7 @@ from eos_schema.ids import ChannelId, TenantId
 @runtime_checkable
 class ChannelRepository(Protocol):
     async def add(self, channel: Channel) -> None: ...
-    async def get(
-        self, *, tenant_id: TenantId, channel_id: ChannelId
-    ) -> Channel | None: ...
+    async def get(self, *, tenant_id: TenantId, channel_id: ChannelId) -> Channel | None: ...
     async def get_by_id(self, channel_id: ChannelId) -> Channel | None: ...
     async def list(
         self,
@@ -35,17 +35,13 @@ class ChannelRepository(Protocol):
         limit: int = 100,
     ) -> list[Channel]: ...
     async def update(self, channel: Channel) -> None: ...
-    async def delete(
-        self, *, tenant_id: TenantId, channel_id: ChannelId
-    ) -> bool: ...
+    async def delete(self, *, tenant_id: TenantId, channel_id: ChannelId) -> bool: ...
 
 
 @runtime_checkable
 class ChannelDeliveryRepository(Protocol):
     async def add(self, delivery: ChannelDelivery) -> None: ...
-    async def get(
-        self, *, tenant_id: TenantId, delivery_id: UUID
-    ) -> ChannelDelivery | None: ...
+    async def get(self, *, tenant_id: TenantId, delivery_id: UUID) -> ChannelDelivery | None: ...
     async def list_for_channel(
         self,
         *,
@@ -67,12 +63,8 @@ class WebhookSecretRepository(Protocol):
         encrypted_payload: bytes,
         key_version: int = 1,
     ) -> UUID: ...
-    async def get(
-        self, *, tenant_id: TenantId, secret_id: UUID
-    ) -> bytes | None: ...
-    async def delete(
-        self, *, tenant_id: TenantId, secret_id: UUID
-    ) -> bool: ...
+    async def get(self, *, tenant_id: TenantId, secret_id: UUID) -> bytes | None: ...
+    async def delete(self, *, tenant_id: TenantId, secret_id: UUID) -> bool: ...
 
 
 # ── Crypto ────────────────────────────────────────────────────────────────

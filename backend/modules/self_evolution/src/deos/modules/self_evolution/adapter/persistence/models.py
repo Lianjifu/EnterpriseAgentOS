@@ -41,9 +41,7 @@ class EvolveCandidateORM(_Base, TenantScopedMixin):
     payload: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, server_default="{}"
     )
-    confidence: Mapped[float] = mapped_column(
-        Float, nullable=False, server_default="0"
-    )
+    confidence: Mapped[float] = mapped_column(Float, nullable=False, server_default="0")
     trigger_reason: Mapped[str] = mapped_column(
         String(256), nullable=False, server_default=""
     )

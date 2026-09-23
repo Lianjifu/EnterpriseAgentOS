@@ -75,9 +75,7 @@ def workflow_run_to_dto(run: WorkflowRun) -> WorkflowRunResponse:
     )
 
 
-def workflow_run_to_run_response(
-    run: WorkflowRun, plan_id: str
-) -> RunPlanResponse:
+def workflow_run_to_run_response(run: WorkflowRun, plan_id: str) -> RunPlanResponse:
     return RunPlanResponse(
         run_id=str(run.id),
         plan_id=plan_id,

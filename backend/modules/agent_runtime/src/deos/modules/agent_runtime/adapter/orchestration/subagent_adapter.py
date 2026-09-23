@@ -101,15 +101,13 @@ class SubAgentAdapter(SubAgentPort):
                         "trace_id": current_trace_id(),
                     },
                 )
-                completion = (
-                    await ar_service.run_turn_to_completion().execute(
-                        tenant_id=tenant_id,
-                        workspace_id=workspace_id,
-                        owner_id=owner_id,
-                        session_id=session_row.id,
-                        user_input=user_input,
-                        model=model,
-                    )
+                completion = await ar_service.run_turn_to_completion().execute(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    owner_id=owner_id,
+                    session_id=session_row.id,
+                    user_input=user_input,
+                    model=model,
                 )
                 await ar_service.close_session().execute(
                     tenant_id=tenant_id,

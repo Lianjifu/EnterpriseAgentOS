@@ -113,7 +113,10 @@ def test_create_plan_duplicate_name_409() -> None:
         "name": "dup",
         "entry_dsl": _plan_dsl("dup"),
     }
-    assert client.post("/v1/orchestration/plans", headers=hdr, json=body).status_code == 201
+    assert (
+        client.post("/v1/orchestration/plans", headers=hdr, json=body).status_code
+        == 201
+    )
     dup = client.post("/v1/orchestration/plans", headers=hdr, json=body)
     assert dup.status_code == 409
 

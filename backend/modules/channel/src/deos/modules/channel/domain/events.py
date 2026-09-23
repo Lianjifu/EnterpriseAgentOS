@@ -8,10 +8,12 @@ in step 7 when the audit subscriber wires them in.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
-from uuid import UUID
+from typing import TYPE_CHECKING, Any
 
 from eos_kernel.events import DomainEvent
+
+if TYPE_CHECKING:
+    from uuid import UUID
 
 
 @dataclass(slots=True, frozen=True)

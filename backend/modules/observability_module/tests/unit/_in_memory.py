@@ -35,7 +35,6 @@ from deos.modules.observability_module.domain.value_objects import (
     RunType,
 )
 
-
 # ── RunRecordRepository ───────────────────────────────────────────────────
 
 
@@ -133,14 +132,12 @@ class InMemoryCostRecordRepository(CostRecordRepository):
         since: datetime | None = None,
         until: datetime | None = None,
     ) -> list[dict[str, Any]]:
-        buckets: dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
+        buckets: dict[str, Decimal] = defaultdict(lambda: Decimal(0))
         for rec in self._store.values():
             if not _match(rec, tenant_id, workspace_id, since, until):
                 continue
             buckets[rec.cost_type.value] += rec.amount_usd
-        return [
-            {"cost_type": k, "total_usd": _to_str(v)} for k, v in buckets.items()
-        ]
+        return [{"cost_type": k, "total_usd": _to_str(v)} for k, v in buckets.items()]
 
     async def sum_by_workspace(
         self,
@@ -149,7 +146,7 @@ class InMemoryCostRecordRepository(CostRecordRepository):
         since: datetime | None = None,
         until: datetime | None = None,
     ) -> list[dict[str, Any]]:
-        buckets: dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
+        buckets: dict[str, Decimal] = defaultdict(lambda: Decimal(0))
         for rec in self._store.values():
             if rec.tenant_id != tenant_id:
                 continue
@@ -170,7 +167,7 @@ class InMemoryCostRecordRepository(CostRecordRepository):
         since: datetime | None = None,
         until: datetime | None = None,
     ) -> list[dict[str, Any]]:
-        buckets: dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
+        buckets: dict[str, Decimal] = defaultdict(lambda: Decimal(0))
         for rec in self._store.values():
             if not _match(rec, tenant_id, workspace_id, since, until):
                 continue
@@ -192,9 +189,7 @@ def _match(
         return False
     if since is not None and rec.created_at < since:
         return False
-    if until is not None and rec.created_at > until:
-        return False
-    return True
+    return not (until is not None and rec.created_at > until)
 
 
 def _to_str(value: Decimal) -> str:

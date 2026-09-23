@@ -8,7 +8,7 @@ Implementations of ``PolicyRepository`` / ``ApprovalRepository`` /
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -25,7 +25,6 @@ from deos.modules.governance.domain.entities import (
     PolicyRule,
 )
 from deos.modules.governance.domain.value_objects import ApprovalStatus
-
 
 # ── PolicyRepository ────────────────────────────────────────────────────────
 
@@ -150,7 +149,7 @@ class InMemoryAuditLog(AuditLogPort):
             actor_id=actor_id,
             event_type=event_type,
             payload=dict(payload),
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         self.rows.append(entry)
         return entry
@@ -172,7 +171,7 @@ class FixedClock:
     """Returns a configurable timestamp; bump via ``advance()``."""
 
     def __init__(self, start: datetime | None = None) -> None:
-        self._now = start or datetime(2026, 1, 1, tzinfo=timezone.utc)
+        self._now = start or datetime(2026, 1, 1, tzinfo=UTC)
 
     def now(self) -> datetime:
         return self._now

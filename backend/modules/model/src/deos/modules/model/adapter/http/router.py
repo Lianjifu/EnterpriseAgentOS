@@ -30,7 +30,7 @@ from eos_schema.ids import (
     ModelId,
     RoutingPolicyId,
 )
-from fastapi import APIRouter, Depends, Path, Query, Request, status
+from fastapi import APIRouter, Path, Query, Request, status
 
 from deos.modules.model.adapter.http.dto import (
     CredentialResponse,
@@ -161,7 +161,9 @@ async def register_model(
         upstream_model=body.upstream_model,
         workspace_id=body.workspace_id,
         credential_id=CredentialId(body.credential_id) if body.credential_id else None,
-        routing_policy_id=RoutingPolicyId(body.routing_policy_id) if body.routing_policy_id else None,
+        routing_policy_id=RoutingPolicyId(body.routing_policy_id)
+        if body.routing_policy_id
+        else None,
     )
     return model_to_response(model)
 
@@ -174,9 +176,7 @@ async def list_models(
 ) -> ModelListResponse:
     svc = make_model_service(request)
     actor = _require_actor(request)
-    items = await svc.list_models(
-        actor=actor, enabled_only=enabled_only, limit=limit
-    )
+    items = await svc.list_models(actor=actor, enabled_only=enabled_only, limit=limit)
     return model_list_to_response(items)
 
 
@@ -223,9 +223,7 @@ async def update_model(
         )
     if "routing_policy_id" in body.model_fields_set:
         updated = updated.with_routing_policy(
-            RoutingPolicyId(body.routing_policy_id)
-            if body.routing_policy_id
-            else None
+            RoutingPolicyId(body.routing_policy_id) if body.routing_policy_id else None
         )
     await svc.model_repo.update(updated)  # type: ignore[attr-defined]
     return model_to_response(updated)
@@ -274,9 +272,7 @@ async def invoke_model(
             code="MODEL_NOT_FOUND",
         )
     chat_req = invoke_request_to_chat(body, model.upstream_model)
-    resp = await svc.invoke(
-        actor=actor, model_id=ModelId(model_id), req=chat_req
-    )
+    resp = await svc.invoke(actor=actor, model_id=ModelId(model_id), req=chat_req)
     return chat_response_to_invoke(resp)
 
 
@@ -294,14 +290,15 @@ async def register_routing_policy(
 ) -> RoutingPolicyResponse:
     svc = make_model_service(request)
     actor = _require_admin(request)
-    from deos.modules.model.domain.value_objects import RoutingStrategy
-
     from deos.modules.model.domain.entities import make_routing_policy
+    from deos.modules.model.domain.value_objects import RoutingStrategy
 
     policy = make_routing_policy(
         tenant_id=actor.tenant_id,
         strategy=RoutingStrategy(body.strategy),
-        primary_model_id=ModelId(body.primary_model_id) if body.primary_model_id else None,
+        primary_model_id=ModelId(body.primary_model_id)
+        if body.primary_model_id
+        else None,
         failover_model_ids=[ModelId(m) for m in body.failover_model_ids],
         selection_rules=body.selection_rules,
     )
@@ -342,7 +339,7 @@ def _require_actor(request: Request):  # type: ignore[no-untyped-def]
 
 def _require_admin(request: Request):  # type: ignore[no-untyped-def]
     actor = _require_actor(request)
-    roles = getattr(actor, "roles", frozenset())
+    roles: frozenset[str] = getattr(actor, "roles", frozenset())  # type: ignore[attr-defined]
     if "admin" not in roles:
         from eos_kernel.errors import ForbiddenError
 
@@ -354,7 +351,6 @@ def _require_admin(request: Request):  # type: ignore[no-untyped-def]
 
 
 __all__ = [
-    "Router",
     "delete_model",
     "get_model",
     "invoke_model",

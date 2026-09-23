@@ -110,7 +110,9 @@ async def repo_and_vs(engine: AsyncEngine):
             raise
 
 
-async def _make_package(repo: SqlKnowledgeRepository, *, tenant, ws) -> KnowledgePackage:
+async def _make_package(
+    repo: SqlKnowledgeRepository, *, tenant, ws
+) -> KnowledgePackage:
     pkg = KnowledgePackage.create(
         tenant_id=tenant,
         workspace_id=ws,
@@ -120,7 +122,9 @@ async def _make_package(repo: SqlKnowledgeRepository, *, tenant, ws) -> Knowledg
     return await repo.add_package(pkg)
 
 
-async def _make_asset(repo: SqlKnowledgeRepository, *, tenant, ws, pkg) -> KnowledgeAsset:
+async def _make_asset(
+    repo: SqlKnowledgeRepository, *, tenant, ws, pkg
+) -> KnowledgeAsset:
     asset = KnowledgeAsset.create(
         tenant_id=tenant,
         workspace_id=ws,
@@ -163,8 +167,9 @@ async def test_create_ingest_and_search_top_k(repo_and_vs) -> None:
 
     # Write chunks directly to the repo + vector adapter (no real ingest
     # pipeline here; that has its own unit test).
-    from deos.modules.knowledge.domain.entities import KnowledgeChunk
     from eos_schema.ids import KnowledgeChunkId
+
+    from deos.modules.knowledge.domain.entities import KnowledgeChunk
 
     target_chunk = KnowledgeChunk.from_text(
         id=None,
@@ -249,8 +254,9 @@ async def test_cross_tenant_isolation(repo_and_vs) -> None:
     asset_a = await _make_asset(repo, tenant=tenant_a, ws=ws, pkg=pkg_a)
     asset_b = await _make_asset(repo, tenant=tenant_b, ws=ws, pkg=pkg_b)
 
-    from deos.modules.knowledge.domain.entities import KnowledgeChunk
     from eos_schema.ids import KnowledgeChunkId
+
+    from deos.modules.knowledge.domain.entities import KnowledgeChunk
 
     c_a = KnowledgeChunk.from_text(
         id=None,
@@ -319,8 +325,9 @@ async def test_workspace_filter_in_vector_payload(repo_and_vs) -> None:
     asset_a = await _make_asset(repo, tenant=tenant, ws=ws_a, pkg=pkg_a)
     asset_b = await _make_asset(repo, tenant=tenant, ws=ws_b, pkg=pkg_b)
 
-    from deos.modules.knowledge.domain.entities import KnowledgeChunk
     from eos_schema.ids import KnowledgeChunkId
+
+    from deos.modules.knowledge.domain.entities import KnowledgeChunk
 
     emb = tuple(_embedding("hello"))
     c_a = KnowledgeChunk.from_text(
@@ -382,8 +389,9 @@ async def test_asset_kind_filter_restricts_results(repo_and_vs) -> None:
     ws = WorkspaceId(uuid4())
     pkg = await _make_package(repo, tenant=tenant, ws=ws)
 
+    from eos_schema.ids import KnowledgeChunkId
+
     from deos.modules.knowledge.domain.entities import KnowledgeAsset, KnowledgeChunk
-    from eos_schema.ids import KnowledgeAssetId, KnowledgeChunkId
 
     asset_text = KnowledgeAsset.create(
         tenant_id=tenant,
@@ -479,8 +487,9 @@ async def test_delete_for_asset_removes_only_matching_rows(repo_and_vs) -> None:
     a_keep = await _make_asset(repo, tenant=tenant, ws=ws, pkg=pkg)
     a_drop = await _make_asset(repo, tenant=tenant, ws=ws, pkg=pkg)
 
-    from deos.modules.knowledge.domain.entities import KnowledgeChunk
     from eos_schema.ids import KnowledgeChunkId
+
+    from deos.modules.knowledge.domain.entities import KnowledgeChunk
 
     emb = tuple(_embedding("x"))
     c_keep = KnowledgeChunk.from_text(
@@ -545,8 +554,9 @@ async def test_delete_for_package_removes_all_assets_rows(repo_and_vs) -> None:
     a_drop_a = await _make_asset(repo, tenant=tenant, ws=ws, pkg=pkg_drop)
     a_drop_b = await _make_asset(repo, tenant=tenant, ws=ws, pkg=pkg_drop)
 
-    from deos.modules.knowledge.domain.entities import KnowledgeChunk
     from eos_schema.ids import KnowledgeChunkId
+
+    from deos.modules.knowledge.domain.entities import KnowledgeChunk
 
     emb = tuple(_embedding("y"))
     c_keep = KnowledgeChunk.from_text(

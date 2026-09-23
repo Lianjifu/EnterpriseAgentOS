@@ -6,7 +6,7 @@ Implements the protocols defined in ``application/ports``.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -19,7 +19,6 @@ from eos_schema.ids import (
 )
 
 from deos.modules.model.application.ports import (
-    ChatInvoker,
     ClockPort,
     CredentialCipher,
     CredentialRepository,
@@ -37,13 +36,12 @@ from deos.modules.model.domain.entities import (
     RoutingPolicy,
 )
 
-
 # ── Clock / ids / publisher ──────────────────────────────────────────────
 
 
 class FixedClock(ClockPort):
     def __init__(self, initial: datetime | None = None) -> None:
-        self._now = initial or datetime(2026, 9, 22, 12, 0, tzinfo=timezone.utc)
+        self._now = initial or datetime(2026, 9, 22, 12, 0, tzinfo=UTC)
         self.advances = 0
 
     def now(self) -> datetime:
@@ -89,9 +87,7 @@ class InMemoryCipher(CredentialCipher):
     def key_version(self) -> int:
         return self._kv
 
-    def encrypt(
-        self, plaintext: bytes, *, aad: bytes | None = None
-    ) -> bytes:
+    def encrypt(self, plaintext: bytes, *, aad: bytes | None = None) -> bytes:
         # Store plaintext so tests can inspect what was sent.
         self.encrypted.append(plaintext)
         return b"ENC:" + plaintext
@@ -114,14 +110,10 @@ class InMemoryModelRepository(ModelRepository):
     async def add(self, model: Model) -> None:
         self._rows[(model.tenant_id, model.id)] = model
 
-    async def get(
-        self, *, tenant_id: TenantId, model_id: ModelId
-    ) -> Model | None:
+    async def get(self, *, tenant_id: TenantId, model_id: ModelId) -> Model | None:
         return self._rows.get((tenant_id, model_id))
 
-    async def get_by_name(
-        self, *, tenant_id: TenantId, name: str
-    ) -> Model | None:
+    async def get_by_name(self, *, tenant_id: TenantId, name: str) -> Model | None:
         for m in self._rows.values():
             if m.tenant_id == tenant_id and m.name == name:
                 return m
@@ -135,9 +127,7 @@ class InMemoryModelRepository(ModelRepository):
         enabled_only: bool = False,
         limit: int = 100,
     ) -> list[Model]:
-        out = [
-            m for m in self._rows.values() if m.tenant_id == tenant_id
-        ]
+        out = [m for m in self._rows.values() if m.tenant_id == tenant_id]
         if workspace_id is not None:
             # Tenant-wide models (workspace_id is None) are always
             # visible to any workspace in the tenant; only sibling
@@ -154,9 +144,7 @@ class InMemoryModelRepository(ModelRepository):
     async def update(self, model: Model) -> None:
         self._rows[(model.tenant_id, model.id)] = model
 
-    async def delete(
-        self, *, tenant_id: TenantId, model_id: ModelId
-    ) -> bool:
+    async def delete(self, *, tenant_id: TenantId, model_id: ModelId) -> bool:
         return self._rows.pop((tenant_id, model_id), None) is not None
 
 
@@ -175,16 +163,12 @@ class InMemoryCredentialRepository(CredentialRepository):
     async def list(
         self, *, tenant_id: TenantId, limit: int = 100
     ) -> list[ModelCredential]:
-        return [
-            c for c in self._rows.values() if c.tenant_id == tenant_id
-        ][:limit]
+        return [c for c in self._rows.values() if c.tenant_id == tenant_id][:limit]
 
     async def update(self, credential: ModelCredential) -> None:
         self._rows[(credential.tenant_id, credential.id)] = credential
 
-    async def delete(
-        self, *, tenant_id: TenantId, credential_id: CredentialId
-    ) -> bool:
+    async def delete(self, *, tenant_id: TenantId, credential_id: CredentialId) -> bool:
         return self._rows.pop((tenant_id, credential_id), None) is not None
 
 
@@ -205,8 +189,7 @@ class InMemoryRoutingPolicyRepository(RoutingPolicyRepository):
     ) -> RoutingPolicy | None:
         for p in self._rows.values():
             if p.tenant_id == tenant_id and (
-                p.primary_model_id == model_id
-                or model_id in p.failover_model_ids
+                p.primary_model_id == model_id or model_id in p.failover_model_ids
             ):
                 return p
         return None
@@ -214,17 +197,13 @@ class InMemoryRoutingPolicyRepository(RoutingPolicyRepository):
     async def list(
         self, *, tenant_id: TenantId, limit: int = 100
     ) -> list[RoutingPolicy]:
-        return [
-            p for p in self._rows.values() if p.tenant_id == tenant_id
-        ][:limit]
+        return [p for p in self._rows.values() if p.tenant_id == tenant_id][:limit]
 
 
 class InMemoryQuotaCounterRepository(QuotaCounterRepository):
     def __init__(self) -> None:
         # (tenant_id, model_id, window_start) → QuotaCounter
-        self._rows: dict[
-            tuple[TenantId, ModelId, datetime], QuotaCounter
-        ] = {}
+        self._rows: dict[tuple[TenantId, ModelId, datetime], QuotaCounter] = {}
 
     async def get(
         self,
@@ -263,7 +242,7 @@ class InMemoryQuotaCounterRepository(QuotaCounterRepository):
             output_tokens=existing.output_tokens + output_tokens,
             requests=existing.requests + 1,
             created_at=existing.created_at,
-            updated_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(UTC),
         )
         self._rows[key] = updated
         return updated
@@ -301,9 +280,7 @@ class EchoLLMClient(LLMClient):
             from deos.modules.model.domain.errors import ModelError
 
             raise ModelError("forced failure", code=self.fail_code)
-        last_user = next(
-            (m for m in reversed(req.messages) if m.role == "user"), None
-        )
+        last_user = next((m for m in reversed(req.messages) if m.role == "user"), None)
         text = (last_user.content if last_user else "") or ""
         return ChatResponse(
             model=req.model,
@@ -334,10 +311,10 @@ __all__ = [
     "EchoClientFactory",
     "EchoLLMClient",
     "FixedClock",
+    "InMemoryCipher",
     "InMemoryCredentialRepository",
     "InMemoryModelRepository",
     "InMemoryQuotaCounterRepository",
     "InMemoryRoutingPolicyRepository",
-    "InMemoryCipher",
     "SequenceIds",
 ]

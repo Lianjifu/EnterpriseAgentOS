@@ -334,9 +334,7 @@ async def test_guard_approval_raises_approval_required() -> None:
     guard = ctx["guard"]
     ctx["evaluator"].invalidate(tenant_id=TenantId(TENANT_A))
     with pytest.raises(ApprovalRequiredError) as ei:
-        await guard.check(
-            actor=_user_actor(), action="tool:execute:clock", resource={}
-        )
+        await guard.check(actor=_user_actor(), action="tool:execute:clock", resource={})
     assert ei.value.code == "APPROVAL_REQUIRED"
     assert ei.value.status == 202
     # approval_id surfaced via details so HTTP layer can attach Location

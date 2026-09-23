@@ -10,26 +10,6 @@ from __future__ import annotations
 from uuid import uuid4
 
 import pytest
-
-from deos.modules.knowledge.application.chunker import FixedWindowChunker
-from deos.modules.knowledge.application.services import KnowledgeService
-from deos.modules.knowledge.domain.errors import (
-    KnowledgeAlreadyRevoked,
-    KnowledgeAssetNotFound,
-    KnowledgePackageNameConflict,
-    KnowledgePackageNotFound,
-)
-from deos.modules.knowledge.domain.events import (
-    KnowledgeAssetIngested,
-    KnowledgeAssetUploaded,
-    KnowledgePackageCreated,
-    KnowledgePackageRevoked,
-)
-from deos.modules.knowledge.domain.value_objects import (
-    KnowledgeAssetKind,
-    KnowledgeAssetStatus,
-    KnowledgePackageStatus,
-)
 from _knowledge_unit_in_memory import (
     DeterministicEmbedding,
     InMemoryKnowledgeRepository,
@@ -43,6 +23,27 @@ from eos_schema.ids import (
     TenantId,
     UserId,
     WorkspaceId,
+)
+
+from deos.modules.knowledge.application.chunker import FixedWindowChunker
+from deos.modules.knowledge.application.services import KnowledgeService
+from deos.modules.knowledge.domain.errors import (
+    KnowledgeAlreadyRevoked,
+    KnowledgeAssetNotFound,
+    KnowledgePackageNameConflict,
+    KnowledgePackageNotFound,
+    KnowledgeValidationError,
+)
+from deos.modules.knowledge.domain.events import (
+    KnowledgeAssetIngested,
+    KnowledgeAssetUploaded,
+    KnowledgePackageCreated,
+    KnowledgePackageRevoked,
+)
+from deos.modules.knowledge.domain.value_objects import (
+    KnowledgeAssetKind,
+    KnowledgeAssetStatus,
+    KnowledgePackageStatus,
 )
 
 
@@ -94,9 +95,7 @@ async def test_create_package_persists_and_publishes(env) -> None:
 
 async def test_create_package_duplicate_name_conflicts(env) -> None:
     tid, wid, _ = _ids()
-    await env["svc"].create_package.execute(
-        tenant_id=tid, workspace_id=wid, name="dup"
-    )
+    await env["svc"].create_package.execute(tenant_id=tid, workspace_id=wid, name="dup")
     with pytest.raises(KnowledgePackageNameConflict):
         await env["svc"].create_package.execute(
             tenant_id=tid, workspace_id=wid, name="dup"
@@ -117,10 +116,8 @@ async def test_get_package_unknown_workspace_returns_none(env) -> None:
 
 async def test_get_package_wrong_tenant_returns_none(env) -> None:
     tid, wid, _ = _ids()
-    other_tid = TenantId(uuid4())
-    await env["svc"].create_package.execute(
-        tenant_id=tid, workspace_id=wid, name="x"
-    )
+    TenantId(uuid4())
+    await env["svc"].create_package.execute(tenant_id=tid, workspace_id=wid, name="x")
     # When called directly on repo, an unknown tenant simply returns None.
     rows = await env["repo"].list_packages(tenant_id=tid, workspace_id=wid)
     assert isinstance(rows, list)
@@ -142,9 +139,7 @@ async def test_list_packages_filters_by_workspace_and_orders_desc(env) -> None:
 async def test_list_packages_rejects_bad_limit(env) -> None:
     tid, wid, _ = _ids()
     with pytest.raises(ValueError):
-        await env["svc"].list_packages.execute(
-            tenant_id=tid, workspace_id=wid, limit=0
-        )
+        await env["svc"].list_packages.execute(tenant_id=tid, workspace_id=wid, limit=0)
 
 
 # ── upload + ingest + search ─────────────────────────────────────────────
@@ -176,7 +171,7 @@ async def test_upload_asset_rejects_oversize_payload(env) -> None:
     pkg = await env["svc"].create_package.execute(
         tenant_id=tid, workspace_id=wid, name="p"
     )
-    with pytest.raises(Exception):
+    with pytest.raises(KnowledgeValidationError):
         await env["svc"].upload_asset.execute(
             tenant_id=tid,
             workspace_id=wid,
@@ -444,9 +439,7 @@ async def test_revoke_package_cascades_to_assets_and_chunks(env) -> None:
         tenant_id=tid, workspace_id=wid, package_id=pkg.id, actor_id=uid
     )
     assert revoked_pkg.status == KnowledgePackageStatus.REVOKED
-    assets = await env["repo"].list_assets_for_package(
-        tenant_id=tid, package_id=pkg.id
-    )
+    assets = await env["repo"].list_assets_for_package(tenant_id=tid, package_id=pkg.id)
     assert all(a.status == KnowledgeAssetStatus.REVOKED for a in assets)
     hits = await env["svc"].search_query(
         tenant_id=tid, workspace_id=wid, query="reset password"

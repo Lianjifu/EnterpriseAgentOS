@@ -290,12 +290,10 @@ class SkillDispatchAdapter(SkillDispatchPort):
                 poll_session = maker()
                 try:
                     poll_service = factory(poll_session)
-                    inv: SkillInvocation = (
-                        await poll_service.get_invocation().execute(
-                            tenant_id=tenant_id,
-                            workspace_id=workspace_id,
-                            invocation_id=inv_id,
-                        )
+                    inv: SkillInvocation = await poll_service.get_invocation().execute(
+                        tenant_id=tenant_id,
+                        workspace_id=workspace_id,
+                        invocation_id=inv_id,
                     )
                 finally:
                     await poll_session.close()

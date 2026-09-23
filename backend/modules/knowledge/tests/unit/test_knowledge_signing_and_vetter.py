@@ -89,9 +89,7 @@ def test_tampered_field_breaks_signature() -> None:
         network_policy=p.network_policy,
     )
     with pytest.raises(InvalidSignature):
-        verify_signature(
-            tampered, signature_b64=sig, public_key=key.public_key()
-        )
+        verify_signature(tampered, signature_b64=sig, public_key=key.public_key())
 
 
 def test_tampered_asset_ids_breaks_signature() -> None:
@@ -110,9 +108,7 @@ def test_tampered_asset_ids_breaks_signature() -> None:
         network_policy=p.network_policy,
     )
     with pytest.raises(InvalidSignature):
-        verify_signature(
-            swapped, signature_b64=sig, public_key=key.public_key()
-        )
+        verify_signature(swapped, signature_b64=sig, public_key=key.public_key())
 
 
 def test_wrong_public_key_breaks_signature() -> None:
@@ -120,9 +116,7 @@ def test_wrong_public_key_breaks_signature() -> None:
     key = _new_key()
     sig = sign_payload(p, private_key=key)
     with pytest.raises(InvalidSignature):
-        verify_signature(
-            p, signature_b64=sig, public_key=_new_key().public_key()
-        )
+        verify_signature(p, signature_b64=sig, public_key=_new_key().public_key())
 
 
 # InMemoryTrustStoreKnowledgeVetter -------------------------------------------
@@ -224,9 +218,7 @@ async def test_inmemory_vetter_rejects_tampered_metadata() -> None:
 async def test_local_trust_store_vetter_accepts(tmp_path: Path) -> None:
     key = _new_key()
     kid = public_key_id(key.public_key())
-    (tmp_path / f"{kid}.pub.pem").write_bytes(
-        public_key_to_pem(key.public_key())
-    )
+    (tmp_path / f"{kid}.pub.pem").write_bytes(public_key_to_pem(key.public_key()))
     vetter = LocalTrustStoreKnowledgeVetter(trust_dir=str(tmp_path))
     await vetter.vet(_signed_package(key))
 
@@ -234,9 +226,7 @@ async def test_local_trust_store_vetter_accepts(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_local_trust_store_rejects_wrong_filename(tmp_path: Path) -> None:
     key = _new_key()
-    (tmp_path / "deadbeef.pub.pem").write_bytes(
-        public_key_to_pem(key.public_key())
-    )
+    (tmp_path / "deadbeef.pub.pem").write_bytes(public_key_to_pem(key.public_key()))
     with pytest.raises(KnowledgeSignerUntrusted):
         LocalTrustStoreKnowledgeVetter(trust_dir=str(tmp_path))
 

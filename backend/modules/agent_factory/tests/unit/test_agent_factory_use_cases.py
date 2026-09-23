@@ -86,8 +86,10 @@ async def test_create_template_persists_and_publishes_event() -> None:
         default_system_prompt="hi",
         created_by=_USER,
     )
-    assert any(getattr(e, "TOPIC", "") == "agent_factory.template.created"
-               for e in svc2.create_template.publisher.published)
+    assert any(
+        getattr(e, "TOPIC", "") == "agent_factory.template.created"
+        for e in svc2.create_template.publisher.published
+    )
 
 
 @pytest.mark.asyncio
@@ -199,9 +201,7 @@ async def test_publish_then_release_with_eval_passes_gate() -> None:
         version_tag="1.0.0",
         created_by=_USER,
     )
-    pub_ver = await svc.publish_version.execute(
-        tenant_id=_TENANT, version_id=ver.id
-    )
+    pub_ver = await svc.publish_version.execute(tenant_id=_TENANT, version_id=ver.id)
     assert pub_ver.status is AgentVersionStatus.PUBLISHED
     # seed a passing eval
     eval_q.add(
@@ -225,7 +225,10 @@ async def test_publish_then_release_with_eval_passes_gate() -> None:
     fresh = await svc.get_version.execute(tenant_id=_TENANT, version_id=pub_ver.id)
     assert fresh.status is AgentVersionStatus.RELEASED
     # event published
-    assert any(getattr(e, "TOPIC", "") == "agent_factory.version.released" for e in pub.published)
+    assert any(
+        getattr(e, "TOPIC", "") == "agent_factory.version.released"
+        for e in pub.published
+    )
 
 
 @pytest.mark.asyncio
@@ -247,9 +250,7 @@ async def test_release_without_eval_returns_422() -> None:
         version_tag="1.0.0",
         created_by=_USER,
     )
-    pub_ver = await svc.publish_version.execute(
-        tenant_id=_TENANT, version_id=ver.id
-    )
+    pub_ver = await svc.publish_version.execute(tenant_id=_TENANT, version_id=ver.id)
     with pytest.raises(BusinessRuleError) as exc:
         await svc.release_version.execute(
             tenant_id=_TENANT,
@@ -280,9 +281,7 @@ async def test_release_with_below_threshold_returns_422() -> None:
         version_tag="1.0.0",
         created_by=_USER,
     )
-    pub_ver = await svc.publish_version.execute(
-        tenant_id=_TENANT, version_id=ver.id
-    )
+    pub_ver = await svc.publish_version.execute(tenant_id=_TENANT, version_id=ver.id)
     eval_q.add(
         tenant_id=_TENANT,
         template_id=tpl.id,
@@ -320,9 +319,7 @@ async def test_release_with_failed_status_returns_422() -> None:
         version_tag="1.0.0",
         created_by=_USER,
     )
-    pub_ver = await svc.publish_version.execute(
-        tenant_id=_TENANT, version_id=ver.id
-    )
+    pub_ver = await svc.publish_version.execute(tenant_id=_TENANT, version_id=ver.id)
     # score ok but status=failed → gate refuses
     eval_q.add(
         tenant_id=_TENANT,
@@ -467,12 +464,8 @@ async def test_list_templates_filters_workspace() -> None:
         default_system_prompt="hi",
         created_by=_USER,
     )
-    rows_a = await svc.list_templates.execute(
-        tenant_id=_TENANT, workspace_id=ws_a
-    )
-    rows_b = await svc.list_templates.execute(
-        tenant_id=_TENANT, workspace_id=ws_b
-    )
+    rows_a = await svc.list_templates.execute(tenant_id=_TENANT, workspace_id=ws_a)
+    rows_b = await svc.list_templates.execute(tenant_id=_TENANT, workspace_id=ws_b)
     assert {t.name for t in rows_a} == {"a1"}
     assert {t.name for t in rows_b} == {"b1"}
 

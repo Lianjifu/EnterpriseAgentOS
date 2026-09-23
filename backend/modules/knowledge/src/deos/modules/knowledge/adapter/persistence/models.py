@@ -17,7 +17,6 @@ for audit / replay.
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -61,9 +60,7 @@ class KnowledgePackageORM(TenantScopedMixin, Base):
         nullable=False,
         server_default=text("'{}'::jsonb"),
     )
-    created_by: Mapped[UUID | None] = mapped_column(
-        PgUUID(as_uuid=True), nullable=True
-    )
+    created_by: Mapped[UUID | None] = mapped_column(PgUUID(as_uuid=True), nullable=True)
     # Tier B signing triple — mirrors ``skill_packages.signature``.
     # NOT NULL DEFAULT '' so existing rows satisfy the constraint;
     # partial-triple invariant is enforced in ``KnowledgePackage.create()``.
@@ -134,7 +131,7 @@ class KnowledgeAssetORM(TenantScopedMixin, Base):
 
 # Eagerly register pgvector so the Vector() type resolves.
 register_pgvector()
-from pgvector.sqlalchemy import Vector  # noqa: E402
+from pgvector.sqlalchemy import Vector
 
 
 class KnowledgeChunkORM(TenantScopedMixin, Base):
@@ -157,9 +154,7 @@ class KnowledgeChunkORM(TenantScopedMixin, Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     char_start: Mapped[int] = mapped_column(Integer, nullable=False)
     char_end: Mapped[int] = mapped_column(Integer, nullable=False)
-    embedding: Mapped[list[float]] = mapped_column(
-        Vector(1536), nullable=False
-    )
+    embedding: Mapped[list[float]] = mapped_column(Vector(1536), nullable=False)
 
     __table_args__ = (
         make_composite_index("workspace_id", "asset_id", "ordinal"),

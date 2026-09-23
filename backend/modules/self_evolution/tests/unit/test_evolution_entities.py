@@ -76,26 +76,38 @@ def test_fingerprint_is_sha256_hex_64() -> None:
 
 def test_fingerprint_is_deterministic_and_canonical() -> None:
     a = compute_fingerprint(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload={"a": 1, "b": 2}  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload={"a": 1, "b": 2},  # type: ignore[arg-type]
     )
     b = compute_fingerprint(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload={"b": 2, "a": 1}  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload={"b": 2, "a": 1},  # type: ignore[arg-type]
     )
     assert a == b
 
 
 def test_fingerprint_differs_by_tenant_and_kind_and_payload() -> None:
     base = compute_fingerprint(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload={"x": 1}  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload={"x": 1},  # type: ignore[arg-type]
     )
     other_tenant = compute_fingerprint(
-        tenant_id=UUID(int=999), kind=EvolveKind.MEMORY_PROMOTE, payload={"x": 1}  # type: ignore[arg-type]
+        tenant_id=UUID(int=999),
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload={"x": 1},  # type: ignore[arg-type]
     )
     other_kind = compute_fingerprint(
-        tenant_id=TENANT, kind=EvolveKind.SKILL_PATCH, payload={"x": 1}  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        kind=EvolveKind.SKILL_PATCH,
+        payload={"x": 1},  # type: ignore[arg-type]
     )
     other_payload = compute_fingerprint(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload={"x": 2}  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload={"x": 2},  # type: ignore[arg-type]
     )
     assert base != other_tenant
     assert base != other_kind

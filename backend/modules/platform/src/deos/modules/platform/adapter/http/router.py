@@ -84,9 +84,7 @@ def build_router() -> APIRouter:
     ) -> SubscriptionResponse | None:
         from eos_schema.ids import TenantId
 
-        sub = await svc.get_my_subscription(
-            tenant_id=TenantId(x_tenant_id)
-        )
+        sub = await svc.get_my_subscription(tenant_id=TenantId(x_tenant_id))
         if sub is None:
             return None
         return subscription_to_dto(sub)
@@ -167,9 +165,7 @@ def build_router() -> APIRouter:
         if match is None:
             raise HTTPException(
                 status_code=404,
-                detail=TenantSettingNotFound(
-                    f"setting {key!r} not found"
-                ).code,
+                detail=TenantSettingNotFound(f"setting {key!r} not found").code,
             )
         return tenant_setting_to_dto(match)
 

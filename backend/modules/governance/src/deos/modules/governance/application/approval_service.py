@@ -79,9 +79,7 @@ class ApprovalService:
         )
         return approval
 
-    async def get(
-        self, *, tenant_id: TenantId, approval_id: ApprovalId
-    ) -> Approval:
+    async def get(self, *, tenant_id: TenantId, approval_id: ApprovalId) -> Approval:
         approval = await self._repo.get(tenant_id=tenant_id, approval_id=approval_id)
         if approval is None:
             raise ApprovalNotFound(
@@ -224,7 +222,6 @@ class ApprovalService:
                 "status": event.status.value,
                 "occurred_at": event.occurred_at.isoformat(),
                 "event_id": str(event.event_id),
-                **({} if force_actor else {}),
             },
         )
 

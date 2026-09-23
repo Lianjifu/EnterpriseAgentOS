@@ -46,9 +46,15 @@ def upgrade() -> None:
         sa.Column("code", sa.String(64), nullable=False),
         sa.Column("display_name", sa.String(256), nullable=False),
         sa.Column("description", sa.Text, nullable=False, server_default=sa.text("''")),
-        sa.Column("limits", postgresql.JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")),
-        sa.Column("features", postgresql.JSONB, nullable=False, server_default=sa.text("'[]'::jsonb")),
-        sa.Column("price_monthly_usd", sa.Numeric(10, 2), nullable=False, server_default=sa.text("0")),
+        sa.Column(
+            "limits", postgresql.JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")
+        ),
+        sa.Column(
+            "features", postgresql.JSONB, nullable=False, server_default=sa.text("'[]'::jsonb")
+        ),
+        sa.Column(
+            "price_monthly_usd", sa.Numeric(10, 2), nullable=False, server_default=sa.text("0")
+        ),
         sa.Column(
             "status",
             sa.String(16),
@@ -138,9 +144,7 @@ def upgrade() -> None:
             name="ck_subscriptions_status_enum",
         ),
     )
-    op.create_index(
-        "ix_subscriptions_tenant_id", "subscriptions", ["tenant_id"]
-    )
+    op.create_index("ix_subscriptions_tenant_id", "subscriptions", ["tenant_id"])
     op.create_index(
         "ix_subscriptions_tenant_id_plan_id",
         "subscriptions",
@@ -174,18 +178,14 @@ def upgrade() -> None:
             name="ck_tenant_settings_key_length",
         ),
     )
-    op.create_index(
-        "ix_tenant_settings_tenant_id", "tenant_settings", ["tenant_id"]
-    )
+    op.create_index("ix_tenant_settings_tenant_id", "tenant_settings", ["tenant_id"])
 
 
 def downgrade() -> None:
     op.drop_index("ix_tenant_settings_tenant_id", table_name="tenant_settings")
     op.drop_table("tenant_settings")
 
-    op.drop_index(
-        "ix_subscriptions_tenant_id_plan_id", table_name="subscriptions"
-    )
+    op.drop_index("ix_subscriptions_tenant_id_plan_id", table_name="subscriptions")
     op.drop_index("ix_subscriptions_tenant_id", table_name="subscriptions")
     op.drop_table("subscriptions")
 

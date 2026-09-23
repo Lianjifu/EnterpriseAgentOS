@@ -49,7 +49,9 @@ def _make_key() -> Ed25519PrivateKey:
     return Ed25519PrivateKey.generate()
 
 
-def _make_package(*, signature: str = "", signer_key_id: str = "", image_digest: str = ""):
+def _make_package(
+    *, signature: str = "", signer_key_id: str = "", image_digest: str = ""
+):
     return SkillPackage.create(
         tenant_id=uuid4(),
         workspace_id=uuid4(),
@@ -174,7 +176,9 @@ def test_local_trust_store_vetter_raises_when_dir_missing(tmp_path: Path) -> Non
         LocalTrustStoreSkillVetter(trust_dir=missing)
 
 
-async def test_local_trust_store_vetter_caches_key_for_repeat_lookups(tmp_path: Path) -> None:
+async def test_local_trust_store_vetter_caches_key_for_repeat_lookups(
+    tmp_path: Path,
+) -> None:
     """Trust dir is scanned once at construction; repeat ``vet`` calls
     use the in-memory cache (no re-read of the PEM file)."""
     key = _make_key()

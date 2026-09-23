@@ -84,9 +84,7 @@ class CreatePlanUseCase:
         if existing is not None:
             from deos.modules.orchestration.domain.errors import PlanNameConflict
 
-            raise PlanNameConflict(
-                f"plan name {name!r} already exists in tenant"
-            )
+            raise PlanNameConflict(f"plan name {name!r} already exists in tenant")
 
         plan = Plan.create(
             tenant_id=tenant_id,

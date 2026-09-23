@@ -17,7 +17,6 @@ from pathlib import Path
 import pytest
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-
 from eos_pack_signing import (
     load_private_key_pem,
     load_public_key_pem,
@@ -264,7 +263,9 @@ def test_pack_trust_seed_copies_pub_with_canonical_filename(tmp_path: Path) -> N
     # And the bytes match the original pub key (defends against copy corruption).
     assert load_public_key_pem(expected.read_bytes()).public_bytes(
         __import__("cryptography").hazmat.primitives.serialization.Encoding.PEM,
-        __import__("cryptography").hazmat.primitives.serialization.PublicFormat.SubjectPublicKeyInfo,
+        __import__(
+            "cryptography"
+        ).hazmat.primitives.serialization.PublicFormat.SubjectPublicKeyInfo,
     ) == public_key_to_pem(key.public_key())
 
 

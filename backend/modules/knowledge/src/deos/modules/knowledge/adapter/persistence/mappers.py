@@ -33,7 +33,6 @@ from deos.modules.knowledge.domain.value_objects import (
     KnowledgePackageStatus,
 )
 
-
 # ── KnowledgePackage ─────────────────────────────────────────────────────
 
 

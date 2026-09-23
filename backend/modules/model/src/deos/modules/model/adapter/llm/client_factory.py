@@ -17,12 +17,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from eos_llm import LLMClient, MockLLMClient, OpenAICompatibleClient
+from eos_llm import LLMClient, LLMConfig, MockLLMClient, OpenAICompatibleClient
 
 from deos.modules.model.application.ports import ModelClientFactory
 from deos.modules.model.domain.entities import Model
 from deos.modules.model.domain.value_objects import ModelProvider
-
 
 # Per-provider default ``base_url`` when the credential didn't carry one.
 _PROVIDER_BASE_URLS: dict[ModelProvider, str] = {
@@ -54,9 +53,11 @@ class _DefaultClientFactory(ModelClientFactory):
             or "https://api.openai.com/v1"
         )
         return OpenAICompatibleClient(
-            api_key=api_key,
-            base_url=resolved_base_url,
-            timeout_seconds=self.request_timeout_seconds,
+            LLMConfig(
+                base_url=resolved_base_url,
+                api_key=api_key,
+                timeout_seconds=int(self.request_timeout_seconds),
+            )
         )
 
 
@@ -64,9 +65,7 @@ def build_default_client_factory(
     *, request_timeout_seconds: float = 30.0
 ) -> ModelClientFactory:
     """Factory-of-factories used by the composition container."""
-    return _DefaultClientFactory(
-        request_timeout_seconds=request_timeout_seconds
-    )
+    return _DefaultClientFactory(request_timeout_seconds=request_timeout_seconds)
 
 
 __all__ = ["_DefaultClientFactory", "build_default_client_factory"]

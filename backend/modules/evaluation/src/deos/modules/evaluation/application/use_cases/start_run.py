@@ -61,13 +61,9 @@ class StartEvalRunUseCase:
             )
 
         # ── resolve dataset + case count ──────────────────────────────
-        ds = await self.dataset_repo.get(
-            tenant_id=tenant_id, dataset_id=dataset_id
-        )
+        ds = await self.dataset_repo.get(tenant_id=tenant_id, dataset_id=dataset_id)
         if ds is None:
-            raise EvalDatasetNotFound(
-                f"eval dataset {dataset_id} not found in tenant"
-            )
+            raise EvalDatasetNotFound(f"eval dataset {dataset_id} not found in tenant")
         case_count = ds.case_count
 
         # ── idempotency: same key → return prior run ─────────────────
@@ -100,9 +96,7 @@ class StartEvalRunUseCase:
         saved = await self.run_repo.add(run)
 
         # ── fire-and-forget background runner ────────────────────────
-        asyncio.create_task(
-            self.runner.run(tenant_id=tenant_id, run_id=saved.id)
-        )
+        asyncio.create_task(self.runner.run(tenant_id=tenant_id, run_id=saved.id))
 
         return saved
 

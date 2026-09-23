@@ -25,6 +25,12 @@ from uuid import UUID, uuid4
 
 import pytest
 import pytest_asyncio
+from eos_schema.ids import (
+    DecisionEventId,
+    TenantId,
+    UserId,
+    WorkspaceId,
+)
 from sqlalchemy import text
 
 from deos.modules.governance.adapter.persistence.repositories import (
@@ -42,7 +48,6 @@ from deos.modules.governance.application.policy_service import PolicyService
 from deos.modules.governance.application.ports import (
     ClockPort,
     IdGeneratorPort,
-    PolicyEventPublisher,
 )
 from deos.modules.governance.domain.entities import (
     Approval,
@@ -54,14 +59,6 @@ from deos.modules.governance.domain.value_objects import (
     PolicyEffect,
     PolicySubject,
 )
-from eos_schema.ids import (
-    DecisionEventId,
-    PolicyId,
-    TenantId,
-    UserId,
-    WorkspaceId,
-)
-
 
 # ── Fakes ──────────────────────────────────────────────────────────────
 
@@ -99,7 +96,9 @@ class RecordingPublisher:
 async def _truncate(session_factory):
     """Clear governance tables before each test for hermetic isolation."""
     async with session_factory() as session:
-        await session.execute(text("TRUNCATE policies, approvals, decision_events, audit_log"))
+        await session.execute(
+            text("TRUNCATE policies, approvals, decision_events, audit_log")
+        )
         await session.commit()
     yield
 
@@ -336,9 +335,7 @@ async def test_decision_events_accumulate(decision_repo):
         )
         await decision_repo.append(ev)
 
-    rows = await decision_repo.list_by_tenant(
-        tenant_id=TENANT_A, limit=10
-    )
+    rows = await decision_repo.list_by_tenant(tenant_id=TENANT_A, limit=10)
     assert len(rows) == 3
 
 

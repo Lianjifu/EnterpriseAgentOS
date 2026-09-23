@@ -93,9 +93,7 @@ class TestPlan:
 
     def test_negative_price_rejected(self) -> None:
         with pytest.raises(ValueError, match=">= 0"):
-            Plan.create(
-                code="bad", display_name="Bad", price_monthly_usd=Decimal(-1)
-            )
+            Plan.create(code="bad", display_name="Bad", price_monthly_usd=Decimal(-1))
 
     def test_is_frozen(self) -> None:
         plan = Plan.create(code="free", display_name="Free")
@@ -110,9 +108,7 @@ class TestSubscription:
     def test_assign_defaults(self) -> None:
         tenant = _tenant_id()
         plan = _plan_id()
-        sub = Subscription.assign(
-            tenant_id=tenant, plan_id=plan, plan_code="free"
-        )
+        sub = Subscription.assign(tenant_id=tenant, plan_id=plan, plan_code="free")
         assert sub.tenant_id == tenant
         assert sub.plan_id == plan
         assert sub.plan_code == "free"
@@ -155,9 +151,7 @@ class TestSubscription:
 class TestTenantSetting:
     def test_upsert_creates(self) -> None:
         tenant = _tenant_id()
-        setting = TenantSetting.upsert(
-            tenant_id=tenant, key="rate_limit", value=42
-        )
+        setting = TenantSetting.upsert(tenant_id=tenant, key="rate_limit", value=42)
         assert setting.tenant_id == tenant
         assert setting.key == "rate_limit"
         assert setting.value == 42
@@ -191,14 +185,10 @@ class TestTenantSetting:
 
     def test_key_too_long_rejected(self) -> None:
         with pytest.raises(ValueError, match="1..128"):
-            TenantSetting.upsert(
-                tenant_id=_tenant_id(), key="k" * 129, value=1
-            )
+            TenantSetting.upsert(tenant_id=_tenant_id(), key="k" * 129, value=1)
 
     def test_is_frozen(self) -> None:
-        setting = TenantSetting.upsert(
-            tenant_id=_tenant_id(), key="x", value=1
-        )
+        setting = TenantSetting.upsert(tenant_id=_tenant_id(), key="x", value=1)
         with pytest.raises((AttributeError, Exception)):
             setting.value = 99  # type: ignore[misc]
 
@@ -224,8 +214,7 @@ class TestErrors:
 
         assert PlanAlreadyExists("x").code == "PLAN_ALREADY_EXISTS"
         assert (
-            SubscriptionInvalidTransition("x").code
-            == "SUBSCRIPTION_INVALID_TRANSITION"
+            SubscriptionInvalidTransition("x").code == "SUBSCRIPTION_INVALID_TRANSITION"
         )
         assert TenantSettingNotFound("x").code == "TENANT_SETTING_NOT_FOUND"
         assert TenantSettingConflict("x").code == "TENANT_SETTING_CONFLICT"

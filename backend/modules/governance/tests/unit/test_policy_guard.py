@@ -2,16 +2,8 @@
 
 from __future__ import annotations
 
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from eos_kernel.errors import ActionDeniedError, ApprovalRequiredError
-from eos_schema.ids import TenantId, UserId
-from eos_vault.actor import ActorContext
-
-from deos.modules.governance.adapter.guard.policy_guard import PolicyGuard
-from deos.modules.governance.application.policy_evaluator import PolicyEvaluator
-from deos.modules.governance.domain.entities import PolicyRule
-from deos.modules.governance.domain.value_objects import PolicyEffect, PolicySubject
 from _governance_unit_in_memory import (
     FixedClock,
     InMemoryApprovalRepository,
@@ -20,6 +12,14 @@ from _governance_unit_in_memory import (
     RecordingPublisher,
     SequenceIds,
 )
+from eos_kernel.errors import ActionDeniedError, ApprovalRequiredError
+from eos_schema.ids import TenantId, UserId
+from eos_vault.actor import ActorContext
+
+from deos.modules.governance.adapter.guard.policy_guard import PolicyGuard
+from deos.modules.governance.application.policy_evaluator import PolicyEvaluator
+from deos.modules.governance.domain.entities import PolicyRule
+from deos.modules.governance.domain.value_objects import PolicyEffect, PolicySubject
 
 TID = TenantId(UUID("00000000-0000-0000-0000-000000000001"))
 USER = UserId(UUID("00000000-0000-0000-0000-00000000000a"))
@@ -43,6 +43,7 @@ def _guard_with_rule(rule: PolicyRule | None) -> PolicyGuard:
         # entity.  Just add it.
         pass
     from asyncio import get_event_loop  # noqa: F401  (avoid unused import linter)
+
     return PolicyGuard(
         evaluator=PolicyEvaluator(
             policy_repo=repo,

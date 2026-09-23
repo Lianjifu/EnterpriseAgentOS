@@ -167,22 +167,14 @@ class EvalCase:
         if not input or not input.strip():
             raise ValueError("EvalCase.input must be non-empty")
         if len(input) > MAX_INPUT_LEN:
-            raise ValueError(
-                f"EvalCase.input must be <= {MAX_INPUT_LEN} chars"
-            )
+            raise ValueError(f"EvalCase.input must be <= {MAX_INPUT_LEN} chars")
         if len(expected_keywords) > MAX_KEYWORDS:
-            raise ValueError(
-                f"EvalCase.expected_keywords must be <= {MAX_KEYWORDS}"
-            )
+            raise ValueError(f"EvalCase.expected_keywords must be <= {MAX_KEYWORDS}")
         for kw in expected_keywords:
             if not kw or len(kw) > MAX_KEYWORD_LEN:
-                raise ValueError(
-                    f"EvalCase keyword must be 1..{MAX_KEYWORD_LEN} chars"
-                )
+                raise ValueError(f"EvalCase keyword must be 1..{MAX_KEYWORD_LEN} chars")
         if not 0.0 <= min_keywords_hit_ratio <= 1.0:
-            raise ValueError(
-                "EvalCase.min_keywords_hit_ratio must be in [0.0, 1.0]"
-            )
+            raise ValueError("EvalCase.min_keywords_hit_ratio must be in [0.0, 1.0]")
         if max_latency_ms <= 0:
             raise ValueError("EvalCase.max_latency_ms must be > 0")
         ts = now or _utcnow()
@@ -273,8 +265,9 @@ class EvalRun:
             raise EvaluationError(
                 f"cannot mark running from status={self.status.value!r}"
             )
-        return _replace(self, status=EvalRunStatus.RUNNING,
-                        started_at=ts, updated_at=ts)
+        return _replace(
+            self, status=EvalRunStatus.RUNNING, started_at=ts, updated_at=ts
+        )
 
     def mark_completed(
         self,

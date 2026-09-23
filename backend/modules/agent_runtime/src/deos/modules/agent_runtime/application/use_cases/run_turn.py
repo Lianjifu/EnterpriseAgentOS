@@ -179,9 +179,7 @@ class RunTurnUseCase:
                 session, recalled_memories, recalled_knowledge
             )
         elif recalled_memories:
-            system_prompt = build_system_prompt_with_memory(
-                session, recalled_memories
-            )
+            system_prompt = build_system_prompt_with_memory(session, recalled_memories)
         elif recalled_knowledge:
             system_prompt = build_system_prompt_with_knowledge(
                 session, recalled_knowledge

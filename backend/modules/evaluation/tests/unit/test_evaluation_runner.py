@@ -58,7 +58,13 @@ def _service(
     *,
     responses: dict[str, str] | None = None,
     threshold: float = 0.6,
-) -> tuple[EvaluationService, InMemoryEvalDatasetRepository, InMemoryEvalRunRepository, FakeSubAgentPort, RecordingPublisher]:
+) -> tuple[
+    EvaluationService,
+    InMemoryEvalDatasetRepository,
+    InMemoryEvalRunRepository,
+    FakeSubAgentPort,
+    RecordingPublisher,
+]:
     ds_repo = InMemoryEvalDatasetRepository()
     run_repo = InMemoryEvalRunRepository()
     sub_agent = FakeSubAgentPort(responses=responses or {})
@@ -178,6 +184,7 @@ async def test_runner_app_error_per_case_does_not_abort_run() -> None:
         async def run_turn_to_completion(self, **kwargs):  # type: ignore[no-untyped-def]
             if kwargs["user_input"] == "boom":
                 from eos_kernel.errors import ExternalServiceError
+
                 raise ExternalServiceError("upstream timeout")
             return await super().run_turn_to_completion(**kwargs)
 
@@ -299,9 +306,7 @@ async def test_get_run_unknown_returns_404() -> None:
     svc, _ds, run_repo, *_ = _service()
     uc: GetEvalRunUseCase = svc.get_run  # type: ignore[assignment]
     with pytest.raises(EvalRunNotFound):
-        await uc.execute(
-            tenant_id=_TENANT, run_id=EvalRunId(uuid4())
-        )
+        await uc.execute(tenant_id=_TENANT, run_id=EvalRunId(uuid4()))
     _ = run_repo  # keep linter happy
 
 

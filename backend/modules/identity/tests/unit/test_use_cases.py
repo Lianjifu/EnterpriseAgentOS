@@ -6,6 +6,14 @@ import asyncio
 from uuid import uuid4
 
 import pytest
+from _identity_unit_in_memory import (
+    FakeAccessTokenIssuer,
+    FakeHasher,
+    InMemoryAPIKeyRepository,
+    InMemoryTenantRepository,
+    InMemoryUserRepository,
+    InMemoryWorkspaceRepository,
+)
 
 from deos.modules.identity.application.services import IdentityService
 from deos.modules.identity.application.use_cases.create_tenant import (
@@ -16,15 +24,6 @@ from deos.modules.identity.domain.errors import (
     TenantAlreadyExists,
     UserAlreadyExists,
     UserNotFound,
-)
-
-from _identity_unit_in_memory import (
-    FakeAccessTokenIssuer,
-    FakeHasher,
-    InMemoryAPIKeyRepository,
-    InMemoryTenantRepository,
-    InMemoryUserRepository,
-    InMemoryWorkspaceRepository,
 )
 
 

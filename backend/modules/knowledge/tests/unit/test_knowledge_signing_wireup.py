@@ -32,7 +32,6 @@ from deos.modules.knowledge.adapter.persistence.mappers import (
     package_to_domain,
     package_to_orm,
 )
-from deos.modules.knowledge.adapter.persistence.models import KnowledgePackageORM
 from deos.modules.knowledge.application.use_cases.create_package import (
     CreateKnowledgePackageUseCase,
 )
@@ -70,9 +69,7 @@ class _StubRepo:
             raise KnowledgePackageNameConflict(
                 f"knowledge package '{package.name}' already exists"
             )
-        self.packages[(package.tenant_id, package.workspace_id, package.name)] = (
-            package
-        )
+        self.packages[(package.tenant_id, package.workspace_id, package.name)] = package
         return package
 
 

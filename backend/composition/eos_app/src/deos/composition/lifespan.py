@@ -128,9 +128,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             )
 
             knowledge_adapter: object | None = None
-            knowledge_factory = getattr(
-                app.state, "knowledge_service_factory", None
-            )
+            knowledge_factory = getattr(app.state, "knowledge_service_factory", None)
             if knowledge_factory is not None:
                 try:
                     knowledge_adapter = KnowledgeServiceAdapter(
@@ -385,9 +383,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
 
     orchestration_bus = container.bus()
-    orchestration_publisher = MessagingOrchestrationEventPublisher(
-        orchestration_bus
-    )
+    orchestration_publisher = MessagingOrchestrationEventPublisher(orchestration_bus)
 
     class _OrchestrationFactory:
         def __init__(self) -> None:
@@ -429,9 +425,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 condition_evaluator=SafeConditionEvaluator(),
                 publisher=self._publisher,
                 policy_guard=self._policy_guard,
-                max_total_steps=(
-                    container.settings.orchestration_max_total_steps
-                ),
+                max_total_steps=(container.settings.orchestration_max_total_steps),
                 default_step_timeout_seconds=(
                     container.settings.orchestration_default_step_timeout_seconds
                 ),
@@ -472,9 +466,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 dataset_repo=ds_repo,
                 sub_agent=sub_agent,
                 publisher=self._publisher,
-                scoring_threshold=(
-                    container.settings.agent_factory_eval_score_min
-                ),
+                scoring_threshold=(container.settings.agent_factory_eval_score_min),
                 concurrency=container.settings.evaluation_runner_concurrency,
                 case_timeout_seconds=(
                     container.settings.evaluation_case_default_timeout_seconds
@@ -565,9 +557,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 evaluation_query=evaluation_query,
                 publisher=self._publisher,
                 policy_guard=self._policy_guard,
-                eval_score_min=(
-                    container.settings.agent_factory_eval_score_min
-                ),
+                eval_score_min=(container.settings.agent_factory_eval_score_min),
             )
 
     def _build_evaluation_query(sf):  # type: ignore[no-untyped-def]
@@ -659,13 +649,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             audit_consumer = container.kafka_audit_consumer()
             await audit_consumer.start()
             app.state.audit_consumer = audit_consumer
-            _log.info(
-                "kafka audit consumer active (group=%s)", audit_consumer.group_id
-            )
+            _log.info("kafka audit consumer active (group=%s)", audit_consumer.group_id)
         else:
-            _log.info(
-                "kafka audit producer active; consumer disabled (multi-replica)"
-            )
+            _log.info("kafka audit producer active; consumer disabled (multi-replica)")
 
     # ── P9 observability subscriber (passive; never raises back) ────────
     obs_recorder = ObservabilityRecorder(
@@ -701,10 +687,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         dispatch = ChannelDispatchSubscriber(
             channel_repository=channel_service_obj.channel_repo,
             agent_runtime_factory=ar_factory,
-            outbound_registry_getter=lambda: getattr(
-                app.state, "channel_outbound_registry", {}
-            )
-            or {},
+            outbound_registry_getter=lambda: (
+                getattr(app.state, "channel_outbound_registry", {}) or {}
+            ),
             clock=container.clock(),
             open_session=container.session_factory().maker,
         )
@@ -775,9 +760,7 @@ async def _seed_default_plans(container: Container) -> None:
         _log.exception("seed_default_plans failed; continuing boot")
 
 
-async def _seed_builtin_eval_datasets(
-    app: FastAPI, container: Container
-) -> None:
+async def _seed_builtin_eval_datasets(app: FastAPI, container: Container) -> None:
     """Seed the 50-case golden dataset for every existing tenant.
 
     Idempotent: skips tenants that already have a ``golden-default``
@@ -941,9 +924,7 @@ async def _seed_office_skill_packs(app: FastAPI, container: Container) -> None:
             tenant_id=demo_tenant.id, limit=1, offset=0
         )
         if not workspaces:
-            _log.info(
-                "demo workspace not present; skipping office skill pack seed"
-            )
+            _log.info("demo workspace not present; skipping office skill pack seed")
             return
         demo_workspace = workspaces[0]
 
@@ -1063,9 +1044,7 @@ async def _seed_office_knowledge_packs(app: FastAPI, container: Container) -> No
     if not packs_root.is_absolute():
         packs_root = (Path(__file__).parents[3] / packs_root).resolve()
     if not packs_root.is_dir():
-        _log.info(
-            "office knowledge packs root %s does not exist; skipping", packs_root
-        )
+        _log.info("office knowledge packs root %s does not exist; skipping", packs_root)
         return
 
     vetter = container.knowledge_vetter()
@@ -1092,9 +1071,7 @@ async def _seed_office_knowledge_packs(app: FastAPI, container: Container) -> No
             tenant_id=demo_tenant.id, limit=1, offset=0
         )
         if not workspaces:
-            _log.info(
-                "demo workspace not present; skipping office knowledge pack seed"
-            )
+            _log.info("demo workspace not present; skipping office knowledge pack seed")
             return
         demo_workspace = workspaces[0]
 
@@ -1141,9 +1118,7 @@ async def _seed_office_knowledge_packs(app: FastAPI, container: Container) -> No
         except KnowledgeValidationError as exc:
             rejected.append((pack_dir.name, f"INVALID_KNOWLEDGE_SPEC: {exc}"))
         except KnowledgeSignatureInvalid as exc:
-            rejected.append(
-                (pack_dir.name, f"KNOWLEDGE_SIGNATURE_INVALID: {exc}")
-            )
+            rejected.append((pack_dir.name, f"KNOWLEDGE_SIGNATURE_INVALID: {exc}"))
         except KnowledgeSignerUntrusted as exc:
             rejected.append((pack_dir.name, f"KNOWLEDGE_SIGNER_UNTRUSTED: {exc}"))
         except Exception as exc:  # noqa: BLE001 — pack loader must never crash boot
@@ -1198,9 +1173,7 @@ async def _seed_office_plan_packs(app: FastAPI, container: Container) -> None:
     if not packs_root.is_absolute():
         packs_root = (Path(__file__).parents[3] / packs_root).resolve()
     if not packs_root.is_dir():
-        _log.info(
-            "office plan packs root %s does not exist; skipping", packs_root
-        )
+        _log.info("office plan packs root %s does not exist; skipping", packs_root)
         return
 
     vetter = container.plan_vetter()
@@ -1227,9 +1200,7 @@ async def _seed_office_plan_packs(app: FastAPI, container: Container) -> None:
             tenant_id=demo_tenant.id, limit=1, offset=0
         )
         if not workspaces:
-            _log.info(
-                "demo workspace not present; skipping office plan pack seed"
-            )
+            _log.info("demo workspace not present; skipping office plan pack seed")
             return
         demo_workspace = workspaces[0]
 
@@ -1299,8 +1270,7 @@ async def _seed_office_plan_packs(app: FastAPI, container: Container) -> None:
         )
     else:
         _log.info(
-            "seeded %d office plan packs (vetter=%s, skipped_existing=%d, "
-            "rejected=%d)",
+            "seeded %d office plan packs (vetter=%s, skipped_existing=%d, rejected=%d)",
             seeded,
             vetter_label,
             skipped_existing,

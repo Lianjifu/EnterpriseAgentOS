@@ -39,8 +39,8 @@ class Channel:
     status: ChannelStatus
     inbound_path: str
     outbound_config: dict[str, Any] = field(default_factory=dict)
-    created_at: datetime = field(default_factory=lambda: datetime.now(__import__("datetime").timezone.utc))
-    updated_at: datetime = field(default_factory=lambda: datetime.now(__import__("datetime").timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def with_status(self, status: ChannelStatus) -> Channel:
         from datetime import datetime as _dt
@@ -146,7 +146,7 @@ class ChannelDelivery:
     payload_summary: dict[str, Any]
     status: DeliveryStatus
     error_code: str | None = None
-    created_at: datetime = field(default_factory=lambda: datetime.now(__import__("datetime").timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     delivered_at: datetime | None = None
 
     def with_status(
@@ -167,9 +167,7 @@ class ChannelDelivery:
             channel_id=self.channel_id,
             direction=self.direction,
             external_message_id=(
-                external_message_id
-                if external_message_id is not None
-                else self.external_message_id
+                external_message_id if external_message_id is not None else self.external_message_id
             ),
             session_id=self.session_id,
             payload_summary=dict(self.payload_summary),

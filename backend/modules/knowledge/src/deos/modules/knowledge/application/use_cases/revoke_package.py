@@ -52,6 +52,7 @@ class RevokeKnowledgePackageUseCase:
     ) -> KnowledgePackage:
         if self.policy_guard is not None:
             from eos_vault.actor import ActorContext
+
             await self.policy_guard.check(  # type: ignore[attr-defined]
                 actor=ActorContext(
                     tenant_id=tenant_id,
@@ -92,9 +93,7 @@ class RevokeKnowledgePackageUseCase:
                     tenant_id=tenant_id, package_id=package_id
                 )
             except Exception:
-                logger.exception(
-                    "vector delete_for_package failed for %s", package_id
-                )
+                logger.exception("vector delete_for_package failed for %s", package_id)
 
         # 3. delete SQL chunk rows
         try:
@@ -102,9 +101,7 @@ class RevokeKnowledgePackageUseCase:
                 tenant_id=tenant_id, package_id=package_id
             )
         except Exception:
-            logger.exception(
-                "delete_chunks_for_package failed for %s", package_id
-            )
+            logger.exception("delete_chunks_for_package failed for %s", package_id)
 
         # 4. revoke package row
         revoked = pkg.with_status(status=KnowledgePackageStatus.REVOKED)

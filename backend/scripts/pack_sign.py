@@ -45,14 +45,20 @@ sys.path.insert(0, str(_REPO_ROOT / "libs" / "pack_signing" / "src"))
 
 from deos.modules.knowledge.domain.signing import (  # noqa: E402
     KnowledgePackPayload,
+)
+from deos.modules.knowledge.domain.signing import (  # noqa: E402
     sign_payload as sign_knowledge_payload,
 )
 from deos.modules.orchestration.domain.signing import (  # noqa: E402
     PlanPackPayload,
+)
+from deos.modules.orchestration.domain.signing import (  # noqa: E402
     sign_payload as sign_plan_payload,
 )
 from deos.modules.skill.domain.signing import (  # noqa: E402
     SkillPackPayload,
+)
+from deos.modules.skill.domain.signing import (  # noqa: E402
     sign_payload as sign_skill_payload,
 )
 from eos_pack_signing import (  # noqa: E402
@@ -100,9 +106,7 @@ _PLAN_REQUIRED_FIELDS = (
 def _build_skill_payload(manifest: dict[str, Any]) -> SkillPackPayload:
     missing = [f for f in _SKILL_REQUIRED_FIELDS if f not in manifest]
     if missing:
-        raise ValueError(
-            f"manifest missing required field(s): {', '.join(sorted(missing))}"
-        )
+        raise ValueError(f"manifest missing required field(s): {', '.join(sorted(missing))}")
     return SkillPackPayload(
         name=str(manifest["name"]),
         version=str(manifest["version"]),
@@ -113,13 +117,9 @@ def _build_skill_payload(manifest: dict[str, Any]) -> SkillPackPayload:
         parameters_schema=dict(manifest["parameters_schema"] or {}),
         artifact_uri=str(manifest["artifact_uri"]),
         network_policy=str(manifest["network_policy"]),
-        cpu_quota=(
-            float(manifest["cpu_quota"]) if manifest["cpu_quota"] is not None else None
-        ),
+        cpu_quota=(float(manifest["cpu_quota"]) if manifest["cpu_quota"] is not None else None),
         memory_bytes=(
-            int(manifest["memory_bytes"])
-            if manifest["memory_bytes"] is not None
-            else None
+            int(manifest["memory_bytes"]) if manifest["memory_bytes"] is not None else None
         ),
         timeout_seconds=int(manifest["timeout_seconds"]),
     )
@@ -128,12 +128,10 @@ def _build_skill_payload(manifest: dict[str, Any]) -> SkillPackPayload:
 def _build_knowledge_payload(manifest: dict[str, Any]) -> KnowledgePackPayload:
     missing = [f for f in _KNOWLEDGE_REQUIRED_FIELDS if f not in manifest]
     if missing:
-        raise ValueError(
-            f"manifest missing required field(s): {', '.join(sorted(missing))}"
-        )
+        raise ValueError(f"manifest missing required field(s): {', '.join(sorted(missing))}")
     asset_ids_raw = manifest["asset_ids"] or []
     if not isinstance(asset_ids_raw, list):
-        raise ValueError("asset_ids must be a list")
+        raise TypeError("asset_ids must be a list")
     return KnowledgePackPayload(
         name=str(manifest["name"]),
         version=str(manifest["version"]),
@@ -149,15 +147,13 @@ def _build_knowledge_payload(manifest: dict[str, Any]) -> KnowledgePackPayload:
 def _build_plan_payload(manifest: dict[str, Any]) -> PlanPackPayload:
     missing = [f for f in _PLAN_REQUIRED_FIELDS if f not in manifest]
     if missing:
-        raise ValueError(
-            f"manifest missing required field(s): {', '.join(sorted(missing))}"
-        )
+        raise ValueError(f"manifest missing required field(s): {', '.join(sorted(missing))}")
     tenants_raw = manifest["allowed_tenants"] or []
     if not isinstance(tenants_raw, list):
-        raise ValueError("allowed_tenants must be a list")
+        raise TypeError("allowed_tenants must be a list")
     plan_dsl = manifest["plan_dsl"]
     if not isinstance(plan_dsl, dict):
-        raise ValueError("plan_dsl must be an object")
+        raise TypeError("plan_dsl must be an object")
     return PlanPackPayload(
         name=str(manifest["name"]),
         version=str(manifest["version"]),
@@ -182,9 +178,7 @@ _SIGNERS = {
 }
 
 
-def _sign_kind(
-    kind: str, manifest: dict[str, Any], *, private_key: Ed25519PrivateKey
-) -> str:
+def _sign_kind(kind: str, manifest: dict[str, Any], *, private_key: Ed25519PrivateKey) -> str:
     payload = _BUILDERS[kind](manifest)
     return _SIGNERS[kind](payload, private_key=private_key)
 

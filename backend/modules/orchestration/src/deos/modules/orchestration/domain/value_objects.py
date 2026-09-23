@@ -38,12 +38,12 @@ class StepKind(StrEnum):
 class WorkflowRunStatus(StrEnum):
     """Lifecycle of a single :class:`WorkflowRun`."""
 
-    PENDING = "pending"          # row created; executor not yet kicked off
-    RUNNING = "running"          # executor dispatched
-    SUCCEEDED = "succeeded"      # terminal: entry returned without error
-    FAILED = "failed"            # terminal: any step failed or evaluator denied
-    CANCELED = "canceled"        # terminal: cancel_run called mid-flight
-    TIMED_OUT = "timed_out"      # terminal: step exceeded its timeout
+    PENDING = "pending"  # row created; executor not yet kicked off
+    RUNNING = "running"  # executor dispatched
+    SUCCEEDED = "succeeded"  # terminal: entry returned without error
+    FAILED = "failed"  # terminal: any step failed or evaluator denied
+    CANCELED = "canceled"  # terminal: cancel_run called mid-flight
+    TIMED_OUT = "timed_out"  # terminal: step exceeded its timeout
 
 
 class StepRunStatus(StrEnum):
@@ -53,7 +53,7 @@ class StepRunStatus(StrEnum):
     RUNNING = "running"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
-    SKIPPED = "skipped"          # conditional branch not taken / fail_fast sibling
+    SKIPPED = "skipped"  # conditional branch not taken / fail_fast sibling
     TIMED_OUT = "timed_out"
 
 

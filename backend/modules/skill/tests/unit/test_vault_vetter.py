@@ -8,9 +8,7 @@ TTL behavior is deterministic.
 
 from __future__ import annotations
 
-import time
-from pathlib import Path
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -18,28 +16,22 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PublicKey,
 )
 from eos_pack_signing import (
-    load_public_key_pem,
     public_key_id,
     public_key_to_pem,
 )
 
-from deos.modules.skill.application.vetter import (
-    InMemoryTrustStoreSkillVetter,
-)
 from deos.modules.skill.application.vetter_vault import (
     SYSTEM_TENANT_ID,
     VaultBackedSkillVetter,
 )
 from deos.modules.skill.domain.entities import NetworkPolicy, SkillPackage
 from deos.modules.skill.domain.errors import (
-    SkillSignatureInvalid,
     SkillSignerUntrusted,
 )
 from deos.modules.skill.domain.signing import (
     SkillPackPayload,
     sign_payload,
 )
-
 
 # ── stubs ─────────────────────────────────────────────────────────────────
 
@@ -72,9 +64,7 @@ def _key_pem(kid: str, key: Ed25519PublicKey) -> str:
     return public_key_to_pem(key).decode("ascii")
 
 
-def _signed_package(
-    priv: Ed25519PrivateKey, *, kid: str
-) -> SkillPackage:
+def _signed_package(priv: Ed25519PrivateKey, *, kid: str) -> SkillPackage:
     p = SkillPackPayload(
         name="hello-skill",
         version="1.0.0",
@@ -110,7 +100,9 @@ def _signed_package(
     )
 
 
-def _build_kv(priv: Ed25519PrivateKey, *, extra: int = 0) -> tuple[_FakeKvResolver, str]:
+def _build_kv(
+    priv: Ed25519PrivateKey, *, extra: int = 0
+) -> tuple[_FakeKvResolver, str]:
     kid = public_key_id(priv.public_key())
     kv = _FakeKvResolver()
     payload = {kid: _key_pem(kid, priv.public_key())}
@@ -331,7 +323,7 @@ async def test_invalidate_keys_works_when_resolver_lacks_invalidate_kwarg() -> N
             self.flush_calls = 0
 
         async def resolve(self, ref, *, actor):  # type: ignore[no-untyped-def]
-            kid = list(self._store.keys())[0]
+            kid = next(iter(self._store.keys()))
             return {kid: self._store[kid]}
 
         def invalidate(self):  # no kwargs at all

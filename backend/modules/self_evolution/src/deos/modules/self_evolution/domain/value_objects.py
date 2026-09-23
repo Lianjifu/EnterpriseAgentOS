@@ -12,9 +12,7 @@ class EvolveStatus(StrEnum):
     APPLIED = "applied"
 
 
-_TERMINAL_STATUSES = frozenset(
-    {EvolveStatus.REJECTED, EvolveStatus.APPLIED}
-)
+_TERMINAL_STATUSES = frozenset({EvolveStatus.REJECTED, EvolveStatus.APPLIED})
 
 
 class EvolveKind(StrEnum):

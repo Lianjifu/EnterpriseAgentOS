@@ -102,12 +102,12 @@ def test_run_queue_starts_in_queued_state() -> None:
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
         dataset_id=EvalDatasetId(uuid4()),
-        template_id=__import__("eos_schema.ids", fromlist=["AgentTemplateId"]).AgentTemplateId(
-            uuid4()
-        ),
-        version_id=__import__("eos_schema.ids", fromlist=["AgentVersionId"]).AgentVersionId(
-            uuid4()
-        ),
+        template_id=__import__(
+            "eos_schema.ids", fromlist=["AgentTemplateId"]
+        ).AgentTemplateId(uuid4()),
+        version_id=__import__(
+            "eos_schema.ids", fromlist=["AgentVersionId"]
+        ).AgentVersionId(uuid4()),
         case_count=10,
         triggered_by=_USER,
         now=_now_iso(),
@@ -232,9 +232,7 @@ def _make_case(*, kws=(), min_hit=0.6, max_lat=30_000) -> EvalCase:
 
 def test_score_all_keywords_hit_passes() -> None:
     case = _make_case(kws=("foo", "bar"), min_hit=0.6, max_lat=1000)
-    s = score_case(
-        case=case, output="Hello FOO and bar there", latency_ms=200
-    )
+    s = score_case(case=case, output="Hello FOO and bar there", latency_ms=200)
     assert s.passed is True
     assert s.hit_ratio == 1.0
     assert set(s.matched) == {"foo", "bar"}
@@ -255,9 +253,7 @@ def test_score_latency_over_max_fails() -> None:
 
 def test_score_error_immediately_fails() -> None:
     case = _make_case(kws=("foo",))
-    s = score_case(
-        case=case, output="", latency_ms=10, error="boom"
-    )
+    s = score_case(case=case, output="", latency_ms=10, error="boom")
     assert s.passed is False
     assert s.error == "boom"
 

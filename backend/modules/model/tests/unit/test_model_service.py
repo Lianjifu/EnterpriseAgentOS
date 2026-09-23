@@ -5,6 +5,17 @@ from __future__ import annotations
 from uuid import UUID
 
 import pytest
+from _in_memory import (
+    CollectingPublisher,
+    EchoClientFactory,
+    FixedClock,
+    InMemoryCipher,
+    InMemoryCredentialRepository,
+    InMemoryModelRepository,
+    InMemoryQuotaCounterRepository,
+    InMemoryRoutingPolicyRepository,
+    SequenceIds,
+)
 from eos_llm import ChatMessage, ChatRequest
 from eos_schema.ids import (
     CredentialId,
@@ -16,19 +27,6 @@ from eos_schema.ids import (
 )
 from eos_vault.actor import ActorContext
 
-from _in_memory import (
-    CollectingPublisher,
-    EchoClientFactory,
-    EchoLLMClient,
-    FixedClock,
-    InMemoryCredentialRepository,
-    InMemoryModelRepository,
-    InMemoryQuotaCounterRepository,
-    InMemoryRoutingPolicyRepository,
-    InMemoryCipher,
-    SequenceIds,
-)
-
 from deos.modules.model.application.services import (
     DEFAULT_QUOTA_WINDOW,
     ModelService,
@@ -36,9 +34,6 @@ from deos.modules.model.application.services import (
     _split_envelope,
 )
 from deos.modules.model.domain.entities import (
-    Model,
-    ModelCredential,
-    RoutingPolicy,
     bucket_start,
     make_routing_policy,
 )
@@ -46,6 +41,7 @@ from deos.modules.model.domain.errors import (
     CredentialNotFound,
     ModelAlreadyExists,
     ModelDisabled,
+    ModelError,
     ModelNotFound,
     QuotaExceeded,
     RoutingPolicyNotFound,
@@ -54,7 +50,6 @@ from deos.modules.model.domain.value_objects import (
     ModelProvider,
     RoutingStrategy,
 )
-
 
 TID = TenantId(UUID(int=1))
 WID = WorkspaceId(UUID(int=2))
@@ -182,7 +177,7 @@ async def test_register_credential_encrypts_payload() -> None:
 
 @pytest.mark.asyncio
 async def test_register_credential_without_base_url() -> None:
-    svc, ctx = _build_service()
+    svc, _ctx = _build_service()
     cred = await svc.register_credential(
         actor=_actor(),
         provider=ModelProvider.ANTHROPIC,
@@ -250,9 +245,7 @@ async def test_invoke_happy_path_increments_quota_and_publishes() -> None:
         model="gpt-4o",
         messages=[ChatMessage(role="user", content="hello")],
     )
-    resp = await svc.invoke(
-        actor=_actor(), model_id=model.id, req=req
-    )
+    resp = await svc.invoke(actor=_actor(), model_id=model.id, req=req)
     assert resp.message.role == "assistant"
     assert resp.message.content == "hello"
     # Echo client: usage matches payload length
@@ -410,7 +403,7 @@ async def test_invoke_quota_exceeded_publishes_event() -> None:
 
 @pytest.mark.asyncio
 async def test_invoke_routing_policy_missing_raises() -> None:
-    svc, ctx = _build_service()
+    svc, _ctx = _build_service()
     cred = await svc.register_credential(
         actor=_actor(),
         provider=ModelProvider.OPENAI,
@@ -450,16 +443,14 @@ async def test_invoke_publishes_error_event_on_llm_failure() -> None:
         credential_id=cred.id,
     )
     ctx["factory"].client.fail_next = True
-    with pytest.raises(Exception):
+    with pytest.raises(ModelError):
         await svc.invoke(
             actor=_actor(),
             model_id=model.id,
             req=ChatRequest(model="x", messages=[]),
         )
     topics_payloads = [(t, p) for t, p in ctx["publisher"].published]
-    invoked_payloads = [
-        p for t, p in topics_payloads if t == "model.invoked"
-    ]
+    invoked_payloads = [p for t, p in topics_payloads if t == "model.invoked"]
     assert invoked_payloads
     assert invoked_payloads[-1]["status"] == "error"
 
@@ -500,21 +491,21 @@ async def test_invoke_cross_tenant_returns_not_found() -> None:
 @pytest.mark.asyncio
 async def test_list_models_filters_by_workspace_and_enabled() -> None:
     svc, _ = _build_service()
-    m1 = await svc.register(
+    await svc.register(
         actor=_actor(),
         name="ws-a",
         provider=ModelProvider.OPENAI,
         upstream_model="gpt-4o",
         workspace_id=WorkspaceId(UUID(int=100)),
     )
-    m2 = await svc.register(
+    await svc.register(
         actor=_actor(),
         name="ws-b",
         provider=ModelProvider.OPENAI,
         upstream_model="gpt-4o",
         workspace_id=WorkspaceId(UUID(int=200)),
     )
-    m3 = await svc.register(
+    await svc.register(
         actor=_actor(),
         name="tenant-default",
         provider=ModelProvider.OPENAI,

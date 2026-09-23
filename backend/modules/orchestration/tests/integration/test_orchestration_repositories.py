@@ -110,14 +110,18 @@ async def repos(engine: AsyncEngine):
 async def test_migration_created_three_tables(engine: AsyncEngine) -> None:
     async with engine.connect() as conn:
         rows = (
-            await conn.execute(
-                text(
-                    "SELECT tablename FROM pg_tables "
-                    "WHERE schemaname='public' "
-                    "AND tablename IN ('orch_plans','workflow_runs','workflow_step_runs')"
+            (
+                await conn.execute(
+                    text(
+                        "SELECT tablename FROM pg_tables "
+                        "WHERE schemaname='public' "
+                        "AND tablename IN ('orch_plans','workflow_runs','workflow_step_runs')"
+                    )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
     assert set(rows) == {"orch_plans", "workflow_runs", "workflow_step_runs"}
 
 
@@ -307,7 +311,8 @@ async def test_workflow_run_repo_lookup_by_idempotency(repos) -> None:
     )
     await run_repo.add(run)
     found = await run_repo.get_by_idempotency_key(
-        tenant_id=tid, idempotency_key=run.idempotency_key  # type: ignore[arg-type]
+        tenant_id=tid,
+        idempotency_key=run.idempotency_key,  # type: ignore[arg-type]
     )
     assert found is not None
     assert found.id == run.id
@@ -402,13 +407,9 @@ async def test_plan_repo_list_pagination(repos) -> None:
             created_by=uid,
         )
         await plan_repo.add(plan)
-    rows = await plan_repo.list(
-        tenant_id=tid, workspace_id=wid, limit=2, offset=0
-    )
+    rows = await plan_repo.list(tenant_id=tid, workspace_id=wid, limit=2, offset=0)
     assert len(rows) == 2
-    rows2 = await plan_repo.list(
-        tenant_id=tid, workspace_id=wid, limit=10, offset=2
-    )
+    rows2 = await plan_repo.list(tenant_id=tid, workspace_id=wid, limit=10, offset=2)
     assert len(rows2) >= 1
 
 

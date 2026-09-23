@@ -52,9 +52,7 @@ class SqlPlanRepository(PlanRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def get(
-        self, *, tenant_id: TenantId, plan_id: PlanId
-    ) -> Plan | None:
+    async def get(self, *, tenant_id: TenantId, plan_id: PlanId) -> Plan | None:
         result = await self._session.execute(
             select(PlanORM).where(
                 PlanORM.tenant_id == tenant_id,
@@ -64,9 +62,7 @@ class SqlPlanRepository(PlanRepository):
         row = result.scalar_one_or_none()
         return plan_to_domain(row) if row is not None else None
 
-    async def get_by_name(
-        self, *, tenant_id: TenantId, name: str
-    ) -> Plan | None:
+    async def get_by_name(self, *, tenant_id: TenantId, name: str) -> Plan | None:
         result = await self._session.execute(
             select(PlanORM).where(
                 PlanORM.tenant_id == tenant_id,
@@ -167,8 +163,10 @@ class SqlWorkflowRunRepository(WorkflowRunRepository):
         )
         if plan_id is not None:
             stmt = stmt.where(WorkflowRunORM.plan_id == plan_id)
-        stmt = stmt.order_by(WorkflowRunORM.created_at.desc()).limit(limit).offset(
-            max(0, offset)
+        stmt = (
+            stmt.order_by(WorkflowRunORM.created_at.desc())
+            .limit(limit)
+            .offset(max(0, offset))
         )
         result = await self._session.execute(stmt)
         return [workflow_run_to_domain(r) for r in result.scalars().all()]

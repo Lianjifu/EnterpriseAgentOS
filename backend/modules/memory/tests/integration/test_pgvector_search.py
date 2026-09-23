@@ -234,7 +234,7 @@ async def test_search_returns_top_k_ordered_by_score(repo_and_vs) -> None:
     owner = UserId(uuid4())
 
     a = await _write(repo, vs, tenant=tenant, ws=ws, owner=owner, content="alpha bravo")
-    b = await _write(repo, vs, tenant=tenant, ws=ws, owner=owner, content="charlie delta")
+    await _write(repo, vs, tenant=tenant, ws=ws, owner=owner, content="charlie delta")
     await _write(repo, vs, tenant=tenant, ws=ws, owner=owner, content="echo foxtrot")
     await _commit_writes(repo)
 

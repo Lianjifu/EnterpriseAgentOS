@@ -6,15 +6,14 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID, uuid4
 
+from _governance_unit_in_memory import FixedClock, InMemoryAuditLog
 from eos_schema.ids import TenantId
 
+from deos.modules.governance.adapter.subscribers import audit_subscriber
 from deos.modules.governance.application.audit_recorder import (
     AuditRecorder,
     build_default_topics,
 )
-from deos.modules.governance.adapter.subscribers import audit_subscriber
-from _governance_unit_in_memory import FixedClock, InMemoryAuditLog
-
 
 TID = TenantId(UUID("00000000-0000-0000-0000-000000000001"))
 
@@ -31,7 +30,7 @@ class _FakeBus:
             await h(envelope)
 
 
-from collections import defaultdict  # noqa: E402
+from collections import defaultdict
 
 
 @dataclass

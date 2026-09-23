@@ -331,8 +331,7 @@ class WorkflowExecutor:
     ) -> tuple[dict[str, Any], list[StepRun]]:
         if step_counter <= 0:
             raise WorkflowTooLarge(
-                "workflow exceeded max_total_steps "
-                f"({self._limits.max_total_steps})"
+                f"workflow exceeded max_total_steps ({self._limits.max_total_steps})"
             )
 
         if step.kind == "sequence":
@@ -490,8 +489,7 @@ class WorkflowExecutor:
         # Each branch counts as 1 step + its children
         if step_counter <= 0:
             raise WorkflowTooLarge(
-                "workflow exceeded max_total_steps "
-                f"({self._limits.max_total_steps})"
+                f"workflow exceeded max_total_steps ({self._limits.max_total_steps})"
             )
 
         async def _run_one(
@@ -553,8 +551,7 @@ class WorkflowExecutor:
     ) -> tuple[dict[str, Any], list[StepRun]]:
         if step_counter <= 0:
             raise WorkflowTooLarge(
-                "workflow exceeded max_total_steps "
-                f"({self._limits.max_total_steps})"
+                f"workflow exceeded max_total_steps ({self._limits.max_total_steps})"
             )
         chosen_key: str | None = None
         try:
@@ -609,8 +606,7 @@ class WorkflowExecutor:
     ) -> tuple[dict[str, Any], list[StepRun]]:
         if step_counter <= 0:
             raise WorkflowTooLarge(
-                "workflow exceeded max_total_steps "
-                f"({self._limits.max_total_steps})"
+                f"workflow exceeded max_total_steps ({self._limits.max_total_steps})"
             )
         if depth >= 16:
             raise WorkflowTooLarge(
@@ -710,8 +706,7 @@ class WorkflowExecutor:
     ) -> tuple[dict[str, Any], list[StepRun]]:
         if step_counter <= 0:
             raise WorkflowTooLarge(
-                "workflow exceeded max_total_steps "
-                f"({self._limits.max_total_steps})"
+                f"workflow exceeded max_total_steps ({self._limits.max_total_steps})"
             )
 
         timeout = default_timeout
@@ -769,9 +764,12 @@ class WorkflowExecutor:
                 latency_ms=latency,
             )
             timed_out = await self._step_run_repository.update(timed_out)
-            raise _LeafFailure(timed_out, WorkflowStepTimeout(
-                f"step {step.step_id!r} timed out after {timeout}s"
-            )) from exc
+            raise _LeafFailure(
+                timed_out,
+                WorkflowStepTimeout(
+                    f"step {step.step_id!r} timed out after {timeout}s"
+                ),
+            ) from exc
         except Exception as exc:
             latency = int((time.monotonic() - started) * 1000)
             err_code = getattr(exc, "code", "WORKFLOW_EXECUTION_FAILED")
@@ -786,9 +784,7 @@ class WorkflowExecutor:
                 raise _LeafFailure(failed, exc) from exc
             raise _LeafFailure(
                 failed,
-                WorkflowExecutionFailed(
-                    f"step {step.step_id!r} failed: {exc}"
-                ),
+                WorkflowExecutionFailed(f"step {step.step_id!r} failed: {exc}"),
             ) from exc
 
         latency = int((time.monotonic() - started) * 1000)
@@ -827,7 +823,8 @@ class WorkflowExecutor:
                 agent_version=step.agent_version,
                 user_input=rendered_input,
                 model_override=step.model_override,
-                timeout_seconds=step.timeout_seconds or self._limits.step_timeout_seconds,
+                timeout_seconds=step.timeout_seconds
+                or self._limits.step_timeout_seconds,
             )
             return {
                 "final_message": result.final_message,
@@ -847,7 +844,8 @@ class WorkflowExecutor:
                 actor_id=owner_id,
                 tool_name=step.tool_name,
                 arguments=rendered_args,
-                timeout_seconds=step.timeout_seconds or self._limits.step_timeout_seconds,
+                timeout_seconds=step.timeout_seconds
+                or self._limits.step_timeout_seconds,
             )
         if kind == "skill":
             assert isinstance(step, SkillStepDSL)
@@ -862,7 +860,8 @@ class WorkflowExecutor:
                 skill_name=step.skill_name,
                 skill_version=step.skill_version,
                 arguments=rendered_args,
-                timeout_seconds=step.timeout_seconds or self._limits.step_timeout_seconds,
+                timeout_seconds=step.timeout_seconds
+                or self._limits.step_timeout_seconds,
             )
         raise PlanValidationError(
             f"step kind {kind!r} is not a leaf (got {type(step).__name__})"

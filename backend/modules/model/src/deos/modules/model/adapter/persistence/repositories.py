@@ -17,12 +17,7 @@ tenant — those repositories apply the WHERE explicitly.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 from uuid import UUID
-
-from sqlalchemy import select
-from sqlalchemy.dialects.postgresql import insert as pg_insert
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from eos_schema.ids import (
     CredentialId,
@@ -33,6 +28,9 @@ from eos_schema.ids import (
 from eos_schema.ids import (
     ModelId as _ModelIdType,
 )
+from sqlalchemy import func, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from deos.modules.model.adapter.persistence.models import (
     ModelCredentialORM,
@@ -68,7 +66,9 @@ def _model_to_domain(row: ModelORM) -> Model:
         upstream_model=row.upstream_model,
         enabled=row.enabled,
         credential_id=CredentialId(row.credential_id) if row.credential_id else None,
-        routing_policy_id=RoutingPolicyId(row.routing_policy_id) if row.routing_policy_id else None,
+        routing_policy_id=RoutingPolicyId(row.routing_policy_id)
+        if row.routing_policy_id
+        else None,
         created_at=row.created_at,
         updated_at=row.updated_at,
     )
@@ -92,7 +92,9 @@ def _policy_to_domain(row: RoutingPolicyORM) -> RoutingPolicy:
         id=RoutingPolicyId(row.id),
         tenant_id=TenantId(row.tenant_id),
         strategy=RoutingStrategy(row.strategy),
-        primary_model_id=_ModelIdType(row.primary_model_id) if row.primary_model_id else None,
+        primary_model_id=_ModelIdType(row.primary_model_id)
+        if row.primary_model_id
+        else None,
         failover_model_ids=[_ModelIdType(m) for m in row.failover_model_ids],
         selection_rules=dict(row.selection_rules or {}),
         version_lock=row.version_lock,
@@ -140,18 +142,14 @@ class SqlModelRepository(ModelRepository):
             )
             await session.commit()
 
-    async def get(
-        self, *, tenant_id: TenantId, model_id: ModelId
-    ) -> Model | None:
+    async def get(self, *, tenant_id: TenantId, model_id: ModelId) -> Model | None:
         async with self._sf() as session:
             row = await session.get(ModelORM, model_id)
             if row is None or row.tenant_id != tenant_id:
                 return None
             return _model_to_domain(row)
 
-    async def get_by_name(
-        self, *, tenant_id: TenantId, name: str
-    ) -> Model | None:
+    async def get_by_name(self, *, tenant_id: TenantId, name: str) -> Model | None:
         async with self._sf() as session:
             stmt = select(ModelORM).where(
                 ModelORM.tenant_id == tenant_id, ModelORM.name == name
@@ -197,9 +195,7 @@ class SqlModelRepository(ModelRepository):
             row.updated_at = model.updated_at
             await session.commit()
 
-    async def delete(
-        self, *, tenant_id: TenantId, model_id: ModelId
-    ) -> bool:
+    async def delete(self, *, tenant_id: TenantId, model_id: ModelId) -> bool:
         async with self._sf() as session:
             row = await session.get(ModelORM, model_id)
             if row is None or row.tenant_id != tenant_id:
@@ -264,9 +260,7 @@ class SqlCredentialRepository(CredentialRepository):
             row.rotated_at = credential.rotated_at
             await session.commit()
 
-    async def delete(
-        self, *, tenant_id: TenantId, credential_id: CredentialId
-    ) -> bool:
+    async def delete(self, *, tenant_id: TenantId, credential_id: CredentialId) -> bool:
         async with self._sf() as session:
             row = await session.get(ModelCredentialORM, credential_id)
             if row is None or row.tenant_id != tenant_id:

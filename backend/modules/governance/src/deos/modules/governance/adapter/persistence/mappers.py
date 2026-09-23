@@ -8,8 +8,6 @@ These are pure functions so they are easy to unit-test.
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any
 from uuid import UUID
 
 from eos_schema.ids import (

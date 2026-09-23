@@ -36,6 +36,8 @@ def make_tenant() -> TenantId:
 
 def make_workspace() -> WorkspaceId:
     return WorkspaceId(UUID("00000000-0000-0000-0000-000000000002"))
+
+
 from deos.modules.skill.domain.errors import SandboxTimeout
 
 

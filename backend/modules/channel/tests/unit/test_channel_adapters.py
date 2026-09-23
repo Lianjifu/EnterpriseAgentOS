@@ -145,10 +145,12 @@ def test_aes_gcm_cipher_round_trip() -> None:
 
 
 def test_aes_gcm_cipher_wrong_key_fails() -> None:
+    from eos_vault.crypto.aes_gcm import InvalidCiphertext
+
     enc = AesGcmWebhookCipher(key=b"k" * 32)
     dec = AesGcmWebhookCipher(key=b"j" * 32)
     blob = enc.encrypt(b"my-secret")
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidCiphertext):
         dec.decrypt(blob)
 
 

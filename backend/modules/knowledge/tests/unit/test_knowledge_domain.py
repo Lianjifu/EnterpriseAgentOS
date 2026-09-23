@@ -6,10 +6,18 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 import pytest
+from eos_schema.ids import (
+    KnowledgeAssetId,
+    KnowledgePackageId,
+    TenantId,
+    UserId,
+    WorkspaceId,
+)
 
 from deos.modules.knowledge.domain.entities import (
     EMBEDDING_DIM,
     KnowledgeAsset,
+    KnowledgeAssetNotFound,
     KnowledgeChunk,
     KnowledgePackage,
     chunk_overlap_default,
@@ -26,14 +34,6 @@ from deos.modules.knowledge.domain.value_objects import (
     KnowledgeAssetStatus,
     KnowledgePackageStatus,
     RetrievalQuery,
-)
-from eos_schema.ids import (
-    KnowledgeAssetId,
-    KnowledgeChunkId,
-    KnowledgePackageId,
-    TenantId,
-    UserId,
-    WorkspaceId,
 )
 
 
@@ -70,9 +70,7 @@ def test_package_create_assigns_uuid_when_id_missing() -> None:
 def test_package_create_uses_caller_id_when_provided() -> None:
     tid, wid, _ = _ids()
     fixed = KnowledgePackageId(uuid4())
-    pkg = KnowledgePackage.create(
-        tenant_id=tid, workspace_id=wid, name="p", id=fixed
-    )
+    pkg = KnowledgePackage.create(tenant_id=tid, workspace_id=wid, name="p", id=fixed)
     assert pkg.id == fixed
 
 
@@ -209,9 +207,7 @@ def test_asset_with_status_records_error_message() -> None:
         byte_size=1,
         storage_uri="u",
     )
-    failed = asset.with_status(
-        status=KnowledgeAssetStatus.FAILED, error_message="boom"
-    )
+    failed = asset.with_status(status=KnowledgeAssetStatus.FAILED, error_message="boom")
     assert failed.status == KnowledgeAssetStatus.FAILED
     assert failed.error_message == "boom"
 
@@ -262,7 +258,7 @@ def test_asset_assert_visible_raises_when_not_ready() -> None:
         byte_size=1,
         storage_uri="u",
     )
-    with pytest.raises(Exception):
+    with pytest.raises(KnowledgeAssetNotFound):
         asset.assert_visible()
 
 

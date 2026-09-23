@@ -196,9 +196,7 @@ class KafkaAuditPublisher:
         last_exc: Exception | None = None
         while attempts <= self._max_retries:
             try:
-                await self._producer.send_and_wait(
-                    self._topic, value=body, key=key
-                )
+                await self._producer.send_and_wait(self._topic, value=body, key=key)
                 return body
             except Exception as exc:  # noqa: BLE001 — audit must retry on any broker error
                 attempts += 1

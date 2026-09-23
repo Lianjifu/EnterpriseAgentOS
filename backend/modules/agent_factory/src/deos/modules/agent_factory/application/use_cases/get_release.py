@@ -14,9 +14,7 @@ from deos.modules.agent_factory.domain.entities import Release
 class GetReleaseUseCase:
     repository: ReleaseRepository
 
-    async def execute(
-        self, *, tenant_id: TenantId, release_id: ReleaseId
-    ) -> Release:
+    async def execute(self, *, tenant_id: TenantId, release_id: ReleaseId) -> Release:
         rel = await self.repository.get(tenant_id=tenant_id, release_id=release_id)
         if rel is None:
             from deos.modules.agent_factory.domain.errors import ReleaseNotFound

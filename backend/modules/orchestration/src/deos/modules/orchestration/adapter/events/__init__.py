@@ -22,16 +22,12 @@ class MessagingOrchestrationEventPublisher(OrchestrationEventPublisher):
     async def publish(self, event: object) -> None:
         topic = getattr(event, "TOPIC", None)
         if topic is None:
-            logger.warning(
-                "orchestration event %r has no TOPIC", type(event).__name__
-            )
+            logger.warning("orchestration event %r has no TOPIC", type(event).__name__)
             return
         try:
             await self._bus.publish(topic, event)
         except Exception:  # pragma: no cover — defensive
-            logger.exception(
-                "orchestration event bus publish failed: topic=%s", topic
-            )
+            logger.exception("orchestration event bus publish failed: topic=%s", topic)
 
 
 __all__ = ["MessagingOrchestrationEventPublisher"]

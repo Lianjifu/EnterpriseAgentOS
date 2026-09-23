@@ -18,9 +18,7 @@ def build(service: PlatformService) -> Any:
     async def execute(
         *, status: str | None = None, limit: int = 100, offset: int = 0
     ) -> list[Plan]:
-        return await service.plan_repo.list(
-            status=status, limit=limit, offset=offset
-        )
+        return await service.plan_repo.list(status=status, limit=limit, offset=offset)
 
     return execute
 

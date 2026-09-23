@@ -21,7 +21,6 @@ from eos_schema.ids import (
     ModelId,
     RoutingPolicyId,
     TenantId,
-    UserId,
 )
 from eos_vault.actor import ActorContext
 
@@ -32,7 +31,6 @@ from deos.modules.model.domain.entities import (
     RoutingPolicy,
 )
 
-
 # ── Repositories ───────────────────────────────────────────────────────────
 
 
@@ -40,13 +38,9 @@ from deos.modules.model.domain.entities import (
 class ModelRepository(Protocol):
     async def add(self, model: Model) -> None: ...
 
-    async def get(
-        self, *, tenant_id: TenantId, model_id: ModelId
-    ) -> Model | None: ...
+    async def get(self, *, tenant_id: TenantId, model_id: ModelId) -> Model | None: ...
 
-    async def get_by_name(
-        self, *, tenant_id: TenantId, name: str
-    ) -> Model | None: ...
+    async def get_by_name(self, *, tenant_id: TenantId, name: str) -> Model | None: ...
 
     async def list(
         self,
@@ -59,9 +53,7 @@ class ModelRepository(Protocol):
 
     async def update(self, model: Model) -> None: ...
 
-    async def delete(
-        self, *, tenant_id: TenantId, model_id: ModelId
-    ) -> bool: ...
+    async def delete(self, *, tenant_id: TenantId, model_id: ModelId) -> bool: ...
 
 
 @runtime_checkable

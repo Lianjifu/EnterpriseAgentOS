@@ -32,7 +32,8 @@ def _candidate() -> EvolveCandidate:
 async def test_direct_apply_guard_returns_outcome() -> None:
     cand = _candidate()
     outcome = await DirectApplyGuard().apply(
-        tenant_id=TENANT, candidate=cand  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate=cand,  # type: ignore[arg-type]
     )
     assert isinstance(outcome, ApplyOutcome)
     assert outcome.candidate_id == cand.id

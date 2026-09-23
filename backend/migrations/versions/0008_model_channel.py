@@ -54,9 +54,7 @@ def upgrade() -> None:
         sa.Column("upstream_model", sa.String(256), nullable=False),
         sa.Column("enabled", sa.Boolean, nullable=False, server_default=sa.true()),
         sa.Column("credential_id", postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column(
-            "routing_policy_id", postgresql.UUID(as_uuid=True), nullable=True
-        ),
+        sa.Column("routing_policy_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -91,9 +89,7 @@ def upgrade() -> None:
         sa.Column(
             "encrypted_payload", sa.LargeBinary, nullable=False
         ),  # nonce(12) || ct || tag(16)
-        sa.Column(
-            "key_version", sa.Integer, nullable=False, server_default="1"
-        ),
+        sa.Column("key_version", sa.Integer, nullable=False, server_default="1"),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -106,9 +102,7 @@ def upgrade() -> None:
             name="ck_credential_provider",
         ),
     )
-    op.execute(
-        "CREATE INDEX ix_model_credentials_tenant ON model_credentials (tenant_id)"
-    )
+    op.execute("CREATE INDEX ix_model_credentials_tenant ON model_credentials (tenant_id)")
 
     # ── Model: routing_policies ──────────────────────────────────────────
     op.create_table(
@@ -129,9 +123,7 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.text("'{}'::jsonb"),
         ),
-        sa.Column(
-            "version_lock", sa.Integer, nullable=False, server_default="1"
-        ),
+        sa.Column("version_lock", sa.Integer, nullable=False, server_default="1"),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -145,29 +137,20 @@ def upgrade() -> None:
             server_default=sa.func.now(),
         ),
         sa.CheckConstraint(
-            "strategy IN "
-            "('priority','round_robin','cost_optim','latency_optim','tenant_default')",
+            "strategy IN ('priority','round_robin','cost_optim','latency_optim','tenant_default')",
             name="ck_routing_strategy",
         ),
     )
-    op.execute(
-        "CREATE INDEX ix_routing_policies_tenant ON routing_policies (tenant_id)"
-    )
+    op.execute("CREATE INDEX ix_routing_policies_tenant ON routing_policies (tenant_id)")
 
     # ── Model: quota_counters ───────────────────────────────────────────
     op.create_table(
         "quota_counters",
         sa.Column("tenant_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("model_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column(
-            "window_start", sa.DateTime(timezone=True), nullable=False
-        ),  # 1-minute buckets
-        sa.Column(
-            "input_tokens", sa.Integer, nullable=False, server_default="0"
-        ),
-        sa.Column(
-            "output_tokens", sa.Integer, nullable=False, server_default="0"
-        ),
+        sa.Column("window_start", sa.DateTime(timezone=True), nullable=False),  # 1-minute buckets
+        sa.Column("input_tokens", sa.Integer, nullable=False, server_default="0"),
+        sa.Column("output_tokens", sa.Integer, nullable=False, server_default="0"),
         sa.Column("requests", sa.Integer, nullable=False, server_default="0"),
         sa.Column(
             "created_at",
@@ -188,9 +171,7 @@ def upgrade() -> None:
             name="pk_quota_counters",
         ),
     )
-    op.execute(
-        "CREATE INDEX ix_quota_counters_window ON quota_counters (window_start)"
-    )
+    op.execute("CREATE INDEX ix_quota_counters_window ON quota_counters (window_start)")
 
     # ── Channel: channels ────────────────────────────────────────────────
     op.create_table(
@@ -201,12 +182,8 @@ def upgrade() -> None:
         sa.Column("type", sa.String(16), nullable=False),
         sa.Column("name", sa.String(256), nullable=False),
         sa.Column("external_id", sa.String(256), nullable=False),
-        sa.Column(
-            "webhook_secret_id", postgresql.UUID(as_uuid=True), nullable=True
-        ),
-        sa.Column(
-            "status", sa.String(16), nullable=False, server_default="active"
-        ),
+        sa.Column("webhook_secret_id", postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column("status", sa.String(16), nullable=False, server_default="active"),
         sa.Column("inbound_path", sa.String(512), nullable=False),
         sa.Column(
             "outbound_config",
@@ -241,9 +218,7 @@ def upgrade() -> None:
             name="ck_channel_status",
         ),
     )
-    op.execute(
-        "CREATE INDEX ix_channels_tenant_status ON channels (tenant_id, status)"
-    )
+    op.execute("CREATE INDEX ix_channels_tenant_status ON channels (tenant_id, status)")
 
     # ── Channel: channel_secrets ─────────────────────────────────────────
     op.create_table(
@@ -255,9 +230,7 @@ def upgrade() -> None:
         sa.Column(
             "encrypted_payload", sa.LargeBinary, nullable=False
         ),  # nonce(12) || ct || tag(16)
-        sa.Column(
-            "key_version", sa.Integer, nullable=False, server_default="1"
-        ),
+        sa.Column("key_version", sa.Integer, nullable=False, server_default="1"),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -270,9 +243,7 @@ def upgrade() -> None:
             name="ck_channel_secret_type",
         ),
     )
-    op.execute(
-        "CREATE INDEX ix_channel_secrets_tenant ON channel_secrets (tenant_id)"
-    )
+    op.execute("CREATE INDEX ix_channel_secrets_tenant ON channel_secrets (tenant_id)")
 
     # ── Channel: channel_deliveries ──────────────────────────────────────
     op.create_table(
@@ -281,9 +252,7 @@ def upgrade() -> None:
         sa.Column("tenant_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("channel_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("direction", sa.String(16), nullable=False),
-        sa.Column(
-            "external_message_id", sa.String(256), nullable=True
-        ),
+        sa.Column("external_message_id", sa.String(256), nullable=True),
         sa.Column("session_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column(
             "payload_summary",
@@ -291,9 +260,7 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.text("'{}'::jsonb"),
         ),
-        sa.Column(
-            "status", sa.String(16), nullable=False, server_default="pending"
-        ),
+        sa.Column("status", sa.String(16), nullable=False, server_default="pending"),
         sa.Column("error_code", sa.String(64), nullable=True),
         sa.Column(
             "created_at",
@@ -315,10 +282,7 @@ def upgrade() -> None:
         "CREATE INDEX ix_channel_deliveries_channel_created "
         "ON channel_deliveries (channel_id, created_at DESC)"
     )
-    op.execute(
-        "CREATE INDEX ix_channel_deliveries_tenant "
-        "ON channel_deliveries (tenant_id)"
-    )
+    op.execute("CREATE INDEX ix_channel_deliveries_tenant ON channel_deliveries (tenant_id)")
 
 
 def downgrade() -> None:

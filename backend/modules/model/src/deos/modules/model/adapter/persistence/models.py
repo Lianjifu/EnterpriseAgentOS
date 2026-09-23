@@ -14,6 +14,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
+from eos_persistence.base import Base, TenantScopedMixin
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -24,10 +25,9 @@ from sqlalchemy import (
     String,
     func,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID as PG_UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
-
-from eos_persistence.base import Base, TenantScopedMixin
 
 
 class ModelORM(Base, TenantScopedMixin):
@@ -71,9 +71,7 @@ class ModelCredentialORM(Base, TenantScopedMixin):
     id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True)
     provider: Mapped[str] = mapped_column(String(16), nullable=False)
     label: Mapped[str] = mapped_column(String(256), nullable=False)
-    encrypted_payload: Mapped[bytes] = mapped_column(
-        LargeBinary, nullable=False
-    )
+    encrypted_payload: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     key_version: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default="1"
     )
@@ -134,12 +132,8 @@ class QuotaCounterORM(Base):
 
     __tablename__ = "quota_counters"
 
-    tenant_id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True), primary_key=True
-    )
-    model_id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True), primary_key=True
-    )
+    tenant_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True)
+    model_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True)
     window_start: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), primary_key=True
     )
@@ -149,9 +143,7 @@ class QuotaCounterORM(Base):
     output_tokens: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default="0"
     )
-    requests: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default="0"
-    )
+    requests: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -159,9 +151,7 @@ class QuotaCounterORM(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
-    __table_args__ = (
-        Index("ix_quota_counters_window", "window_start"),
-    )
+    __table_args__ = (Index("ix_quota_counters_window", "window_start"),)
 
 
 __all__ = [

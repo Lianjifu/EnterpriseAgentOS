@@ -91,6 +91,7 @@ class _InMemoryUoW:
     async def rollback(self) -> None:
         return None
 
+
 # Canonical 12-field payload used to sign a test manifest.
 _CANONICAL_FIELDS = (
     "name",
@@ -134,7 +135,9 @@ def _write_pack(
     signature_b64 = sign_payload_dict(payload_dict, key)
     key_id = public_key_id(key.public_key())
 
-    (pack_dir / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True))
+    (pack_dir / "manifest.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True)
+    )
     (pack_dir / "signature.json").write_text(
         json.dumps(
             {"signature": signature_b64, "signer_key_id": key_id},
@@ -184,7 +187,9 @@ async def test_register_use_case_accepts_signed_pack() -> None:
         key = Ed25519PrivateKey.generate()
         key_id = public_key_id(key.public_key())
         trust_dir.mkdir()
-        (trust_dir / f"{key_id}.pub.pem").write_bytes(public_key_to_pem(key.public_key()))
+        (trust_dir / f"{key_id}.pub.pem").write_bytes(
+            public_key_to_pem(key.public_key())
+        )
 
         _write_pack(packs_root / "demo-pack", name="demo-pack", key=key)
 
@@ -239,7 +244,9 @@ async def test_register_use_case_raises_skill_already_exists_on_repeat() -> None
         key = Ed25519PrivateKey.generate()
         key_id = public_key_id(key.public_key())
         trust_dir.mkdir()
-        (trust_dir / f"{key_id}.pub.pem").write_bytes(public_key_to_pem(key.public_key()))
+        (trust_dir / f"{key_id}.pub.pem").write_bytes(
+            public_key_to_pem(key.public_key())
+        )
 
         _write_pack(packs_root / "demo-pack", name="demo-pack", key=key)
 
@@ -346,11 +353,12 @@ def test_office_packs_sign_against_dev_trust_key() -> None:
             f"trust store missing key for {pack_dir.name}: {key_path}"
         )
 
+        from eos_pack_signing import load_public_key_pem
+
         from deos.modules.skill.domain.signing import (
             SkillPackPayload,
             verify_signature,
         )
-        from eos_pack_signing import load_public_key_pem
 
         pub_key = load_public_key_pem(key_path.read_bytes())
         payload = SkillPackPayload(

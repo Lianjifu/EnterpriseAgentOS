@@ -162,4 +162,3 @@ async def test_direct_run_turn_constructor_accepts_memory_port() -> None:
         pass
 
     assert memory.calls and memory.calls[0]["query"] == "ping"
-

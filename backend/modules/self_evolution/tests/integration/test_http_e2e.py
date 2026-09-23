@@ -98,7 +98,8 @@ def _build_test_app() -> tuple[FastAPI, dict]:
     # 409, SignerMustDiffer → 403, InvalidEvolveCandidate → 422) into
     # JSON envelopes so the test app behaves like the real app.
     app.add_middleware(
-        BaseHTTPMiddleware, dispatch=error_envelope_middleware  # type: ignore[arg-type]
+        BaseHTTPMiddleware,
+        dispatch=error_envelope_middleware,  # type: ignore[arg-type]
     )
     app.include_router(evolution_router)
 
@@ -152,9 +153,7 @@ class _DirectApplyGuardStub:
 
 
 def _client(app: FastAPI) -> AsyncClient:
-    return AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://testserver"
-    )
+    return AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver")
 
 
 # ── /v1/evolve/candidates create + read ────────────────────────────────
@@ -185,7 +184,8 @@ async def test_create_candidate_returns_201_and_persists() -> None:
     assert body["fingerprint"]  # sha256 hex, non-empty
     # Persisted
     rows = await ctx["repo"].list_by_status(
-        tenant_id=TENANT_A, status=__import__(
+        tenant_id=TENANT_A,
+        status=__import__(
             "deos.modules.self_evolution.domain.value_objects",
             fromlist=["EvolveStatus"],
         ).EvolveStatus.PENDING,
@@ -513,9 +513,7 @@ async def test_apply_uses_injected_guard_not_default_direct() -> None:
     approved = await svc.approve(
         tenant_id=TENANT_A, candidate_id=cand.id, approver_id=ADMIN_ID
     )
-    applied, outcome = await svc.apply(
-        tenant_id=TENANT_A, candidate_id=approved.id
-    )
+    applied, outcome = await svc.apply(tenant_id=TENANT_A, candidate_id=approved.id)
     assert guard.calls == 1
     assert outcome.summary == {"mode": "counted", "calls": 1}
     assert applied.status.value == "applied"

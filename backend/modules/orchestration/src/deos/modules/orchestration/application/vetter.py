@@ -95,9 +95,7 @@ class LocalTrustStorePlanVetter(PlanVetter):
     async def vet(self, plan: Plan) -> None:
         if not plan.signature:
             if self._require_signature:
-                raise PlanSignatureInvalid(
-                    f"plan {plan.name} has no signature"
-                )
+                raise PlanSignatureInvalid(f"plan {plan.name} has no signature")
             return
         key = self._keys.get(plan.signer_key_id)
         if key is None:
@@ -141,9 +139,7 @@ class InMemoryTrustStorePlanVetter(PlanVetter):
     async def vet(self, plan: Plan) -> None:
         if not plan.signature:
             if self._require_signature:
-                raise PlanSignatureInvalid(
-                    f"plan {plan.name} has no signature"
-                )
+                raise PlanSignatureInvalid(f"plan {plan.name} has no signature")
             return
         key = self._keys.get(plan.signer_key_id)
         if key is None:

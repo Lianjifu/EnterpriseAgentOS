@@ -81,9 +81,7 @@ def test_topics_contains_all_subscribed_events() -> None:
 
 
 def test_unknown_event_ignored(recorder: ObservabilityRecorder) -> None:
-    awaitable = recorder.handle(
-        _envelope("TurnStarted", {"tenant_id": uuid4()})
-    )
+    awaitable = recorder.handle(_envelope("TurnStarted", {"tenant_id": uuid4()}))
     # Should be a coroutine; await it and check side effect free.
     import asyncio
 
@@ -329,9 +327,7 @@ def test_handle_never_raises_on_bad_payload(recorder: ObservabilityRecorder) -> 
 
     # Missing tenant_id — handler must swallow and log.
     async def go() -> None:
-        await recorder.handle(
-            _envelope("ModelInvoked", {"input_tokens": 10})
-        )
+        await recorder.handle(_envelope("ModelInvoked", {"input_tokens": 10}))
         await recorder.handle(_envelope("ModelInvoked", {}))
 
     asyncio.run(go())
@@ -360,6 +356,7 @@ def test_handle_never_raises_when_repo_errors(recorder: ObservabilityRecorder) -
     )
     tid = TenantId(uuid4())
     wid = WorkspaceId(uuid4())
+
     async def go() -> None:
         await boom.handle(
             _envelope(
@@ -375,6 +372,7 @@ def test_handle_falls_back_workspace_id(recorder: ObservabilityRecorder) -> None
     import asyncio
 
     tid = TenantId(uuid4())
+
     # No workspace_id in envelope.
     async def go() -> None:
         await recorder.handle(

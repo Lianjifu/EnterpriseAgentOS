@@ -156,9 +156,9 @@ def test_get_package_returns_dto() -> None:
     app, _ = _build_app()
     client = TestClient(app)
     hdr = _hdrs()
-    pid = client.post(
-        "/v1/knowledge/packages", headers=hdr, json={"name": "p"}
-    ).json()["id"]
+    pid = client.post("/v1/knowledge/packages", headers=hdr, json={"name": "p"}).json()[
+        "id"
+    ]
     resp = client.get(f"/v1/knowledge/packages/{pid}", headers=hdr)
     assert resp.status_code == 200
     assert resp.json()["id"] == pid
@@ -184,9 +184,9 @@ def test_revoke_package_returns_revoked_status() -> None:
     app, _ = _build_app()
     client = TestClient(app)
     hdr = _hdrs()
-    pid = client.post(
-        "/v1/knowledge/packages", headers=hdr, json={"name": "p"}
-    ).json()["id"]
+    pid = client.post("/v1/knowledge/packages", headers=hdr, json={"name": "p"}).json()[
+        "id"
+    ]
     resp = client.delete(f"/v1/knowledge/packages/{pid}", headers=hdr)
     assert resp.status_code == 200
     assert resp.json()["status"] == "revoked"
@@ -199,9 +199,9 @@ def test_text_ingest_returns_202_and_ready() -> None:
     app, _ = _build_app()
     client = TestClient(app)
     hdr = _hdrs()
-    pid = client.post(
-        "/v1/knowledge/packages", headers=hdr, json={"name": "p"}
-    ).json()["id"]
+    pid = client.post("/v1/knowledge/packages", headers=hdr, json={"name": "p"}).json()[
+        "id"
+    ]
     resp = client.post(
         f"/v1/knowledge/packages/{pid}/assets/text",
         headers=hdr,
@@ -217,9 +217,9 @@ def test_upload_asset_b64_returns_201() -> None:
     app, _ = _build_app()
     client = TestClient(app)
     hdr = _hdrs()
-    pid = client.post(
-        "/v1/knowledge/packages", headers=hdr, json={"name": "p"}
-    ).json()["id"]
+    pid = client.post("/v1/knowledge/packages", headers=hdr, json={"name": "p"}).json()[
+        "id"
+    ]
     payload = base64.b64encode(b"hello bytes").decode("ascii")
     resp = client.post(
         f"/v1/knowledge/packages/{pid}/assets",
@@ -241,9 +241,9 @@ def test_upload_asset_b64_rejects_invalid_base64() -> None:
     app, _ = _build_app()
     client = TestClient(app)
     hdr = _hdrs()
-    pid = client.post(
-        "/v1/knowledge/packages", headers=hdr, json={"name": "p"}
-    ).json()["id"]
+    pid = client.post("/v1/knowledge/packages", headers=hdr, json={"name": "p"}).json()[
+        "id"
+    ]
     resp = client.post(
         f"/v1/knowledge/packages/{pid}/assets",
         headers=hdr,
@@ -261,9 +261,9 @@ def test_detach_asset_returns_revoked() -> None:
     app, _ = _build_app()
     client = TestClient(app)
     hdr = _hdrs()
-    pid = client.post(
-        "/v1/knowledge/packages", headers=hdr, json={"name": "p"}
-    ).json()["id"]
+    pid = client.post("/v1/knowledge/packages", headers=hdr, json={"name": "p"}).json()[
+        "id"
+    ]
     aid = client.post(
         f"/v1/knowledge/packages/{pid}/assets/text",
         headers=hdr,
@@ -281,9 +281,9 @@ def test_search_returns_hits_after_ingest() -> None:
     app, _ = _build_app()
     client = TestClient(app)
     hdr = _hdrs()
-    pid = client.post(
-        "/v1/knowledge/packages", headers=hdr, json={"name": "p"}
-    ).json()["id"]
+    pid = client.post("/v1/knowledge/packages", headers=hdr, json={"name": "p"}).json()[
+        "id"
+    ]
     client.post(
         f"/v1/knowledge/packages/{pid}/assets/text",
         headers=hdr,
@@ -308,9 +308,9 @@ def test_search_rejects_empty_query() -> None:
     app, _ = _build_app()
     client = TestClient(app)
     hdr = _hdrs()
-    pid = client.post(
-        "/v1/knowledge/packages", headers=hdr, json={"name": "p"}
-    ).json()["id"]
+    pid = client.post("/v1/knowledge/packages", headers=hdr, json={"name": "p"}).json()[
+        "id"
+    ]
     resp = client.post(
         f"/v1/knowledge/packages/{pid}/search",
         headers=hdr,

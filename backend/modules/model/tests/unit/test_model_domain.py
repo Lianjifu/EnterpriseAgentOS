@@ -18,10 +18,7 @@ from eos_schema.ids import (
 )
 
 from deos.modules.model.domain.entities import (
-    Model,
-    ModelCredential,
     QuotaCounter,
-    RoutingPolicy,
     bucket_start,
     make_credential,
     make_model,
@@ -47,7 +44,6 @@ from deos.modules.model.domain.value_objects import (
     ModelProvider,
     RoutingStrategy,
 )
-
 
 TID = TenantId(UUID(int=1))
 WID = WorkspaceId(UUID(int=2))
@@ -314,7 +310,7 @@ def test_bucket_start_day() -> None:
 
 
 def test_bucket_start_naive_assumes_utc() -> None:
-    ts = datetime(2026, 9, 22, 12, 34, 56)
+    ts = datetime(2026, 9, 22, 12, 34, 56)  # noqa: DTZ001 — naive input is the test premise
     assert bucket_start(ts, "minute").tzinfo == UTC
 
 

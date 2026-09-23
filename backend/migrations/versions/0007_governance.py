@@ -143,9 +143,7 @@ def upgrade() -> None:
         "approvals",
         ["tenant_id", "status", "created_at"],
     )
-    op.create_index(
-        "ix_approvals_correlation_id", "approvals", ["correlation_id"]
-    )
+    op.create_index("ix_approvals_correlation_id", "approvals", ["correlation_id"])
 
     op.create_table(
         "decision_events",
@@ -194,8 +192,7 @@ def upgrade() -> None:
         ),
     )
     op.execute(
-        "CREATE INDEX ix_audit_log_tenant_id_created_at "
-        "ON audit_log (tenant_id, created_at DESC)"
+        "CREATE INDEX ix_audit_log_tenant_id_created_at ON audit_log (tenant_id, created_at DESC)"
     )
 
 
@@ -203,15 +200,11 @@ def downgrade() -> None:
     op.drop_index("ix_audit_log_tenant_id_created_at", table_name="audit_log")
     op.drop_table("audit_log")
 
-    op.drop_index(
-        "ix_decision_events_tenant_id_created_at", table_name="decision_events"
-    )
+    op.drop_index("ix_decision_events_tenant_id_created_at", table_name="decision_events")
     op.drop_table("decision_events")
 
     op.drop_index("ix_approvals_correlation_id", table_name="approvals")
-    op.drop_index(
-        "ix_approvals_tenant_id_status_created_at", table_name="approvals"
-    )
+    op.drop_index("ix_approvals_tenant_id_status_created_at", table_name="approvals")
     op.drop_index("ix_approvals_tenant_id", table_name="approvals")
     op.drop_table("approvals")
 

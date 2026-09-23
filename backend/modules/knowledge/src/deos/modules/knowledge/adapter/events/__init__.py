@@ -26,9 +26,7 @@ class MessagingKnowledgeEventPublisher(KnowledgeEventPublisher):
         try:
             await self._bus.publish(topic, event)
         except Exception:  # pragma: no cover — defensive
-            logger.exception(
-                "knowledge event bus publish failed: topic=%s", topic
-            )
+            logger.exception("knowledge event bus publish failed: topic=%s", topic)
 
 
 __all__ = ["MessagingKnowledgeEventPublisher"]

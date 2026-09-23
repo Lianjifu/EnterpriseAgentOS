@@ -5,7 +5,13 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-from eos_schema.ids import KnowledgeAssetId, KnowledgePackageId, TenantId, UserId, WorkspaceId
+from eos_schema.ids import (
+    KnowledgeAssetId,
+    KnowledgePackageId,
+    TenantId,
+    UserId,
+    WorkspaceId,
+)
 
 from deos.modules.knowledge.application.ports import (
     KnowledgeEventPublisher,
@@ -21,7 +27,6 @@ from deos.modules.knowledge.domain.errors import (
 from deos.modules.knowledge.domain.events import KnowledgeAssetRevoked
 from deos.modules.knowledge.domain.value_objects import (
     KnowledgeAssetStatus,
-    KnowledgePackageStatus,
 )
 
 logger = logging.getLogger(__name__)
@@ -71,6 +76,7 @@ class DetachKnowledgeAssetUseCase:
     ) -> KnowledgeAsset:
         if self.policy_guard is not None:
             from eos_vault.actor import ActorContext
+
             await self.policy_guard.check(  # type: ignore[attr-defined]
                 actor=ActorContext(
                     tenant_id=tenant_id,

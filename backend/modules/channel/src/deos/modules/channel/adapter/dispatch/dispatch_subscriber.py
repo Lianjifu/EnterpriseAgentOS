@@ -77,9 +77,7 @@ class ChannelDispatchSubscriber:
 
     async def install(self, event_bus: Any) -> None:
         """Subscribe to :attr:`ChannelMessageReceived.TOPIC`."""
-        await event_bus.subscribe(
-            ChannelMessageReceived.TOPIC, self._handle_envelope
-        )
+        await event_bus.subscribe(ChannelMessageReceived.TOPIC, self._handle_envelope)
         _log.info(
             "channel dispatch subscriber installed",
             extra={"topic": ChannelMessageReceived.TOPIC},
@@ -187,8 +185,7 @@ class ChannelDispatchSubscriber:
                     },
                 )
                 user_input = (
-                    f"[channel={evt.channel_type} "
-                    f"chat={evt.external_chat_id}] {evt.text_preview}"
+                    f"[channel={evt.channel_type} chat={evt.external_chat_id}] {evt.text_preview}"
                 )
                 result = await svc.run_turn_to_completion().execute(
                     tenant_id=evt.tenant_id,
@@ -222,9 +219,7 @@ class ChannelDispatchSubscriber:
         # definition site.
         adapter: OutboundAdapter | None = None
         for key, candidate in registry.items():
-            if str(key) == str(channel_type) or (
-                getattr(key, "value", None) == channel_type
-            ):
+            if str(key) == str(channel_type) or (getattr(key, "value", None) == channel_type):
                 adapter = candidate
                 break
         if adapter is None:
@@ -261,10 +256,7 @@ class ChannelDispatchSubscriber:
         The inbound event lacks ``external_message_id``; combine the
         fields we do have and hash so the tuple fits in the LRU key.
         """
-        raw = (
-            f"{evt.channel_id}|{evt.external_user_id}|"
-            f"{evt.external_chat_id}|{evt.text_preview}"
-        )
+        raw = f"{evt.channel_id}|{evt.external_user_id}|{evt.external_chat_id}|{evt.text_preview}"
         return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
     def _evict_dedup(self) -> None:

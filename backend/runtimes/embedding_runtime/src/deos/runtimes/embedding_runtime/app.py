@@ -22,9 +22,7 @@ def _build_adapter(provider: str, *, openai_api_key: str = "") -> EmbeddingAdapt
         return NoOpAdapter()
     if p == "openai":
         if not openai_api_key:
-            raise RuntimeError(
-                "OPENAI_API_KEY required when EMBEDDING_PROVIDER=openai"
-            )
+            raise RuntimeError("OPENAI_API_KEY required when EMBEDDING_PROVIDER=openai")
         return OpenAIAdapter(api_key=openai_api_key)
     if p == "sbert":
         from deos.runtimes.embedding_runtime.adapters.sbert_adapter import (

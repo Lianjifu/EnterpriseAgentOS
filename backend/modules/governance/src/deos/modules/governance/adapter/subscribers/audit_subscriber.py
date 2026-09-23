@@ -7,10 +7,10 @@ for every topic returned by ``recorder.topics()``.  The handler is
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from deos.modules.governance.application.audit_recorder import AuditRecorder
-
 
 SubscriberHandler = Callable[[Any], Coroutine[Any, Any, None]]
 
@@ -43,6 +43,7 @@ async def install(
     # The cache-invalidator subscribes alongside the recorder (same topic
     # = two handlers); we don't dedupe across handler kinds.
     if cache_invalidator is not None:
+
         async def _policy_changed(envelope: Any) -> None:
             payload = (
                 getattr(envelope, "payload", None)

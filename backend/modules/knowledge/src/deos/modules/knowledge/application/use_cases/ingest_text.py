@@ -38,7 +38,9 @@ class IngestTextUseCase:
     storage: StoragePort
     publisher: KnowledgeEventPublisher | None = None
     policy_guard: object | None = None
-    max_inline_bytes: int = 256 * 1024  # 256 KiB stays inline; otherwise staged via StoragePort.
+    max_inline_bytes: int = (
+        256 * 1024
+    )  # 256 KiB stays inline; otherwise staged via StoragePort.
 
     async def execute(
         self,
@@ -81,9 +83,7 @@ class IngestTextUseCase:
             # in PENDING; the caller is expected to invoke ingest separately.
             return asset
 
-        return await ingest_use_case.execute(
-            tenant_id=tenant_id, asset_id=asset.id
-        )
+        return await ingest_use_case.execute(tenant_id=tenant_id, asset_id=asset.id)
 
 
 __all__ = ["IngestTextUseCase"]

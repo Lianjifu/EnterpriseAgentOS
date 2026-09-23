@@ -100,9 +100,7 @@ class EvolutionCandidateService:
     async def get(
         self, *, tenant_id: TenantId, candidate_id: EvolveCandidateId
     ) -> EvolveCandidate:
-        cand = await self._repo.get(
-            tenant_id=tenant_id, candidate_id=candidate_id
-        )
+        cand = await self._repo.get(tenant_id=tenant_id, candidate_id=candidate_id)
         if cand is None:
             raise EvolveCandidateNotFound(
                 f"candidate {candidate_id} not found",
@@ -196,7 +194,9 @@ class EvolutionCandidateService:
         decided = cand.reject(approver_id=cand.requester_id or UserId(cand.id), now=now)
         await self._repo.update(decided)
         await self._publish_decided(
-            decided, approver_id=decided.requester_id or approver_id_synthetic(cand), reason="expired"
+            decided,
+            approver_id=decided.requester_id or approver_id_synthetic(cand),
+            reason="expired",
         )
         return decided
 

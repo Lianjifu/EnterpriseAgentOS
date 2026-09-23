@@ -7,9 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 AssetKindLiteral = Literal["text", "document", "webpage"]
-AssetStatusLiteral = Literal[
-    "pending", "processing", "ready", "failed", "revoked"
-]
+AssetStatusLiteral = Literal["pending", "processing", "ready", "failed", "revoked"]
 PackageStatusLiteral = Literal["active", "archived", "revoked"]
 
 

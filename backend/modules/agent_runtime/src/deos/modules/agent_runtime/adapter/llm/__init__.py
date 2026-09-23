@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
+from uuid import UUID
 
 from deos.modules.model.application.services import ModelService
 from eos_llm.client import ChatRequest, LLMChunk, LLMClient
@@ -69,9 +70,9 @@ class LLMPortAdapter(LLMPort):
         from eos_vault.actor import ActorContext
 
         model_actor = ActorContext(
-            tenant_id=actor.tenant_id,
-            workspace_id=actor.workspace_id,
-            principal_id=actor.principal_id,
+            tenant_id=UUID(actor.tenant_id),  # type: ignore[arg-type]
+            workspace_id=UUID(actor.workspace_id) if actor.workspace_id else None,  # type: ignore[arg-type]
+            principal_id=UUID(actor.principal_id) if actor.principal_id else None,  # type: ignore[arg-type]
             roles=frozenset({"agent"}),
         )
         resp = await self._model_service.invoke(

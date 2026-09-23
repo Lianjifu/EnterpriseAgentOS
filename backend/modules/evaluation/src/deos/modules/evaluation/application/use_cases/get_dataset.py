@@ -20,9 +20,7 @@ class GetEvalDatasetUseCase:
     ) -> EvalDataset:
         ds = await self.repository.get(tenant_id=tenant_id, dataset_id=dataset_id)
         if ds is None:
-            raise EvalDatasetNotFound(
-                f"eval dataset {dataset_id} not found in tenant"
-            )
+            raise EvalDatasetNotFound(f"eval dataset {dataset_id} not found in tenant")
         return ds
 
 

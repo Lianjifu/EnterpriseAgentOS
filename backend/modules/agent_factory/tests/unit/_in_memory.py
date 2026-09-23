@@ -56,7 +56,8 @@ class InMemoryAgentTemplateRepository(AgentTemplateRepository):
         offset: int = 0,
     ) -> list[AgentTemplate]:
         rows = [
-            t for (tid, _), t in self._by_id.items()
+            t
+            for (tid, _), t in self._by_id.items()
             if tid == tenant_id and t.workspace_id == workspace_id
         ]
         rows.sort(key=lambda t: t.created_at, reverse=True)
@@ -114,9 +115,9 @@ class InMemoryAgentVersionRepository(AgentVersionRepository):
 
     async def add(self, version: AgentVersion) -> AgentVersion:
         self._by_id[(version.tenant_id, version.id)] = version
-        self._by_tag[
-            (version.tenant_id, version.template_id, version.version_tag)
-        ] = version.id
+        self._by_tag[(version.tenant_id, version.template_id, version.version_tag)] = (
+            version.id
+        )
         return version
 
     async def update(self, version: AgentVersion) -> AgentVersion:
@@ -160,8 +161,14 @@ class InMemoryEvaluationQuery(EvaluationQueryPort):
     def __init__(self) -> None:
         self._runs: dict[tuple[UUID, UUID, UUID], EvalRunSummary] = {}
 
-    def add(self, *, tenant_id: TenantId, template_id: AgentTemplateId,
-            version_id: AgentVersionId, summary: EvalRunSummary) -> None:
+    def add(
+        self,
+        *,
+        tenant_id: TenantId,
+        template_id: AgentTemplateId,
+        version_id: AgentVersionId,
+        summary: EvalRunSummary,
+    ) -> None:
         self._runs[(tenant_id, template_id, version_id)] = summary
 
     async def latest_passed_run(
@@ -191,6 +198,7 @@ def make_eval_summary(
 ) -> EvalRunSummary:
     """Build an EvalRunSummary with a default completed_at set."""
     from datetime import UTC, datetime
+
     return EvalRunSummary(
         run_id=run_id,
         status=status,

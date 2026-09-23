@@ -36,9 +36,7 @@ def build(service: PlatformService) -> Any:
                 message=f"plan {plan_code!r} is retired and cannot be assigned",
                 code="PLAN_RETIRED",
             )
-        existing = await service.subscription_repo.get_for_tenant(
-            tenant_id=tenant_id
-        )
+        existing = await service.subscription_repo.get_for_tenant(tenant_id=tenant_id)
         now = datetime.now(UTC)
         if existing is None:
             sub = Subscription.assign(

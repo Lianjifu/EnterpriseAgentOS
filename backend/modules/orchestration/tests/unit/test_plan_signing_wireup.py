@@ -24,7 +24,6 @@ from deos.modules.orchestration.adapter.persistence.mappers import (
     plan_to_domain,
     plan_to_orm,
 )
-from deos.modules.orchestration.adapter.persistence.models import PlanORM
 from deos.modules.orchestration.application.use_cases.create_plan import (
     CreatePlanUseCase,
 )

@@ -41,13 +41,9 @@ __all__ = [
 class PlanRepository(Protocol):
     """Persistence for :class:`Plan` aggregates."""
 
-    async def get(
-        self, *, tenant_id: TenantId, plan_id: PlanId
-    ) -> Plan | None: ...
+    async def get(self, *, tenant_id: TenantId, plan_id: PlanId) -> Plan | None: ...
 
-    async def get_by_name(
-        self, *, tenant_id: TenantId, name: str
-    ) -> Plan | None: ...
+    async def get_by_name(self, *, tenant_id: TenantId, name: str) -> Plan | None: ...
 
     async def list(
         self,

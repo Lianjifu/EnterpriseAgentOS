@@ -70,14 +70,10 @@ class _AesGcmCipher(CredentialCipher):
     def key_version(self) -> int:
         return self._key_version
 
-    def encrypt(
-        self, plaintext: bytes, *, aad: bytes | None = None
-    ) -> bytes:
+    def encrypt(self, plaintext: bytes, *, aad: bytes | None = None) -> bytes:
         return aes_gcm.encrypt(plaintext, self._key, aad=aad)
 
-    def decrypt(
-        self, blob: bytes, *, aad: bytes | None = None
-    ) -> bytes:
+    def decrypt(self, blob: bytes, *, aad: bytes | None = None) -> bytes:
         return aes_gcm.decrypt(blob, self._key, aad=aad)
 
 

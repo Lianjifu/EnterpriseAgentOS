@@ -45,6 +45,7 @@ class RevokeMemoryUseCase:
         # P5: gate revokes behind the policy engine
         if self.policy_guard is not None:
             from eos_vault.actor import ActorContext
+
             await self.policy_guard.check(  # type: ignore[attr-defined]
                 actor=ActorContext(
                     tenant_id=tenant_id,

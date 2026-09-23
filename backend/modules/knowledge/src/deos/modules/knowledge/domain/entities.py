@@ -16,7 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from eos_schema.ids import (
     KnowledgeAssetId,
@@ -29,8 +29,6 @@ from eos_schema.ids import (
 
 from deos.modules.knowledge.domain.errors import (
     KnowledgeAssetNotFound,
-    KnowledgeChunkNotFound,
-    KnowledgePackageNotFound,
     KnowledgeValidationError,
 )
 from deos.modules.knowledge.domain.value_objects import (

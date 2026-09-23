@@ -42,10 +42,10 @@ from deos.modules.knowledge.domain.signing import (
 )
 
 __all__ = [
+    "InMemoryTrustStoreKnowledgeVetter",
+    "KnowledgeVetter",
     "LocalTrustStoreKnowledgeVetter",
     "NoOpKnowledgeVetter",
-    "KnowledgeVetter",
-    "InMemoryTrustStoreKnowledgeVetter",
 ]
 
 
@@ -62,7 +62,9 @@ def _payload_of(p: KnowledgePackage) -> KnowledgePackPayload:
     # currently not part of the entity — we hash the *sorted* set so an
     # out-of-order pack still canonicalizes deterministically.
     metadata = dict(p.metadata or {})
-    asset_ids: tuple[str, ...] = tuple(sorted(str(x) for x in metadata.get("asset_ids", ())))
+    asset_ids: tuple[str, ...] = tuple(
+        sorted(str(x) for x in metadata.get("asset_ids", ()))
+    )
     return KnowledgePackPayload(
         name=p.name,
         version=str(metadata.get("version", p.name)),

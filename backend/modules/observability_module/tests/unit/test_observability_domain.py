@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import uuid4
@@ -17,7 +18,6 @@ from deos.modules.observability_module.domain.value_objects import (
     RunStatus,
     RunType,
 )
-
 
 # ── RunRecord ─────────────────────────────────────────────────────────────
 
@@ -83,7 +83,9 @@ def test_run_record_frozen() -> None:
     )
     try:
         rec.status = RunStatus.FAILED  # type: ignore[misc]
-    except (AttributeError, Exception):
+    except (AttributeError, dataclasses.FrozenInstanceError):
+        # RunRecord is frozen — assignment must raise. Other unexpected
+        # exceptions propagate so the test fails loudly.
         pass
     else:
         raise AssertionError("RunRecord must be frozen")
@@ -156,7 +158,7 @@ def test_cost_record_rejects_empty_unit() -> None:
             workspace_id=WorkspaceId(uuid4()),
             run_id=uuid4(),
             cost_type=CostType.TOOL,
-            amount_usd=Decimal("0"),
+            amount_usd=Decimal(0),
             unit="",
         )
 
@@ -170,7 +172,7 @@ def test_cost_record_rejects_long_unit() -> None:
             workspace_id=WorkspaceId(uuid4()),
             run_id=uuid4(),
             cost_type=CostType.TOOL,
-            amount_usd=Decimal("0"),
+            amount_usd=Decimal(0),
             unit="x" * 17,
         )
 
@@ -184,7 +186,7 @@ def test_cost_record_rejects_long_currency() -> None:
             workspace_id=WorkspaceId(uuid4()),
             run_id=uuid4(),
             cost_type=CostType.TOOL,
-            amount_usd=Decimal("0"),
+            amount_usd=Decimal(0),
             currency="TOOLONGCC",  # 9 chars > 8
         )
 
@@ -207,10 +209,10 @@ def test_cost_record_zero_amount_is_valid() -> None:
         workspace_id=WorkspaceId(uuid4()),
         run_id=uuid4(),
         cost_type=CostType.TOOL,
-        amount_usd=Decimal("0"),
+        amount_usd=Decimal(0),
         unit="echo",
     )
-    assert rec.amount_usd == Decimal("0")
+    assert rec.amount_usd == Decimal(0)
 
 
 def test_cost_record_decimal_precision() -> None:

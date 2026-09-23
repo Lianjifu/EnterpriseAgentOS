@@ -5,6 +5,12 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
+from _memory_unit_in_memory import (
+    DeterministicEmbedding,
+    InMemoryMemoryRepository,
+    InMemoryVectorSearch,
+    RecordingPublisher,
+)
 from eos_schema.ids import MemoryEntryId, TenantId, UserId, WorkspaceId
 
 from deos.modules.memory.application import MemoryService
@@ -17,13 +23,6 @@ from deos.modules.memory.domain.errors import (
 )
 from deos.modules.memory.domain.events import MemoryRevoked, MemoryWritten
 from deos.modules.memory.domain.value_objects import MemoryScope
-
-from _memory_unit_in_memory import (
-    DeterministicEmbedding,
-    InMemoryMemoryRepository,
-    InMemoryVectorSearch,
-    RecordingPublisher,
-)
 
 
 def _tenant() -> TenantId:

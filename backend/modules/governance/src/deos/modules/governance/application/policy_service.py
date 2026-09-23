@@ -8,7 +8,6 @@ subscriber to invalidate the cache on policy lifecycle events.
 from __future__ import annotations
 
 from typing import Any
-from uuid import UUID
 
 from eos_schema.ids import PolicyId, TenantId, UserId, WorkspaceId
 

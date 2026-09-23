@@ -73,7 +73,9 @@ async def test_create_persists_and_emits_event(svc: EvolutionCandidateService) -
 
 
 @pytest.mark.asyncio
-async def test_create_with_no_publisher_does_not_raise(svc: EvolutionCandidateService) -> None:
+async def test_create_with_no_publisher_does_not_raise(
+    svc: EvolutionCandidateService,
+) -> None:
     svc_no_pub = EvolutionCandidateService(
         repo=InMemoryEvolutionCandidateRepository(),
         clock=FixedClock(),
@@ -96,11 +98,15 @@ async def test_create_with_no_publisher_does_not_raise(svc: EvolutionCandidateSe
 @pytest.mark.asyncio
 async def test_get_returns_persisted(svc: EvolutionCandidateService) -> None:
     cand = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload=_payload(),
-        confidence=0.7, trigger_reason="x",
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload=_payload(),
+        confidence=0.7,
+        trigger_reason="x",
     )
     fetched = await svc.get(
-        tenant_id=TENANT, candidate_id=cand.id  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=cand.id,  # type: ignore[arg-type]
     )
     assert fetched.id == cand.id
 
@@ -117,8 +123,11 @@ async def test_get_raises_not_found(svc: EvolutionCandidateService) -> None:
 @pytest.mark.asyncio
 async def test_get_blocks_cross_tenant(svc: EvolutionCandidateService) -> None:
     cand = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload={},
-        confidence=0.5, trigger_reason="x",
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload={},
+        confidence=0.5,
+        trigger_reason="x",
     )
     with pytest.raises(EvolveCandidateNotFound):
         await svc.get(
@@ -131,14 +140,21 @@ async def test_get_blocks_cross_tenant(svc: EvolutionCandidateService) -> None:
 
 
 @pytest.mark.asyncio
-async def test_approve_moves_to_approved_and_emits(svc: EvolutionCandidateService) -> None:
+async def test_approve_moves_to_approved_and_emits(
+    svc: EvolutionCandidateService,
+) -> None:
     cand = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload=_payload(),
-        confidence=0.7, trigger_reason="x",
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload=_payload(),
+        confidence=0.7,
+        trigger_reason="x",
         requester_id=USER_REQ,
     )
     decided = await svc.approve(
-        tenant_id=TENANT, candidate_id=cand.id, approver_id=USER_ADMIN  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=cand.id,
+        approver_id=USER_ADMIN,  # type: ignore[arg-type]
     )
     assert decided.status is EvolveStatus.APPROVED
     publisher = svc._publisher  # type: ignore[attr-defined]
@@ -151,45 +167,62 @@ async def test_approve_rejects_when_signer_equals_requester(
     svc: EvolutionCandidateService,
 ) -> None:
     cand = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload=_payload(),
-        confidence=0.7, trigger_reason="x",
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload=_payload(),
+        confidence=0.7,
+        trigger_reason="x",
         requester_id=USER_ADMIN,
     )
     from deos.modules.self_evolution.domain.errors import SignerMustDiffer
 
     with pytest.raises(SignerMustDiffer):
         await svc.approve(
-            tenant_id=TENANT, candidate_id=cand.id, approver_id=USER_ADMIN  # type: ignore[arg-type]
+            tenant_id=TENANT,
+            candidate_id=cand.id,
+            approver_id=USER_ADMIN,  # type: ignore[arg-type]
         )
 
 
 @pytest.mark.asyncio
 async def test_approve_rejects_double_decision(svc: EvolutionCandidateService) -> None:
     cand = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload=_payload(),
-        confidence=0.7, trigger_reason="x",
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload=_payload(),
+        confidence=0.7,
+        trigger_reason="x",
     )
     await svc.approve(
-        tenant_id=TENANT, candidate_id=cand.id, approver_id=USER_ADMIN  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=cand.id,
+        approver_id=USER_ADMIN,  # type: ignore[arg-type]
     )
     with pytest.raises(EvolveCandidateAlreadyDecided):
         await svc.approve(
-            tenant_id=TENANT, candidate_id=cand.id, approver_id=UUID(int=12)  # type: ignore[arg-type]
+            tenant_id=TENANT,
+            candidate_id=cand.id,
+            approver_id=UUID(int=12),  # type: ignore[arg-type]
         )
 
 
 @pytest.mark.asyncio
 async def test_approve_rejects_when_expired(svc: EvolutionCandidateService) -> None:
     cand = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload=_payload(),
-        confidence=0.7, trigger_reason="x",
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload=_payload(),
+        confidence=0.7,
+        trigger_reason="x",
         ttl_seconds=60,
     )
     clock = svc._clock  # type: ignore[attr-defined]
     clock.advance(hours=1)
     with pytest.raises(EvolveCandidateAlreadyDecided):
         await svc.approve(
-            tenant_id=TENANT, candidate_id=cand.id, approver_id=USER_ADMIN  # type: ignore[arg-type]
+            tenant_id=TENANT,
+            candidate_id=cand.id,
+            approver_id=USER_ADMIN,  # type: ignore[arg-type]
         )
 
 
@@ -199,11 +232,16 @@ async def test_approve_rejects_when_expired(svc: EvolutionCandidateService) -> N
 @pytest.mark.asyncio
 async def test_reject_terminates_candidate(svc: EvolutionCandidateService) -> None:
     cand = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload=_payload(),
-        confidence=0.7, trigger_reason="x",
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload=_payload(),
+        confidence=0.7,
+        trigger_reason="x",
     )
     decided = await svc.reject(
-        tenant_id=TENANT, candidate_id=cand.id, approver_id=USER_ADMIN,  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=cand.id,
+        approver_id=USER_ADMIN,  # type: ignore[arg-type]
         reason="not relevant",
     )
     assert decided.status is EvolveStatus.REJECTED
@@ -212,15 +250,22 @@ async def test_reject_terminates_candidate(svc: EvolutionCandidateService) -> No
 @pytest.mark.asyncio
 async def test_reject_after_approve_fails(svc: EvolutionCandidateService) -> None:
     cand = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload=_payload(),
-        confidence=0.7, trigger_reason="x",
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload=_payload(),
+        confidence=0.7,
+        trigger_reason="x",
     )
     await svc.approve(
-        tenant_id=TENANT, candidate_id=cand.id, approver_id=USER_ADMIN  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=cand.id,
+        approver_id=USER_ADMIN,  # type: ignore[arg-type]
     )
     with pytest.raises(EvolveCandidateAlreadyDecided):
         await svc.reject(
-            tenant_id=TENANT, candidate_id=cand.id, approver_id=USER_ADMIN  # type: ignore[arg-type]
+            tenant_id=TENANT,
+            candidate_id=cand.id,
+            approver_id=USER_ADMIN,  # type: ignore[arg-type]
         )
 
 
@@ -232,14 +277,20 @@ async def test_apply_calls_guard_and_marks_applied(
     svc: EvolutionCandidateService,
 ) -> None:
     cand = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload=_payload(),
-        confidence=0.7, trigger_reason="x",
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload=_payload(),
+        confidence=0.7,
+        trigger_reason="x",
     )
     await svc.approve(
-        tenant_id=TENANT, candidate_id=cand.id, approver_id=USER_ADMIN  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=cand.id,
+        approver_id=USER_ADMIN,  # type: ignore[arg-type]
     )
     applied, outcome = await svc.apply(
-        tenant_id=TENANT, candidate_id=cand.id  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=cand.id,  # type: ignore[arg-type]
     )
     assert applied.status is EvolveStatus.APPLIED
     assert outcome.summary["mode"] == "direct"
@@ -248,23 +299,32 @@ async def test_apply_calls_guard_and_marks_applied(
 @pytest.mark.asyncio
 async def test_apply_without_approve_fails(svc: EvolutionCandidateService) -> None:
     cand = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload=_payload(),
-        confidence=0.7, trigger_reason="x",
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload=_payload(),
+        confidence=0.7,
+        trigger_reason="x",
     )
     with pytest.raises(EvolveCandidateAlreadyDecided):
         await svc.apply(
-            tenant_id=TENANT, candidate_id=cand.id  # type: ignore[arg-type]
+            tenant_id=TENANT,
+            candidate_id=cand.id,  # type: ignore[arg-type]
         )
 
 
 @pytest.mark.asyncio
 async def test_apply_is_not_idempotent(svc: EvolutionCandidateService) -> None:
     cand = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload=_payload(),
-        confidence=0.7, trigger_reason="x",
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload=_payload(),
+        confidence=0.7,
+        trigger_reason="x",
     )
     await svc.approve(
-        tenant_id=TENANT, candidate_id=cand.id, approver_id=USER_ADMIN  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=cand.id,
+        approver_id=USER_ADMIN,  # type: ignore[arg-type]
     )
     await svc.apply(tenant_id=TENANT, candidate_id=cand.id)  # type: ignore[arg-type]
     with pytest.raises(EvolveCandidateAlreadyDecided):
@@ -274,11 +334,16 @@ async def test_apply_is_not_idempotent(svc: EvolutionCandidateService) -> None:
 @pytest.mark.asyncio
 async def test_apply_uses_custom_guard(svc: EvolutionCandidateService) -> None:
     cand = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload=_payload(),
-        confidence=0.7, trigger_reason="x",
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload=_payload(),
+        confidence=0.7,
+        trigger_reason="x",
     )
     await svc.approve(
-        tenant_id=TENANT, candidate_id=cand.id, approver_id=USER_ADMIN  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=cand.id,
+        approver_id=USER_ADMIN,  # type: ignore[arg-type]
     )
 
     class _CountingGuard(ApplyGuard):
@@ -296,7 +361,8 @@ async def test_apply_uses_custom_guard(svc: EvolutionCandidateService) -> None:
 
     svc._guard = _CountingGuard()  # type: ignore[attr-defined]
     applied, outcome = await svc.apply(
-        tenant_id=TENANT, candidate_id=cand.id  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=cand.id,  # type: ignore[arg-type]
     )
     assert applied.status is EvolveStatus.APPLIED
     assert _CountingGuard.calls == 1
@@ -309,14 +375,18 @@ async def test_apply_uses_custom_guard(svc: EvolutionCandidateService) -> None:
 @pytest.mark.asyncio
 async def test_expire_if_due_rejects_when_due(svc: EvolutionCandidateService) -> None:
     cand = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload=_payload(),
-        confidence=0.7, trigger_reason="x",
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload=_payload(),
+        confidence=0.7,
+        trigger_reason="x",
         ttl_seconds=60,
     )
     clock = svc._clock  # type: ignore[attr-defined]
     clock.advance(hours=1)
     expired = await svc.expire_if_due(
-        tenant_id=TENANT, candidate_id=cand.id  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=cand.id,  # type: ignore[arg-type]
     )
     assert expired is not None
     assert expired.status is EvolveStatus.REJECTED
@@ -327,12 +397,16 @@ async def test_expire_if_due_returns_none_when_not_due(
     svc: EvolutionCandidateService,
 ) -> None:
     cand = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload=_payload(),
-        confidence=0.7, trigger_reason="x",
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload=_payload(),
+        confidence=0.7,
+        trigger_reason="x",
         ttl_seconds=3600,
     )
     result = await svc.expire_if_due(
-        tenant_id=TENANT, candidate_id=cand.id  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=cand.id,  # type: ignore[arg-type]
     )
     assert result is None
 
@@ -342,14 +416,20 @@ async def test_expire_if_due_returns_none_when_already_terminal(
     svc: EvolutionCandidateService,
 ) -> None:
     cand = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload=_payload(),
-        confidence=0.7, trigger_reason="x",
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload=_payload(),
+        confidence=0.7,
+        trigger_reason="x",
     )
     await svc.approve(
-        tenant_id=TENANT, candidate_id=cand.id, approver_id=USER_ADMIN  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=cand.id,
+        approver_id=USER_ADMIN,  # type: ignore[arg-type]
     )
     result = await svc.expire_if_due(
-        tenant_id=TENANT, candidate_id=cand.id  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=cand.id,  # type: ignore[arg-type]
     )
     assert result is None
 
@@ -362,15 +442,25 @@ async def test_list_pending_excludes_terminal_and_expired(
     svc: EvolutionCandidateService,
 ) -> None:
     a = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload={"k": "a"},
-        confidence=0.5, trigger_reason="x", ttl_seconds=3600,
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload={"k": "a"},
+        confidence=0.5,
+        trigger_reason="x",
+        ttl_seconds=3600,
     )
     b = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.SKILL_PATCH, payload={"k": "b"},
-        confidence=0.5, trigger_reason="x", ttl_seconds=60,
+        tenant_id=TENANT,
+        kind=EvolveKind.SKILL_PATCH,
+        payload={"k": "b"},
+        confidence=0.5,
+        trigger_reason="x",
+        ttl_seconds=60,
     )
     await svc.reject(
-        tenant_id=TENANT, candidate_id=a.id, approver_id=USER_ADMIN  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=a.id,
+        approver_id=USER_ADMIN,  # type: ignore[arg-type]
     )
     svc._clock.advance(hours=1)  # type: ignore[attr-defined]
     pending = await svc.list_pending(tenant_id=TENANT, limit=100)  # type: ignore[arg-type]
@@ -382,18 +472,25 @@ async def test_list_pending_excludes_terminal_and_expired(
 @pytest.mark.asyncio
 async def test_list_by_status_filters_correctly(svc: EvolutionCandidateService) -> None:
     cand = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload={},
-        confidence=0.5, trigger_reason="x",
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload={},
+        confidence=0.5,
+        trigger_reason="x",
     )
     await svc.approve(
-        tenant_id=TENANT, candidate_id=cand.id, approver_id=USER_ADMIN  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=cand.id,
+        approver_id=USER_ADMIN,  # type: ignore[arg-type]
     )
     approved = await svc.list_by_status(
-        tenant_id=TENANT, status=EvolveStatus.APPROVED  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        status=EvolveStatus.APPROVED,  # type: ignore[arg-type]
     )
     assert cand.id in [c.id for c in approved]
     pending = await svc.list_by_status(
-        tenant_id=TENANT, status=EvolveStatus.PENDING  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        status=EvolveStatus.PENDING,  # type: ignore[arg-type]
     )
     assert cand.id not in [c.id for c in pending]
 
@@ -404,12 +501,18 @@ async def test_list_by_status_filters_correctly(svc: EvolutionCandidateService) 
 @pytest.mark.asyncio
 async def test_cross_tenant_list_isolated(svc: EvolutionCandidateService) -> None:
     cand_t1 = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload={},
-        confidence=0.5, trigger_reason="x",
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload={},
+        confidence=0.5,
+        trigger_reason="x",
     )
     cand_t2 = await svc.create(
-        tenant_id=UUID(int=999), kind=EvolveKind.MEMORY_PROMOTE, payload={},  # type: ignore[arg-type]
-        confidence=0.5, trigger_reason="x",
+        tenant_id=UUID(int=999),
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload={},  # type: ignore[arg-type]
+        confidence=0.5,
+        trigger_reason="x",
     )
     pending_t1 = await svc.list_pending(tenant_id=TENANT, limit=100)  # type: ignore[arg-type]
     assert cand_t1.id in [c.id for c in pending_t1]
@@ -419,11 +522,16 @@ async def test_cross_tenant_list_isolated(svc: EvolutionCandidateService) -> Non
 @pytest.mark.asyncio
 async def test_event_published_for_applied(svc: EvolutionCandidateService) -> None:
     cand = await svc.create(
-        tenant_id=TENANT, kind=EvolveKind.MEMORY_PROMOTE, payload={},
-        confidence=0.5, trigger_reason="x",
+        tenant_id=TENANT,
+        kind=EvolveKind.MEMORY_PROMOTE,
+        payload={},
+        confidence=0.5,
+        trigger_reason="x",
     )
     await svc.approve(
-        tenant_id=TENANT, candidate_id=cand.id, approver_id=USER_ADMIN  # type: ignore[arg-type]
+        tenant_id=TENANT,
+        candidate_id=cand.id,
+        approver_id=USER_ADMIN,  # type: ignore[arg-type]
     )
     await svc.apply(tenant_id=TENANT, candidate_id=cand.id)  # type: ignore[arg-type]
     publisher = svc._publisher  # type: ignore[attr-defined]

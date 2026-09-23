@@ -220,7 +220,9 @@ class WorkflowRun:
             status=status,
             variables=self.variables,
             input=self.input,
-            final_output=final_output if final_output is not None else self.final_output,
+            final_output=final_output
+            if final_output is not None
+            else self.final_output,
             error_code=error_code if error_code is not None else self.error_code,
             trace_id=self.trace_id,
             idempotency_key=self.idempotency_key,

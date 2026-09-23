@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
 from eos_pack_signing import (
     public_key_id,
     public_key_to_pem,

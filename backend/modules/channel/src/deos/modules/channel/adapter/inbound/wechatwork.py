@@ -12,7 +12,6 @@ Wecom delivers two kinds of messages to the configured callback URL:
 from __future__ import annotations
 
 import json
-import xml.etree.ElementTree as ET
 from typing import Any
 
 from deos.modules.channel.application.ports import InboundAdapter, ParsedMessage
@@ -90,8 +89,10 @@ def _safe_json(text: str) -> dict[str, Any]:
 
 def _safe_xml(body: bytes) -> dict[str, str]:
     try:
-        root = ET.fromstring(body)  # type: ignore[arg-type]
-    except ET.ParseError:
+        from defusedxml import ElementTree as DefusedET
+
+        root = DefusedET.fromstring(body)  # type: ignore[arg-type]
+    except DefusedET.ParseError:  # type: ignore[attr-defined]
         return {}
     return {child.tag: (child.text or "") for child in root}
 

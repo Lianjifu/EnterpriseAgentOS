@@ -69,9 +69,7 @@ class AgentTemplateORM(TenantScopedMixin, Base):
         nullable=False,
         server_default=text("'{}'::jsonb"),
     )
-    created_by: Mapped[UUID | None] = mapped_column(
-        PgUUID(as_uuid=True), nullable=True
-    )
+    created_by: Mapped[UUID | None] = mapped_column(PgUUID(as_uuid=True), nullable=True)
 
     __table_args__ = (
         CheckConstraint(
@@ -135,9 +133,7 @@ class AgentVersionORM(TenantScopedMixin, Base):
         nullable=False,
         server_default=text("'{}'::jsonb"),
     )
-    created_by: Mapped[UUID | None] = mapped_column(
-        PgUUID(as_uuid=True), nullable=True
-    )
+    created_by: Mapped[UUID | None] = mapped_column(PgUUID(as_uuid=True), nullable=True)
 
     __table_args__ = (
         CheckConstraint(
@@ -171,9 +167,7 @@ class ReleaseORM(TenantScopedMixin, Base):
     eval_run_id: Mapped[UUID | None] = mapped_column(
         PgUUID(as_uuid=True), nullable=True
     )
-    eval_score: Mapped[float | None] = mapped_column(
-        Numeric(4, 3), nullable=True
-    )
+    eval_score: Mapped[float | None] = mapped_column(Numeric(4, 3), nullable=True)
     status: Mapped[str] = mapped_column(
         String(16),
         nullable=False,
@@ -185,9 +179,7 @@ class ReleaseORM(TenantScopedMixin, Base):
     released_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
-    notes: Mapped[str] = mapped_column(
-        Text, nullable=False, server_default=text("''")
-    )
+    notes: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("''"))
 
     __table_args__ = (
         CheckConstraint(

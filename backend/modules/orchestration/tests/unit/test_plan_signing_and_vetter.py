@@ -79,9 +79,7 @@ def test_tampered_dsl_breaks_signature() -> None:
         default_timeout_seconds=p.default_timeout_seconds,
     )
     with pytest.raises(InvalidSignature):
-        verify_signature(
-            tampered, signature_b64=sig, public_key=key.public_key()
-        )
+        verify_signature(tampered, signature_b64=sig, public_key=key.public_key())
 
 
 def test_tampered_allowed_tenants_breaks_signature() -> None:
@@ -99,9 +97,7 @@ def test_tampered_allowed_tenants_breaks_signature() -> None:
         default_timeout_seconds=p.default_timeout_seconds,
     )
     with pytest.raises(InvalidSignature):
-        verify_signature(
-            tampered, signature_b64=sig, public_key=key.public_key()
-        )
+        verify_signature(tampered, signature_b64=sig, public_key=key.public_key())
 
 
 def test_tampered_schedule_breaks_signature() -> None:
@@ -118,9 +114,7 @@ def test_tampered_schedule_breaks_signature() -> None:
         default_timeout_seconds=p.default_timeout_seconds,
     )
     with pytest.raises(InvalidSignature):
-        verify_signature(
-            tampered, signature_b64=sig, public_key=key.public_key()
-        )
+        verify_signature(tampered, signature_b64=sig, public_key=key.public_key())
 
 
 def test_tampered_timeout_breaks_signature() -> None:
@@ -137,9 +131,7 @@ def test_tampered_timeout_breaks_signature() -> None:
         default_timeout_seconds=86_400 * 365,  # tampered — effectively no timeout
     )
     with pytest.raises(InvalidSignature):
-        verify_signature(
-            tampered, signature_b64=sig, public_key=key.public_key()
-        )
+        verify_signature(tampered, signature_b64=sig, public_key=key.public_key())
 
 
 # InMemoryTrustStorePlanVetter ------------------------------------------------
@@ -245,9 +237,7 @@ async def test_inmemory_vetter_rejects_tampered_dsl() -> None:
 async def test_local_trust_store_vetter_accepts(tmp_path: Path) -> None:
     key = _new_key()
     kid = public_key_id(key.public_key())
-    (tmp_path / f"{kid}.pub.pem").write_bytes(
-        public_key_to_pem(key.public_key())
-    )
+    (tmp_path / f"{kid}.pub.pem").write_bytes(public_key_to_pem(key.public_key()))
     vetter = LocalTrustStorePlanVetter(trust_dir=str(tmp_path))
     await vetter.vet(_signed_plan(key))
 
@@ -255,9 +245,7 @@ async def test_local_trust_store_vetter_accepts(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_local_trust_store_rejects_wrong_filename(tmp_path: Path) -> None:
     key = _new_key()
-    (tmp_path / "deadbeef.pub.pem").write_bytes(
-        public_key_to_pem(key.public_key())
-    )
+    (tmp_path / "deadbeef.pub.pem").write_bytes(public_key_to_pem(key.public_key()))
     with pytest.raises(PlanSignerUntrusted):
         LocalTrustStorePlanVetter(trust_dir=str(tmp_path))
 

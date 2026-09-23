@@ -86,14 +86,10 @@ class PlatformService:
     async def get_plan(
         self, *, plan_id: str | None = None, code: str | None = None
     ) -> Plan:
-        return await self._use_cases["get_plan"](
-            plan_id=plan_id, code=code
-        )
+        return await self._use_cases["get_plan"](plan_id=plan_id, code=code)
 
     async def get_my_subscription(self, *, tenant_id: object) -> Subscription | None:
-        return await self._use_cases["get_my_subscription"](
-            tenant_id=tenant_id
-        )
+        return await self._use_cases["get_my_subscription"](tenant_id=tenant_id)
 
     async def assign_subscription(
         self,

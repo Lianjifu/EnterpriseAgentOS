@@ -145,8 +145,7 @@ def upgrade() -> None:
             server_default=sa.text("now()"),
         ),
         sa.CheckConstraint(
-            "cost_type IN ('llm_input','llm_output','tool','skill','memory',"
-            "'knowledge','channel')",
+            "cost_type IN ('llm_input','llm_output','tool','skill','memory','knowledge','channel')",
             name="ck_cost_records_cost_type_enum",
         ),
         sa.CheckConstraint(

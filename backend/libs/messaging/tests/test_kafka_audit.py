@@ -91,7 +91,9 @@ class _FakeAIOKafkaConsumer:
     aiokafka's shape: ``dict[TopicPartition, list[ConsumerRecord]]``.
     """
 
-    def __init__(self, topic: str, *, bootstrap_servers: str, group_id: str, **_: Any) -> None:
+    def __init__(
+        self, topic: str, *, bootstrap_servers: str, group_id: str, **_: Any
+    ) -> None:
         self.topic = topic
         self.bootstrap_servers = bootstrap_servers
         self.group_id = group_id
@@ -113,7 +115,9 @@ class _FakeAIOKafkaConsumer:
     async def stop(self) -> None:
         self.stopped = True
 
-    async def getmany(self, *, timeout_ms: int, max_records: int) -> dict[_FakePartition, list[_FakeRecord]]:
+    async def getmany(
+        self, *, timeout_ms: int, max_records: int
+    ) -> dict[_FakePartition, list[_FakeRecord]]:
         # Real aiokafka returns {} immediately when no records + non-blocking.
         if not self._pending:
             return {}

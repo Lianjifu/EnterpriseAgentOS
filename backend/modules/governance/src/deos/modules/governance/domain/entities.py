@@ -155,9 +155,7 @@ class Approval:
             created_at=ts,
         )
 
-    def approve(
-        self, *, approver_id: UserId, now: datetime | None = None
-    ) -> Approval:
+    def approve(self, *, approver_id: UserId, now: datetime | None = None) -> Approval:
         from deos.modules.governance.domain.errors import (
             ApprovalAlreadyDecided,
             ApproverMustDiffer,

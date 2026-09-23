@@ -8,8 +8,7 @@ Inbound adapter registry + outbound adapter registry are read from
 
 from __future__ import annotations
 
-from typing import Annotated
-from uuid import UUID
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, Body, Path, Query, Request, status
 
@@ -26,11 +25,15 @@ from deos.modules.channel.adapter.http.mappers import (
     channel_to_response,
     delivery_to_response,
 )
-from deos.modules.channel.application.ports import InboundAdapter, OutboundAdapter
-from deos.modules.channel.application.services import ChannelService
 from deos.modules.channel.domain.errors import ChannelNotFound
 from deos.modules.channel.domain.value_objects import ChannelStatus, ChannelType
 from eos_schema.ids import ChannelId, TenantId
+
+if TYPE_CHECKING:
+    from uuid import UUID
+
+    from deos.modules.channel.application.ports import InboundAdapter, OutboundAdapter
+    from deos.modules.channel.application.services import ChannelService
 
 router = APIRouter(prefix="/v1", tags=["channel"])
 
@@ -71,7 +74,7 @@ def _require_actor(request: Request):
 
 def _require_admin(request: Request):
     actor = _require_actor(request)
-    roles = getattr(actor, "roles", frozenset())
+    roles: frozenset[str] = getattr(actor, "roles", frozenset())  # type: ignore[attr-defined]
     if "admin" not in roles:
         from eos_kernel.errors import ForbiddenError
 

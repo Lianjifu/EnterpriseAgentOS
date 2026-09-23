@@ -106,11 +106,9 @@ def build_router() -> APIRouter:
         x_workspace_id: UUID = Header(..., alias="X-Workspace-Id"),  # noqa: B008
         svc: ObservabilityService = Depends(observability_service_dependency),  # noqa: B008
         cost_type: str | None = Query(None),
-        group_by: Literal["cost_type", "workspace", "model"] | None = Query(
-            None
-        ),
-        since: datetime | None = Query(None),
-        until: datetime | None = Query(None),
+        group_by: Literal["cost_type", "workspace", "model"] | None = Query(None),
+        since: datetime | None = Query(None),  # noqa: B008 — FastAPI idiom
+        until: datetime | None = Query(None),  # noqa: B008 — FastAPI idiom
         limit: int = Query(200, ge=1, le=500),
         offset: int = Query(0, ge=0),
     ):

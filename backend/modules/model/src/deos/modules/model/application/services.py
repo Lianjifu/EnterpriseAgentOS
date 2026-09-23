@@ -28,12 +28,10 @@ from eos_schema.ids import (
     ModelId,
     RoutingPolicyId,
     TenantId,
-    UserId,
 )
 from eos_vault.actor import ActorContext
 
 from deos.modules.model.application.ports import (
-    ChatInvoker,
     ClockPort,
     CredentialCipher,
     CredentialRepository,
@@ -178,13 +176,13 @@ class ModelService:
             raise ValueError("api_key must be non-empty")
         # Embed base_url in AAD so the cipher rejects keys bound to a
         # different upstream endpoint (defense-in-depth).
-        aad = (
-            f"provider={provider.value}|base_url={base_url or ''}".encode()
-        )
+        aad = f"provider={provider.value}|base_url={base_url or ''}".encode()
         ciphertext = self.cipher.encrypt(api_key.encode("utf-8"), aad=aad)
         # The encrypted_payload holds (ciphertext + base_url) so the
         # client factory can rehydrate the credential at invoke time.
-        envelope = ciphertext + (b"\x00" + base_url.encode("utf-8") if base_url else b"")
+        envelope = ciphertext + (
+            b"\x00" + base_url.encode("utf-8") if base_url else b""
+        )
         cred = make_credential(
             tenant_id=actor.tenant_id,
             provider=provider,
@@ -214,7 +212,9 @@ class ModelService:
             )
         aad = _extract_aad_from_envelope(cred.encrypted_payload, cred.provider)
         new_ct = self.cipher.encrypt(new_api_key.encode("utf-8"), aad=aad)
-        new_payload = _build_envelope(new_ct, _base_url_from_envelope(cred.encrypted_payload))
+        new_payload = _build_envelope(
+            new_ct, _base_url_from_envelope(cred.encrypted_payload)
+        )
         rotated = cred.with_rotated(
             encrypted_payload=new_payload,
             key_version=self.cipher.key_version,
@@ -247,9 +247,7 @@ class ModelService:
         model_id: ModelId,
         req: ChatRequest,
     ) -> ChatResponse:
-        model = await self.model_repo.get(
-            tenant_id=actor.tenant_id, model_id=model_id
-        )
+        model = await self.model_repo.get(tenant_id=actor.tenant_id, model_id=model_id)
         if model is None:
             raise ModelNotFound(
                 f"model {model_id} not found",
@@ -261,7 +259,7 @@ class ModelService:
                 code="MODEL_DISABLED",
             )
         api_key, base_url = await self._decrypt_credential(model)
-        cap, window = await self._quota_policy(actor.tenant_id, model)
+        cap, window = await self._quota_policy(actor.tenant_id, model)  # type: ignore[arg-type]
         if cap is not None:
             used = await self.quota_repo.get_window_usage(
                 tenant_id=actor.tenant_id,
@@ -345,9 +343,7 @@ class ModelService:
 
     # ── internal helpers ────────────────────────────────────────────────
 
-    async def _decrypt_credential(
-        self, model: Model
-    ) -> tuple[str, str | None]:
+    async def _decrypt_credential(self, model: Model) -> tuple[str, str | None]:
         """Return (api_key, base_url) for the model's credential.
 
         Raises ``CredentialNotFound`` if the model has no credential
@@ -469,9 +465,7 @@ def _base_url_from_envelope(envelope: bytes) -> str | None:
     return _split_envelope(envelope)[1]
 
 
-def _extract_aad_from_envelope(
-    envelope: bytes, provider: ModelProvider
-) -> bytes:
+def _extract_aad_from_envelope(envelope: bytes, provider: ModelProvider) -> bytes:
     """Build the AAD that was used to encrypt the credential.
 
     The AAD binds the credential to its provider + base_url so a
@@ -482,8 +476,8 @@ def _extract_aad_from_envelope(
 
 
 __all__ = [
+    "DEFAULT_QUOTA_WINDOW",
     "ModelService",
     "_build_envelope",
     "_split_envelope",
-    "DEFAULT_QUOTA_WINDOW",
 ]

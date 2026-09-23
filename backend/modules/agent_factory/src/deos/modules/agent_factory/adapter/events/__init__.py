@@ -31,8 +31,8 @@ class MessagingAgentFactoryEventPublisher:
         trace_id = getattr(event, "trace_id", None)
         try:
             envelope = EventEnvelope.wrap(
-                event,
-                tenant_id=tenant_id,
+                event,  # type: ignore[arg-type]
+                tenant_id=tenant_id,  # type: ignore[arg-type]
                 workspace_id=workspace_id,
                 trace_id=trace_id,
             )

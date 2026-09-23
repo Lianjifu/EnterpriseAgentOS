@@ -131,9 +131,7 @@ class InMemoryChannelRepo(ChannelRepository):
     ):
         items = [r for r in self.rows.values() if r.tenant_id == tenant_id]
         if workspace_id is not None:
-            items = [
-                r for r in items if r.workspace_id is None or r.workspace_id == workspace_id
-            ]
+            items = [r for r in items if r.workspace_id is None or r.workspace_id == workspace_id]
         if enabled_only:
             items = [r for r in items if r.status is ChannelStatus.ACTIVE]
         return items[:limit]
@@ -164,9 +162,7 @@ class InMemoryDeliveryRepo(ChannelDeliveryRepository):
 
     async def list_for_channel(self, *, tenant_id, channel_id, limit=50):
         return [
-            r
-            for r in self.rows.values()
-            if r.tenant_id == tenant_id and r.channel_id == channel_id
+            r for r in self.rows.values() if r.tenant_id == tenant_id and r.channel_id == channel_id
         ][:limit]
 
     async def update(self, delivery):
@@ -220,7 +216,9 @@ class RecordingOutbound(OutboundAdapter):
             {"external_chat_id": external_chat_id, "text": text, "metadata": dict(metadata)}
         )
         if self.fail:
-            raise ChannelDeliveryFailed("synthetic outbound failure", code="CHANNEL_DELIVERY_FAILED")
+            raise ChannelDeliveryFailed(
+                "synthetic outbound failure", code="CHANNEL_DELIVERY_FAILED"
+            )
         return self.return_id
 
 
@@ -230,7 +228,13 @@ def _make_service(
     clock: FixedClock | None = None,
     cipher: WebhookSecretCipher | None = None,
     tolerance: int | None = None,
-) -> tuple[ChannelService, InMemoryChannelRepo, InMemoryDeliveryRepo, InMemorySecretRepo, CollectingPublisher]:
+) -> tuple[
+    ChannelService,
+    InMemoryChannelRepo,
+    InMemoryDeliveryRepo,
+    InMemorySecretRepo,
+    CollectingPublisher,
+]:
     channel_repo = InMemoryChannelRepo()
     delivery_repo = InMemoryDeliveryRepo()
     secret_repo = InMemorySecretRepo()
@@ -353,7 +357,7 @@ async def test_register_channel_with_secret() -> None:
 
 @pytest.mark.asyncio
 async def test_register_channel_without_secret() -> None:
-    svc, channel_repo, _, _, _ = _make_service()
+    svc, _channel_repo, _, _, _ = _make_service()
     tenant = TenantId(uuid4())
     ch = await svc.register_channel(
         tenant_id=tenant,
@@ -376,7 +380,7 @@ def _sign(secret: bytes, ts: int, body: bytes) -> str:
 @pytest.mark.asyncio
 async def test_handle_webhook_happy_path() -> None:
     cipher = NoopCipher()
-    svc, channel_repo, delivery_repo, secret_repo, publisher = _make_service(cipher=cipher)
+    svc, _channel_repo, _delivery_repo, _secret_repo, publisher = _make_service(cipher=cipher)
     tenant = TenantId(uuid4())
     ch = await svc.register_channel(
         tenant_id=tenant,
@@ -410,7 +414,7 @@ async def test_handle_webhook_happy_path() -> None:
 
 @pytest.mark.asyncio
 async def test_handle_webhook_rejects_bad_signature() -> None:
-    svc, channel_repo, delivery_repo, _, publisher = _make_service()
+    svc, _channel_repo, _delivery_repo, _, publisher = _make_service()
     tenant = TenantId(uuid4())
     ch = await svc.register_channel(
         tenant_id=tenant,
@@ -441,7 +445,7 @@ async def test_handle_webhook_rejects_bad_signature() -> None:
 
 @pytest.mark.asyncio
 async def test_handle_webhook_rejects_timestamp_skew() -> None:
-    svc, _, _, _, publisher = _make_service()
+    svc, _, _, _, _publisher = _make_service()
     tenant = TenantId(uuid4())
     ch = await svc.register_channel(
         tenant_id=tenant,
@@ -632,9 +636,7 @@ async def test_list_channels_filters() -> None:
         external_id="eb",
         inbound_path="/b",
     )
-    await svc.set_status(
-        tenant_id=tenant, channel_id=b.id, status=ChannelStatus.DISABLED
-    )
+    await svc.set_status(tenant_id=tenant, channel_id=b.id, status=ChannelStatus.DISABLED)
     items = await svc.list_channels(tenant_id=tenant)
     assert len(items) == 2
     enabled = await svc.list_channels(tenant_id=tenant, enabled_only=True)

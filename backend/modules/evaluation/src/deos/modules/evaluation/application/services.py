@@ -39,9 +39,7 @@ class EvaluationService:
 
     def __post_init__(self) -> None:
         self.get_dataset = GetEvalDatasetUseCase(repository=self.dataset_repository)
-        self.list_datasets = ListEvalDatasetsUseCase(
-            repository=self.dataset_repository
-        )
+        self.list_datasets = ListEvalDatasetsUseCase(repository=self.dataset_repository)
         self.get_run = GetEvalRunUseCase(repository=self.run_repository)
         self.list_runs = ListEvalRunsUseCase(repository=self.run_repository)
         self.start_run = StartEvalRunUseCase(

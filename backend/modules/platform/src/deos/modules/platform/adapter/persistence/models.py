@@ -41,9 +41,7 @@ class PlanORM(Base):
 
     __tablename__ = "plans"
 
-    id: Mapped[UUID] = mapped_column(
-        PgUUID(as_uuid=True), primary_key=True
-    )
+    id: Mapped[UUID] = mapped_column(PgUUID(as_uuid=True), primary_key=True)
     code: Mapped[str] = mapped_column(String(64), nullable=False)
     display_name: Mapped[str] = mapped_column(String(256), nullable=False)
     description: Mapped[str] = mapped_column(
@@ -80,9 +78,7 @@ class PlanORM(Base):
             "status IN ('active','hidden','retired')",
             name="plans_status_enum",
         ),
-        CheckConstraint(
-            "price_monthly_usd >= 0", name="plans_price_nonneg"
-        ),
+        CheckConstraint("price_monthly_usd >= 0", name="plans_price_nonneg"),
     )
 
 
@@ -110,9 +106,7 @@ class SubscriptionORM(TenantScopedMixin, Base):
     auto_renew: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("true")
     )
-    updated_by: Mapped[UUID | None] = mapped_column(
-        PgUUID(as_uuid=True), nullable=True
-    )
+    updated_by: Mapped[UUID | None] = mapped_column(PgUUID(as_uuid=True), nullable=True)
     metadata_: Mapped[dict[str, Any]] = mapped_column(
         "metadata",
         JSONB,
@@ -137,14 +131,10 @@ class TenantSettingORM(TenantScopedMixin, Base):
     )
     key: Mapped[str] = mapped_column(String(128), nullable=False)
     value: Mapped[Any] = mapped_column(JSONB, nullable=False)
-    updated_by: Mapped[UUID | None] = mapped_column(
-        PgUUID(as_uuid=True), nullable=True
-    )
+    updated_by: Mapped[UUID | None] = mapped_column(PgUUID(as_uuid=True), nullable=True)
 
     __table_args__ = (
-        UniqueConstraint(
-            "tenant_id", "key", name="uq_tenant_settings_tenant_id_key"
-        ),
+        UniqueConstraint("tenant_id", "key", name="uq_tenant_settings_tenant_id_key"),
         CheckConstraint(
             "length(key) BETWEEN 1 AND 128",
             name="tenant_settings_key_length",

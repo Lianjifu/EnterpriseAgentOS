@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 from datetime import UTC
-from uuid import UUID
+from typing import TYPE_CHECKING
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from deos.modules.channel.adapter.persistence.models import (
     ChannelDeliveryORM,
@@ -24,6 +23,11 @@ from deos.modules.channel.domain.value_objects import (
     ChannelType,
 )
 from eos_schema.ids import ChannelId, TenantId
+
+if TYPE_CHECKING:
+    from uuid import UUID
+
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 
 def _channel_to_domain(row: ChannelORM) -> Channel:
@@ -85,9 +89,7 @@ class SqlChannelRepository(ChannelRepository):
             )
             await session.commit()
 
-    async def get(
-        self, *, tenant_id: TenantId, channel_id: ChannelId
-    ) -> Channel | None:
+    async def get(self, *, tenant_id: TenantId, channel_id: ChannelId) -> Channel | None:
         async with self._sf() as session:
             row = await session.get(ChannelORM, channel_id)
             if row is None or row.tenant_id != tenant_id:
@@ -116,8 +118,7 @@ class SqlChannelRepository(ChannelRepository):
             stmt = select(ChannelORM).where(ChannelORM.tenant_id == tenant_id)
             if workspace_id is not None:
                 stmt = stmt.where(
-                    (ChannelORM.workspace_id.is_(None))
-                    | (ChannelORM.workspace_id == workspace_id)
+                    (ChannelORM.workspace_id.is_(None)) | (ChannelORM.workspace_id == workspace_id)
                 )
             if enabled_only:
                 stmt = stmt.where(ChannelORM.status == "active")
@@ -137,9 +138,7 @@ class SqlChannelRepository(ChannelRepository):
             row.updated_at = channel.updated_at
             await session.commit()
 
-    async def delete(
-        self, *, tenant_id: TenantId, channel_id: ChannelId
-    ) -> bool:
+    async def delete(self, *, tenant_id: TenantId, channel_id: ChannelId) -> bool:
         async with self._sf() as session:
             row = await session.get(ChannelORM, channel_id)
             if row is None or row.tenant_id != tenant_id:
@@ -172,9 +171,7 @@ class SqlChannelDeliveryRepository(ChannelDeliveryRepository):
             )
             await session.commit()
 
-    async def get(
-        self, *, tenant_id: TenantId, delivery_id: UUID
-    ) -> ChannelDelivery | None:
+    async def get(self, *, tenant_id: TenantId, delivery_id: UUID) -> ChannelDelivery | None:
         async with self._sf() as session:
             row = await session.get(ChannelDeliveryORM, delivery_id)
             if row is None or row.tenant_id != tenant_id:
@@ -241,18 +238,14 @@ class SqlWebhookSecretRepository(WebhookSecretRepository):
             await session.commit()
             return row.id
 
-    async def get(
-        self, *, tenant_id: TenantId, secret_id: UUID
-    ) -> bytes | None:
+    async def get(self, *, tenant_id: TenantId, secret_id: UUID) -> bytes | None:
         async with self._sf() as session:
             row = await session.get(ChannelSecretORM, secret_id)
             if row is None or row.tenant_id != tenant_id:
                 return None
             return bytes(row.encrypted_payload)
 
-    async def delete(
-        self, *, tenant_id: TenantId, secret_id: UUID
-    ) -> bool:
+    async def delete(self, *, tenant_id: TenantId, secret_id: UUID) -> bool:
         async with self._sf() as session:
             row = await session.get(ChannelSecretORM, secret_id)
             if row is None or row.tenant_id != tenant_id:

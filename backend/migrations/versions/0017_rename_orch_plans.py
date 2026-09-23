@@ -53,10 +53,7 @@ def upgrade() -> None:
     op.rename_table("plans", "orch_plans")
     # Rename the indexes / constraint to keep the naming aligned with
     # the new table (matches 0010_orchestration.py).
-    op.execute(
-        "ALTER INDEX IF EXISTS ix_plans_tenant_id "
-        "RENAME TO ix_orch_plans_tenant_id"
-    )
+    op.execute("ALTER INDEX IF EXISTS ix_plans_tenant_id RENAME TO ix_orch_plans_tenant_id")
     op.execute(
         "ALTER INDEX IF EXISTS ix_plans_tenant_id_workspace_id_created_at "
         "RENAME TO ix_orch_plans_tenant_id_workspace_id_created_at"
@@ -85,10 +82,7 @@ def downgrade() -> None:
     if "entry_dsl" not in cols or "code" in cols:
         return
 
-    op.execute(
-        "ALTER INDEX IF EXISTS ix_orch_plans_tenant_id "
-        "RENAME TO ix_plans_tenant_id"
-    )
+    op.execute("ALTER INDEX IF EXISTS ix_orch_plans_tenant_id RENAME TO ix_plans_tenant_id")
     op.execute(
         "ALTER INDEX IF EXISTS ix_orch_plans_tenant_id_workspace_id_created_at "
         "RENAME TO ix_plans_tenant_id_workspace_id_created_at"

@@ -154,8 +154,12 @@ def create_app() -> FastAPI:
     app.dependency_overrides[_require_actor] = _resolve_actor
     app.dependency_overrides[_require_admin] = _resolve_admin
     app.dependency_overrides[make_policy_service] = lambda: container.policy_service()
-    app.dependency_overrides[make_approval_service] = lambda: container.approval_service()
-    app.dependency_overrides[make_policy_evaluator] = lambda: container.policy_evaluator()
+    app.dependency_overrides[make_approval_service] = lambda: (
+        container.approval_service()
+    )
+    app.dependency_overrides[make_policy_evaluator] = lambda: (
+        container.policy_evaluator()
+    )
 
     # A4 self_evolution module — /v1/evolve/candidates/*
     from deos.modules.self_evolution.adapter.http.factory import (
@@ -174,7 +178,9 @@ def create_app() -> FastAPI:
     app.include_router(evolution_router)
     app.dependency_overrides[evolution_require_actor] = _resolve_actor
     app.dependency_overrides[evolution_require_admin] = _resolve_admin
-    app.dependency_overrides[make_evolution_service] = lambda: container.evolution_service()
+    app.dependency_overrides[make_evolution_service] = lambda: (
+        container.evolution_service()
+    )
 
     # P6 model module — /v1/models + /v1/model-credentials + /v1/routing-policies
     from deos.modules.model.adapter.http.router import (

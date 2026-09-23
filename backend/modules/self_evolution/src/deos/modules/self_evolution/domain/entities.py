@@ -113,9 +113,7 @@ class EvolveCandidate:
         fp = (
             fingerprint
             if fingerprint is not None
-            else compute_fingerprint(
-                tenant_id=tenant_id, kind=kind, payload=payload
-            )
+            else compute_fingerprint(tenant_id=tenant_id, kind=kind, payload=payload)
         )
         return cls(
             id=EvolveCandidateId(uuid4()),  # type: ignore[arg-type]

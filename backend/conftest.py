@@ -17,6 +17,7 @@ Two jobs:
    registers all `tests/unit/conftest.py` files under the same module
    name (`tests.unit.conftest`) and raises "Plugin already registered".
 """
+
 from __future__ import annotations
 
 import importlib.util

@@ -13,8 +13,6 @@ from uuid import UUID
 
 from eos_schema.ids import (
     ApprovalId,
-    AuditLogId,
-    DecisionEventId,
     PolicyId,
     TenantId,
     UserId,
@@ -47,17 +45,13 @@ class PolicyRepository(Protocol):
         cursor: str | None = None,
     ) -> list[PolicyRule]: ...
 
-    async def list_enabled(
-        self, *, tenant_id: TenantId
-    ) -> list[PolicyRule]:
+    async def list_enabled(self, *, tenant_id: TenantId) -> list[PolicyRule]:  # type: ignore[valid-type]
         """Bulk fetch the tenant's enabled rules — the evaluator hot path."""
         ...
 
     async def update(self, rule: PolicyRule) -> None: ...
 
-    async def delete(
-        self, *, tenant_id: TenantId, rule_id: PolicyId
-    ) -> bool: ...
+    async def delete(self, *, tenant_id: TenantId, rule_id: PolicyId) -> bool: ...
 
 
 @runtime_checkable

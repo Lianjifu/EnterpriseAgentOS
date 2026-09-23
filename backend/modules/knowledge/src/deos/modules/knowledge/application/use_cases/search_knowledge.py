@@ -25,8 +25,8 @@ from deos.modules.knowledge.application.ports import (
     VectorSearchPort,
 )
 from deos.modules.knowledge.domain.value_objects import (
-    KnowledgeAssetStatus,
     KnowledgeAssetKind,
+    KnowledgeAssetStatus,
     KnowledgePackageStatus,
     RetrievalQuery,
 )
@@ -49,6 +49,7 @@ class SearchKnowledgeUseCase:
         # P5 gate
         if self.policy_guard is not None:
             from eos_vault.actor import ActorContext
+
             await self.policy_guard.check(  # type: ignore[attr-defined]
                 actor=ActorContext(
                     tenant_id=tenant_id,

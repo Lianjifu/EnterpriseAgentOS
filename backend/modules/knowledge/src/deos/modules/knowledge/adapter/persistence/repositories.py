@@ -6,9 +6,6 @@ is NOT touched here — use cases emit events.
 
 from __future__ import annotations
 
-from sqlalchemy import delete, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from eos_schema.ids import (
     KnowledgeAssetId,
     KnowledgeChunkId,
@@ -16,6 +13,8 @@ from eos_schema.ids import (
     TenantId,
     WorkspaceId,
 )
+from sqlalchemy import delete, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from deos.modules.knowledge.adapter.persistence.mappers import (
     asset_to_domain,
@@ -197,7 +196,7 @@ class SqlKnowledgeRepository(KnowledgeRepository):
             )
             .execution_options(synchronize_session=False)
         )
-        return int(result.rowcount or 0)
+        return int(result.rowcount or 0)  # type: ignore[attr-defined]
 
     async def delete_chunks_for_package(
         self, *, tenant_id: TenantId, package_id: KnowledgePackageId
@@ -210,7 +209,7 @@ class SqlKnowledgeRepository(KnowledgeRepository):
             )
             .execution_options(synchronize_session=False)
         )
-        return int(result.rowcount or 0)
+        return int(result.rowcount or 0)  # type: ignore[attr-defined]
 
     async def find_chunk(
         self, *, tenant_id: TenantId, chunk_id: KnowledgeChunkId

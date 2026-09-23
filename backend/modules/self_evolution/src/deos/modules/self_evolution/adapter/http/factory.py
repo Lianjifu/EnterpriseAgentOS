@@ -10,8 +10,7 @@ from deos.modules.self_evolution.application.evolution_service import (
 def make_evolution_service() -> EvolutionCandidateService:
     """Real dependency — overridden by composition root via Depends overrides."""
     raise RuntimeError(
-        "EvolutionCandidateService dependency not wired; "
-        "composition root must override"
+        "EvolutionCandidateService dependency not wired; composition root must override"
     )
 
 

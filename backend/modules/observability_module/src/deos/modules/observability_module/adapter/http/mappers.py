@@ -59,9 +59,7 @@ def quality_score_to_dto(score: QualityScore) -> QualityScoreResponse:
         ),
         mean_score=score.mean_score,
         sample_count=score.sample_count,
-        completed_at=(
-            score.completed_at.isoformat() if score.completed_at else None
-        ),
+        completed_at=(score.completed_at.isoformat() if score.completed_at else None),
     )
 
 

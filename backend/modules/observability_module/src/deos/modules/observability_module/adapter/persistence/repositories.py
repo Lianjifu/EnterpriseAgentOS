@@ -166,7 +166,7 @@ class SqlCostRecordRepository(CostRecordRepository):
         workspace_id: WorkspaceId | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> list[dict[str, Any]]:  # type: ignore[valid-type]
         stmt = (
             select(CostRecordORM.cost_type, func.sum(CostRecordORM.amount_usd))
             .where(CostRecordORM.tenant_id == tenant_id)
@@ -190,11 +190,9 @@ class SqlCostRecordRepository(CostRecordRepository):
         tenant_id: TenantId,
         since: datetime | None = None,
         until: datetime | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> list[dict[str, Any]]:  # type: ignore[valid-type]
         stmt = (
-            select(
-                CostRecordORM.workspace_id, func.sum(CostRecordORM.amount_usd)
-            )
+            select(CostRecordORM.workspace_id, func.sum(CostRecordORM.amount_usd))
             .where(CostRecordORM.tenant_id == tenant_id)
             .group_by(CostRecordORM.workspace_id)
         )
@@ -215,7 +213,7 @@ class SqlCostRecordRepository(CostRecordRepository):
         workspace_id: WorkspaceId | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> list[dict[str, Any]]:  # type: ignore[valid-type]
         stmt = (
             select(CostRecordORM.model_id, func.sum(CostRecordORM.amount_usd))
             .where(CostRecordORM.tenant_id == tenant_id)

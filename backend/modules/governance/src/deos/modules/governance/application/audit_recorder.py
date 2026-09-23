@@ -16,7 +16,8 @@ succeeded by the time the event lands here.
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Coroutine
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from eos_schema.ids import TenantId, UserId
 from eos_vault.actor import ActorContext
@@ -27,8 +28,8 @@ _log = logging.getLogger(__name__)
 
 
 def extract_actor_id(payload: dict[str, Any]) -> UserId | None:
-    raw = payload.get("actor_id") or payload.get("user_id") or payload.get(
-        "principal_id"
+    raw = (
+        payload.get("actor_id") or payload.get("user_id") or payload.get("principal_id")
     )
     if raw is None:
         return None
@@ -67,12 +68,14 @@ class AuditRecorder:
 
     async def handle(self, envelope: Any) -> None:
         """EventBus handler — accepts an EventEnvelope or a raw dict payload."""
+        payload: dict[str, Any]
         if isinstance(envelope, dict):
             # The EventEnvelope shape wraps the actual payload under
             # ``payload``; if present, persist only that sub-dict so we
             # don't try to JSON-envelope UUIDs/``occurred_at_ms`` ints
             # from the envelope envelope itself.
-            payload = envelope.get("payload") if "payload" in envelope else envelope
+            raw = envelope.get("payload") if "payload" in envelope else envelope
+            payload = raw if isinstance(raw, dict) else {}
             event_type = (
                 envelope.get("event_name")
                 or envelope.get("topic")
@@ -130,7 +133,7 @@ def _scrub(payload: dict[str, Any]) -> dict[str, Any]:
     ``secrets_ref`` (a pointer into the vault) and the recorder keeps
     only that reference.
     """
-    SENSITIVE = {"password", "api_key", "secret", "token", "authorization"}  # noqa: N806
+    SENSITIVE = {"password", "api_key", "secret", "token", "authorization"}
     out: dict[str, Any] = {}
     for k, v in payload.items():
         if k.lower() in SENSITIVE and not k.endswith("_ref"):
@@ -181,7 +184,9 @@ def actor_from_payload(
         roles = ()
     return ActorContext(
         tenant_id=tenant_id,
-        workspace_id=workspace_id if isinstance(workspace_id, type(tenant_id)) else None,
+        workspace_id=workspace_id
+        if isinstance(workspace_id, type(tenant_id))
+        else None,
         principal_id=principal_id,
         roles=frozenset(roles),
     )

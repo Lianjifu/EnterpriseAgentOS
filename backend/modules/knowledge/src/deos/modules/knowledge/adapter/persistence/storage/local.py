@@ -38,9 +38,7 @@ class LocalDiskKnowledgeStorage:
     def _path(self, tenant_id: str, sha: str) -> Path:
         return self._root / tenant_id / sha[:2] / sha
 
-    async def put(
-        self, *, tenant_id: TenantId, key: str, data: bytes
-    ) -> str:
+    async def put(self, *, tenant_id: TenantId, key: str, data: bytes) -> str:
         del key  # unused — content addressed
         sha = hashlib.sha256(data).hexdigest()
         async with self._lock:

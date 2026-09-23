@@ -21,9 +21,9 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PublicKey,
 )
 from cryptography.hazmat.primitives.serialization import (
-    load_pem_private_key,
     load_pem_public_key,
 )
+
 from eos_pack_signing import (
     canonical_payload,
     load_private_key_pem,

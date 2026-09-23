@@ -28,8 +28,8 @@ from deos.modules.knowledge.domain.errors import (
 )
 from deos.modules.knowledge.domain.events import KnowledgeAssetUploaded
 from deos.modules.knowledge.domain.value_objects import (
-    KnowledgeAssetKind,
     MAX_ASSET_BYTES,
+    KnowledgeAssetKind,
 )
 
 logger = logging.getLogger(__name__)
@@ -64,6 +64,7 @@ class UploadKnowledgeAssetUseCase:
 
         if self.policy_guard is not None:
             from eos_vault.actor import ActorContext
+
             await self.policy_guard.check(  # type: ignore[attr-defined]
                 actor=ActorContext(
                     tenant_id=tenant_id,
@@ -88,9 +89,7 @@ class UploadKnowledgeAssetUseCase:
         )
 
         # Stage bytes in object storage first; only commit the row if storage succeeds.
-        storage_uri = await self.storage.put(
-            tenant_id=tenant_id, key=name, data=data
-        )
+        storage_uri = await self.storage.put(tenant_id=tenant_id, key=name, data=data)
         asset = KnowledgeAsset.create(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
@@ -147,4 +146,4 @@ class UploadKnowledgeAssetUseCase:
         return asset, 0
 
 
-__all__ = ["UploadKnowledgeAssetUseCase", "KnowledgeAssetNotFound"]
+__all__ = ["KnowledgeAssetNotFound", "UploadKnowledgeAssetUseCase"]

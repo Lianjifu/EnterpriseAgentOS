@@ -87,10 +87,7 @@ def _resource_matches(rule: PolicyRule, resource: dict[str, Any]) -> bool:
     rw = resource.get("workspace_id")
     if rw is None:
         return True  # caller didn't pin — applies tenant-wide rule to any workspace
-    try:
-        return str(rule.workspace_id) == str(rw)
-    except Exception:
-        return False
+    return str(rule.workspace_id) == str(rw)
 
 
 def match(
@@ -108,9 +105,7 @@ def match(
         return False
     if not _subject_matches(actor, rule):
         return False
-    if not _resource_matches(rule, resource):
-        return False
-    return True
+    return _resource_matches(rule, resource)
 
 
 def action_precedence(effect: str) -> int:

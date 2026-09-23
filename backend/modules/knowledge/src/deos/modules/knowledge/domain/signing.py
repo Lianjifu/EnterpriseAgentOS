@@ -18,8 +18,9 @@ egress-allowlisted without re-signing).
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Final, Mapping
+from typing import Any, Final
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey,
@@ -27,7 +28,11 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 )
 from eos_pack_signing import (
     canonical_payload as _canonical_bytes,
+)
+from eos_pack_signing import (
     sign_payload as _sign_bytes,
+)
+from eos_pack_signing import (
     verify_signature as _verify_bytes,
 )
 

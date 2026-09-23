@@ -60,9 +60,7 @@ class CancelRunUseCase:
                     )
                 )
             except AppError:  # pragma: no cover - defensive
-                logger.exception(
-                    "publish WorkflowRunCompleted failed for %s", saved.id
-                )
+                logger.exception("publish WorkflowRunCompleted failed for %s", saved.id)
 
         return saved
 

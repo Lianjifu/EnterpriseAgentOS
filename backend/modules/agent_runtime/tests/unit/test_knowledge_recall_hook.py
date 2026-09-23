@@ -176,19 +176,22 @@ async def test_memory_and_knowledge_combined_into_system_prompt() -> None:
             self.calls += 1
             return [{"id": "m1", "content": "mem-ctx", "score": 0.8}]
 
-    m, k = _M(), _RecordingKnowledgePort(
-        chunks=[
-            {
-                "id": "c1",
-                "asset_id": "a1",
-                "package_id": "p1",
-                "package_name": "faq",
-                "asset_name": "a.txt",
-                "content": "k-ctx",
-                "score": 0.7,
-                "ordinal": 0,
-            }
-        ]
+    m, k = (
+        _M(),
+        _RecordingKnowledgePort(
+            chunks=[
+                {
+                    "id": "c1",
+                    "asset_id": "a1",
+                    "package_id": "p1",
+                    "package_name": "faq",
+                    "asset_name": "a.txt",
+                    "content": "k-ctx",
+                    "score": 0.7,
+                    "ordinal": 0,
+                }
+            ]
+        ),
     )
     svc = AgentRuntimeService(**deps, memory_port=m, knowledge_port=k)  # type: ignore[arg-type]
     tid, wid, sid, uid = await _new_session(svc, deps)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from deos.modules.channel.adapter.http.dto import (
@@ -9,7 +10,9 @@ from deos.modules.channel.adapter.http.dto import (
     ChannelResponse,
     DeliveryResponse,
 )
-from deos.modules.channel.domain.entities import Channel, ChannelDelivery
+
+if TYPE_CHECKING:
+    from deos.modules.channel.domain.entities import Channel, ChannelDelivery
 
 
 def channel_to_response(ch: Channel) -> ChannelResponse:

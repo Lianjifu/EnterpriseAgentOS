@@ -21,14 +21,10 @@ from deos.modules.evaluation.domain.errors import EvalRunNotFound
 class GetEvalRunUseCase:
     repository: EvalRunRepository
 
-    async def execute(
-        self, *, tenant_id: TenantId, run_id: EvalRunId
-    ) -> EvalRun:
+    async def execute(self, *, tenant_id: TenantId, run_id: EvalRunId) -> EvalRun:
         run = await self.repository.get(tenant_id=tenant_id, run_id=run_id)
         if run is None:
-            raise EvalRunNotFound(
-                f"eval run {run_id} not found in tenant"
-            )
+            raise EvalRunNotFound(f"eval run {run_id} not found in tenant")
         return run
 
 

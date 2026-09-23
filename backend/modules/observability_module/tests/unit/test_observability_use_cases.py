@@ -140,9 +140,7 @@ def test_list_runs_filters_by_workspace(service: ObservabilityService) -> None:
                 }
             )
         )
-    rows = asyncio.run(
-        service.list_runs(tenant_id=tid, workspace_id=wid_a)
-    )
+    rows = asyncio.run(service.list_runs(tenant_id=tid, workspace_id=wid_a))
     assert len(rows) == 2
 
 
@@ -163,12 +161,8 @@ def test_list_costs_tenant_isolation(service: ObservabilityService) -> None:
                 }
             )
         )
-    rows_a = asyncio.run(
-        service.list_costs(tenant_id=tid_a, workspace_id=wid)
-    )
-    rows_b = asyncio.run(
-        service.list_costs(tenant_id=tid_b, workspace_id=wid)
-    )
+    rows_a = asyncio.run(service.list_costs(tenant_id=tid_a, workspace_id=wid))
+    rows_b = asyncio.run(service.list_costs(tenant_id=tid_b, workspace_id=wid))
     assert len(rows_a) == 1
     assert len(rows_b) == 1
     assert rows_a[0].tenant_id == tid_a
@@ -198,9 +192,7 @@ def test_aggregate_by_cost_type(service: ObservabilityService) -> None:
                 }
             )
         )
-    rows = asyncio.run(
-        service.aggregate_costs(tenant_id=tid, group_by="cost_type")
-    )
+    rows = asyncio.run(service.aggregate_costs(tenant_id=tid, group_by="cost_type"))
     by_type = {r["cost_type"]: r["total_usd"] for r in rows}
     assert by_type["llm_input"] == "0.03"
     assert by_type["tool"] == "0.005"
@@ -211,7 +203,11 @@ def test_aggregate_by_workspace(service: ObservabilityService) -> None:
     wid_a = WorkspaceId(uuid4())
     wid_b = WorkspaceId(uuid4())
     rid = uuid4()
-    for wid, amount in [(wid_a, Decimal("0.01")), (wid_a, Decimal("0.02")), (wid_b, Decimal("0.05"))]:
+    for wid, amount in [
+        (wid_a, Decimal("0.01")),
+        (wid_a, Decimal("0.02")),
+        (wid_b, Decimal("0.05")),
+    ]:
         asyncio.run(
             service.record_cost(
                 cmd={
@@ -223,9 +219,7 @@ def test_aggregate_by_workspace(service: ObservabilityService) -> None:
                 }
             )
         )
-    rows = asyncio.run(
-        service.aggregate_costs(tenant_id=tid, group_by="workspace")
-    )
+    rows = asyncio.run(service.aggregate_costs(tenant_id=tid, group_by="workspace"))
     by_ws = {r["workspace_id"]: r["total_usd"] for r in rows}
     assert by_ws[str(wid_a)] == "0.03"
     assert by_ws[str(wid_b)] == "0.05"
@@ -252,9 +246,7 @@ def test_aggregate_by_model(service: ObservabilityService) -> None:
                 }
             )
         )
-    rows = asyncio.run(
-        service.aggregate_costs(tenant_id=tid, group_by="model")
-    )
+    rows = asyncio.run(service.aggregate_costs(tenant_id=tid, group_by="model"))
     by_mid = {r["model_id"]: r["total_usd"] for r in rows}
     assert by_mid["gpt-4o"] == "0.03"
     assert by_mid["other"] == "0.005"
@@ -263,9 +255,7 @@ def test_aggregate_by_model(service: ObservabilityService) -> None:
 def test_aggregate_rejects_invalid_group_by(service: ObservabilityService) -> None:
     with pytest.raises(BusinessRuleError):
         asyncio.run(
-            service.aggregate_costs(
-                tenant_id=TenantId(uuid4()), group_by="nonsense"
-            )
+            service.aggregate_costs(tenant_id=TenantId(uuid4()), group_by="nonsense")
         )
 
 
@@ -296,9 +286,7 @@ def test_quality_score_returns_aggregate(service: ObservabilityService) -> None:
         runs={(str(tid), str(tpl), str(ver)): fake_run}
     )
     score = asyncio.run(
-        service.get_quality_score(
-            tenant_id=tid, template_id=tpl, version_id=ver
-        )
+        service.get_quality_score(tenant_id=tid, template_id=tpl, version_id=ver)
     )
     assert isinstance(score, QualityScore)
     assert score.mean_score == 0.85

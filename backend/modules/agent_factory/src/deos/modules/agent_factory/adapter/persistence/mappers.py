@@ -84,7 +84,9 @@ def version_to_domain(row: AgentVersionORM) -> AgentVersion:
         allowed_tools=tuple(row.allowed_tools or []),
         allowed_skills=tuple(row.allowed_skills or []),
         knowledge_package_ids=tuple(row.knowledge_package_ids or []),
-        plan_dsl_snapshot=dict(row.plan_dsl_snapshot) if row.plan_dsl_snapshot is not None else None,
+        plan_dsl_snapshot=dict(row.plan_dsl_snapshot)
+        if row.plan_dsl_snapshot is not None
+        else None,
         max_total_steps=row.max_total_steps,
         release_notes=row.release_notes or "",
         published_at=row.published_at,
@@ -109,7 +111,9 @@ def version_to_orm(entity: AgentVersion) -> AgentVersionORM:
         allowed_tools=list(entity.allowed_tools),
         allowed_skills=list(entity.allowed_skills),
         knowledge_package_ids=list(entity.knowledge_package_ids),
-        plan_dsl_snapshot=dict(entity.plan_dsl_snapshot) if entity.plan_dsl_snapshot is not None else None,
+        plan_dsl_snapshot=dict(entity.plan_dsl_snapshot)
+        if entity.plan_dsl_snapshot is not None
+        else None,
         max_total_steps=entity.max_total_steps,
         release_notes=entity.release_notes,
         published_at=entity.published_at,

@@ -21,6 +21,7 @@ from urllib.parse import quote
 
 import httpx
 from eos_vault.actor import ActorContext
+from eos_vault.errors import VaultError
 from eos_vault.resolver import VaultSecretsResolver as SecretsResolver
 
 from deos.modules.tool.domain import AuthConfig, AuthConfigType, SpecOperation
@@ -48,12 +49,15 @@ def _adapter(resolver: SecretsResolver) -> VaultSecretsCallable:
             if hasattr(resolver, "resolve"):
                 payload = await resolver.resolve(ref, actor=actor)  # type: ignore[attr-defined]
             else:
-                payload = await resolver(ref, actor=actor)  # type: ignore[call-arg]
+                payload = await resolver(ref, actor=actor)  # type: ignore[operator,call-arg]
             # vault may return a dict or a bare string (legacy callers)
             if isinstance(payload, str):
                 return {"value": payload}
             return dict(payload) if payload else {}
-        except Exception:
+        except VaultError:
+            # Vault lookup failed (ref / perm / network) → surface as
+            # empty payload so the openapi call can proceed without
+            # secrets. Other exceptions (programming errors) propagate.
             return {}
 
     return _call
@@ -75,7 +79,9 @@ class OpenAPIRuntimeAdapter:
     ) -> None:
         self._http = http
         self._secrets = (
-            _adapter(secrets_resolver) if secrets_resolver is not None else _no_op_secrets_resolver
+            _adapter(secrets_resolver)
+            if secrets_resolver is not None
+            else _no_op_secrets_resolver
         )
 
     async def invoke(
@@ -101,7 +107,9 @@ class OpenAPIRuntimeAdapter:
         url = _inject_path(base_url.rstrip("/") + operation.path, path_params)
         headers: dict[str, str] = {"Accept": "application/json"}
         if auth is not None:
-            ctx = actor or ActorContext.anonymous(tenant_id=__import__("uuid").UUID(int=0))
+            ctx = actor or ActorContext.anonymous(
+                tenant_id=__import__("uuid").UUID(int=0)
+            )
             headers.update(await self._inject_auth(auth, ctx))
 
         method = operation.method.upper()

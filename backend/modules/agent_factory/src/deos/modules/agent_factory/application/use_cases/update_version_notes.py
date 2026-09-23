@@ -21,9 +21,7 @@ class UpdateAgentVersionNotesUseCase:
         version_id: AgentVersionId,
         release_notes: str,
     ) -> AgentVersion:
-        version = await self.repository.get(
-            tenant_id=tenant_id, version_id=version_id
-        )
+        version = await self.repository.get(tenant_id=tenant_id, version_id=version_id)
         if version is None:
             from deos.modules.agent_factory.domain.errors import (
                 AgentVersionNotFound,

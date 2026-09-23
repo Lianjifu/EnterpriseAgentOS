@@ -158,9 +158,7 @@ async def test_model_invoked_records_run_and_two_costs(
     )
     await bus.publish(env)
 
-    runs = await recorder.run_repo.list(
-        tenant_id=tenant_id, workspace_id=workspace_id
-    )
+    runs = await recorder.run_repo.list(tenant_id=tenant_id, workspace_id=workspace_id)
     assert len(runs) == 1
     run = runs[0]
     assert run.run_type == RunType.LLM
@@ -200,9 +198,7 @@ async def test_tool_completed_records_one_cost(bus_with_recorder) -> None:
             workspace_id=workspace_id,
         )
     )
-    runs = await recorder.run_repo.list(
-        tenant_id=tenant_id, workspace_id=workspace_id
-    )
+    runs = await recorder.run_repo.list(tenant_id=tenant_id, workspace_id=workspace_id)
     assert len(runs) == 1
     assert runs[0].run_type == RunType.TOOL
     assert runs[0].status.value == "succeeded"
@@ -232,9 +228,7 @@ async def test_tool_failed_marks_status_failed(bus_with_recorder) -> None:
             workspace_id=workspace_id,
         )
     )
-    runs = await recorder.run_repo.list(
-        tenant_id=tenant_id, workspace_id=workspace_id
-    )
+    runs = await recorder.run_repo.list(tenant_id=tenant_id, workspace_id=workspace_id)
     assert len(runs) == 1
     assert runs[0].status.value == "failed"
 
@@ -262,9 +256,7 @@ async def test_skill_invocation_completed_records_run_and_cost(
             workspace_id=workspace_id,
         )
     )
-    runs = await recorder.run_repo.list(
-        tenant_id=tenant_id, workspace_id=workspace_id
-    )
+    runs = await recorder.run_repo.list(tenant_id=tenant_id, workspace_id=workspace_id)
     assert len(runs) == 1
     assert runs[0].run_type == RunType.SKILL
 
@@ -380,9 +372,7 @@ async def test_run_only_events_record_only_run_no_cost(
             )
         )
 
-    runs = await recorder.run_repo.list(
-        tenant_id=tenant_id, workspace_id=workspace_id
-    )
+    runs = await recorder.run_repo.list(tenant_id=tenant_id, workspace_id=workspace_id)
     assert len(runs) == 3
     types = {r.run_type for r in runs}
     assert types == {RunType.WORKFLOW, RunType.EVAL, RunType.GOVERNANCE}
@@ -454,12 +444,8 @@ async def test_cross_tenant_isolation_via_recorder_repo(
             )
         )
 
-    runs_a = await recorder.run_repo.list(
-        tenant_id=tenant_a, workspace_id=workspace
-    )
-    runs_b = await recorder.run_repo.list(
-        tenant_id=tenant_b, workspace_id=workspace
-    )
+    runs_a = await recorder.run_repo.list(tenant_id=tenant_a, workspace_id=workspace)
+    runs_b = await recorder.run_repo.list(tenant_id=tenant_b, workspace_id=workspace)
     assert len(runs_a) == 1
     assert len(runs_b) == 1
     assert runs_a[0].tenant_id == tenant_a

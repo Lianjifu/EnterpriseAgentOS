@@ -23,11 +23,11 @@ class KnowledgeAssetKind(StrEnum):
 class KnowledgeAssetStatus(StrEnum):
     """Lifecycle of a single uploaded asset."""
 
-    PENDING = "pending"          # row created; bytes not yet committed
-    PROCESSING = "processing"    # chunk + embed in flight
-    READY = "ready"              # indexed; searchable
-    FAILED = "failed"            # ingest errored; surface error_message
-    REVOKED = "revoked"          # soft-deleted; out of vector index
+    PENDING = "pending"  # row created; bytes not yet committed
+    PROCESSING = "processing"  # chunk + embed in flight
+    READY = "ready"  # indexed; searchable
+    FAILED = "failed"  # ingest errored; surface error_message
+    REVOKED = "revoked"  # soft-deleted; out of vector index
 
 
 class KnowledgePackageStatus(StrEnum):
@@ -50,7 +50,9 @@ class RetrievalQuery:
 
     query: str
     top_k: int = 10
-    package_ids: tuple[str, ...] = ()  # str to keep value object free of eos_schema at boundary
+    package_ids: tuple[
+        str, ...
+    ] = ()  # str to keep value object free of eos_schema at boundary
     asset_kind_filter: KnowledgeAssetKind | None = None
 
     def __post_init__(self) -> None:
@@ -66,11 +68,11 @@ class RetrievalQuery:
 __all__ = [
     "DEFAULT_CHUNK_OVERLAP",
     "DEFAULT_CHUNK_SIZE",
-    "KnowledgeAssetKind",
-    "KnowledgeAssetStatus",
-    "KnowledgePackageStatus",
     "MAX_ASSET_BYTES",
     "MAX_TOP_K",
     "MIN_TOP_K",
+    "KnowledgeAssetKind",
+    "KnowledgeAssetStatus",
+    "KnowledgePackageStatus",
     "RetrievalQuery",
 ]

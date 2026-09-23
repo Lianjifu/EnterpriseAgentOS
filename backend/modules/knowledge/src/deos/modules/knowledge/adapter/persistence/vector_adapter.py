@@ -13,9 +13,6 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncEngine
-
 from eos_schema.ids import (
     KnowledgeAssetId,
     KnowledgeChunkId,
@@ -25,6 +22,8 @@ from eos_schema.ids import (
 )
 from eos_vector.pg_vector import PgVectorStore
 from eos_vector.store import VectorItem
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from deos.modules.knowledge.application.ports import (
     VectorSearchHit,
@@ -73,9 +72,7 @@ class PgKnowledgeVectorAdapter(VectorSearchPort):
         )
         await self._store.upsert([item])
 
-    async def delete(
-        self, *, tenant_id: TenantId, chunk_id: KnowledgeChunkId
-    ) -> None:
+    async def delete(self, *, tenant_id: TenantId, chunk_id: KnowledgeChunkId) -> None:
         await self._store.delete([UUID(str(chunk_id))])
 
     async def delete_for_asset(
@@ -122,13 +119,12 @@ class PgKnowledgeVectorAdapter(VectorSearchPort):
         payload: dict[str, object] = {}
         if workspace_filter_required:
             payload["workspace_id"] = str(workspace_id)
-        if package_ids:
+        if package_ids and len(package_ids) == 1:
             # PgVectorStore filter does exact match on a single value; we
             # only narrow by package_ids when exactly one is supplied —
             # for multiple IDs the caller should fall back to post-filter
             # via the SQL repository's chunk hydration.
-            if len(package_ids) == 1:
-                payload["package_id"] = package_ids[0]
+            payload["package_id"] = package_ids[0]
         if asset_kind_filter is not None:
             payload["asset_kind"] = asset_kind_filter.value
 

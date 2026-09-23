@@ -113,6 +113,7 @@ def build_router() -> APIRouter:
         svc: AgentFactoryService = Depends(agent_factory_service_dependency),  # noqa: B008
     ) -> TemplateResponse:
         from eos_schema.ids import TenantId, UserId, WorkspaceId
+
         try:
             template = await svc.create_template.execute(  # type: ignore[union-attr]
                 tenant_id=TenantId(x_tenant_id),
@@ -142,6 +143,7 @@ def build_router() -> APIRouter:
         offset: int = Query(0, ge=0),
     ) -> TemplateListResponse:
         from eos_schema.ids import TenantId, WorkspaceId
+
         rows = await svc.list_templates.execute(  # type: ignore[union-attr]
             tenant_id=TenantId(x_tenant_id),
             workspace_id=WorkspaceId(x_workspace_id),
@@ -163,6 +165,7 @@ def build_router() -> APIRouter:
         svc: AgentFactoryService = Depends(agent_factory_service_dependency),  # noqa: B008
     ) -> TemplateResponse:
         from eos_schema.ids import AgentTemplateId, TenantId
+
         try:
             template = await svc.get_template.execute(  # type: ignore[union-attr]
                 tenant_id=TenantId(x_tenant_id),
@@ -185,6 +188,7 @@ def build_router() -> APIRouter:
         from eos_schema.ids import AgentTemplateId, TenantId
 
         from deos.modules.agent_factory.domain.value_objects import AgentTemplateStatus
+
         if body.status is None:
             raise HTTPException(status_code=422, detail="status is required")
         try:
@@ -217,6 +221,7 @@ def build_router() -> APIRouter:
         svc: AgentFactoryService = Depends(agent_factory_service_dependency),  # noqa: B008
     ) -> VersionResponse:
         from eos_schema.ids import AgentTemplateId, TenantId, UserId, WorkspaceId
+
         try:
             version = await svc.create_version.execute(  # type: ignore[union-attr]
                 tenant_id=TenantId(x_tenant_id),
@@ -252,6 +257,7 @@ def build_router() -> APIRouter:
         offset: int = Query(0, ge=0),
     ) -> VersionListResponse:
         from eos_schema.ids import AgentTemplateId, TenantId
+
         rows = await svc.list_versions.execute(  # type: ignore[union-attr]
             tenant_id=TenantId(x_tenant_id),
             template_id=AgentTemplateId(aid),
@@ -274,6 +280,7 @@ def build_router() -> APIRouter:
         svc: AgentFactoryService = Depends(agent_factory_service_dependency),  # noqa: B008
     ) -> VersionResponse:
         from eos_schema.ids import AgentVersionId, TenantId
+
         try:
             version = await svc.get_version.execute(  # type: ignore[union-attr]
                 tenant_id=TenantId(x_tenant_id),
@@ -295,6 +302,7 @@ def build_router() -> APIRouter:
         svc: AgentFactoryService = Depends(agent_factory_service_dependency),  # noqa: B008
     ) -> VersionResponse:
         from eos_schema.ids import AgentVersionId, TenantId
+
         try:
             version = await svc.update_version_notes.execute(  # type: ignore[union-attr]
                 tenant_id=TenantId(x_tenant_id),
@@ -318,6 +326,7 @@ def build_router() -> APIRouter:
         svc: AgentFactoryService = Depends(agent_factory_service_dependency),  # noqa: B008
     ) -> VersionResponse:
         from eos_schema.ids import AgentVersionId, TenantId
+
         try:
             version = await svc.publish_version.execute(  # type: ignore[union-attr]
                 tenant_id=TenantId(x_tenant_id),
@@ -347,6 +356,7 @@ def build_router() -> APIRouter:
             UserId,
             WorkspaceId,
         )
+
         notes = body.notes if body else ""
         try:
             release = await svc.release_version.execute(  # type: ignore[union-attr]
@@ -372,6 +382,7 @@ def build_router() -> APIRouter:
         svc: AgentFactoryService = Depends(agent_factory_service_dependency),  # noqa: B008
     ) -> VersionResponse:
         from eos_schema.ids import AgentVersionId, TenantId
+
         try:
             version = await svc.retire_version.execute(  # type: ignore[union-attr]
                 tenant_id=TenantId(x_tenant_id),
@@ -394,6 +405,7 @@ def build_router() -> APIRouter:
         offset: int = Query(0, ge=0),
     ) -> ReleaseListResponse:
         from eos_schema.ids import AgentTemplateId, TenantId
+
         rows = await svc.list_releases.execute(  # type: ignore[union-attr]
             tenant_id=TenantId(x_tenant_id),
             template_id=AgentTemplateId(aid),

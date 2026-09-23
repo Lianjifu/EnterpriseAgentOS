@@ -15,12 +15,6 @@ from __future__ import annotations
 
 from uuid import UUID, uuid4
 
-from eos_schema.ids import TenantId
-from eos_vault.actor import ActorContext
-
-from deos.modules.governance.application.policy_evaluator import PolicyEvaluator
-from deos.modules.governance.domain.entities import PolicyRule
-from deos.modules.governance.domain.value_objects import PolicyEffect, PolicySubject
 from _governance_unit_in_memory import (
     FixedClock,
     InMemoryApprovalRepository,
@@ -29,6 +23,12 @@ from _governance_unit_in_memory import (
     RecordingPublisher,
     SequenceIds,
 )
+from eos_schema.ids import TenantId
+from eos_vault.actor import ActorContext
+
+from deos.modules.governance.application.policy_evaluator import PolicyEvaluator
+from deos.modules.governance.domain.entities import PolicyRule
+from deos.modules.governance.domain.value_objects import PolicyEffect, PolicySubject
 
 TID = TenantId(UUID("00000000-0000-0000-0000-000000000001"))
 USER = UUID("00000000-0000-0000-0000-00000000000a")
@@ -43,7 +43,13 @@ def _actor(*, roles=("workspace_member",)) -> ActorContext:
     )
 
 
-def _evaluator() -> tuple[PolicyEvaluator, InMemoryPolicyRepository, InMemoryApprovalRepository, InMemoryDecisionEventRepo, RecordingPublisher]:
+def _evaluator() -> tuple[
+    PolicyEvaluator,
+    InMemoryPolicyRepository,
+    InMemoryApprovalRepository,
+    InMemoryDecisionEventRepo,
+    RecordingPublisher,
+]:
     repo = InMemoryPolicyRepository()
     ap_repo = InMemoryApprovalRepository()
     dec = InMemoryDecisionEventRepo()
@@ -82,16 +88,14 @@ async def test_evaluate_allow_match():
         effect=PolicyEffect.ALLOW,
     )
     await repo.add(rule)
-    rec = await ev.evaluate(
-        actor=_actor(), action="tool:execute:reverse", resource={}
-    )
+    rec = await ev.evaluate(actor=_actor(), action="tool:execute:reverse", resource={})
     assert rec.effect is PolicyEffect.ALLOW
     assert rec.rule_id == rule.id
     assert len(dec.events) == 1
 
 
 async def test_evaluate_deny_beats_allow():
-    ev, repo, _, dec, _ = _evaluator()
+    ev, repo, _, _dec, _ = _evaluator()
     allow = PolicyRule.create(
         tenant_id=TID,
         subject_type=PolicySubject.ROLE,
@@ -110,9 +114,7 @@ async def test_evaluate_deny_beats_allow():
     )
     await repo.add(allow)
     await repo.add(deny)
-    rec = await ev.evaluate(
-        actor=_actor(), action="tool:execute:reverse", resource={}
-    )
+    rec = await ev.evaluate(actor=_actor(), action="tool:execute:reverse", resource={})
     assert rec.effect is PolicyEffect.DENY
     assert rec.rule_id == deny.id
 
@@ -131,7 +133,8 @@ async def test_evaluate_approval_mints_approval_record():
     assert rec.effect is PolicyEffect.REQUIRE_APPROVAL
     assert rec.approval_id is not None
     approval = await ap_repo.get(
-        tenant_id=TID, approval_id=rec.approval_id  # type: ignore[arg-type]
+        tenant_id=TID,
+        approval_id=rec.approval_id,  # type: ignore[arg-type]
     )
     assert approval is not None
     assert approval.action == "tool:execute:clock"
@@ -159,9 +162,7 @@ async def test_evaluate_same_priority_priority_asc_tiebreak():
     )
     await repo.add(low)
     await repo.add(high)
-    rec = await ev.evaluate(
-        actor=_actor(), action="tool:execute:reverse", resource={}
-    )
+    rec = await ev.evaluate(actor=_actor(), action="tool:execute:reverse", resource={})
     assert rec.rule_id == high.id
 
 
@@ -187,9 +188,7 @@ async def test_evaluate_cache_ttl_hits():
             effect=PolicyEffect.DENY,
         )
     )
-    rec = await ev.evaluate(
-        actor=_actor(), action="tool:execute:reverse", resource={}
-    )
+    rec = await ev.evaluate(actor=_actor(), action="tool:execute:reverse", resource={})
     assert rec.effect is PolicyEffect.ALLOW  # served from cache
     assert len(dec.events) == 2
 
@@ -205,21 +204,17 @@ async def test_evaluate_invalidate_forces_refetch():
             effect=PolicyEffect.ALLOW,
         )
     )
-    rec1 = await ev.evaluate(
-        actor=_actor(), action="tool:execute:reverse", resource={}
-    )
+    rec1 = await ev.evaluate(actor=_actor(), action="tool:execute:reverse", resource={})
     assert rec1.effect is PolicyEffect.ALLOW
 
     # flip the rule to deny, then invalidate — second call should see deny
-    row = list((await repo.list(tenant_id=TID)))[0]
+    row = next(iter(await repo.list(tenant_id=TID)))
     from dataclasses import replace
 
     await repo.update(replace(row, effect=PolicyEffect.DENY))
     ev.invalidate(tenant_id=TID)
 
-    rec2 = await ev.evaluate(
-        actor=_actor(), action="tool:execute:reverse", resource={}
-    )
+    rec2 = await ev.evaluate(actor=_actor(), action="tool:execute:reverse", resource={})
     assert rec2.effect is PolicyEffect.DENY
 
 

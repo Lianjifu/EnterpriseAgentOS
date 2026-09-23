@@ -39,9 +39,7 @@ async def memory_service_dependency(
         request.app.state, "memory_service_factory", None
     )
     if factory is None:
-        raise HTTPException(
-            status_code=503, detail="memory service factory not wired"
-        )
+        raise HTTPException(status_code=503, detail="memory service factory not wired")
     return factory.for_session()
 
 

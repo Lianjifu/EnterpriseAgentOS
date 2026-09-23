@@ -23,7 +23,8 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -49,7 +50,9 @@ def canonical_payload(payload: Mapping[str, Any]) -> bytes:
     endings.  Every pack vetter MUST call this helper before signing /
     verifying so SDKs of different versions agree byte-for-byte.
     """
-    return json.dumps(dict(payload), sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return json.dumps(dict(payload), sort_keys=True, separators=(",", ":")).encode(
+        "utf-8"
+    )
 
 
 def payload_digest(payload: Mapping[str, Any]) -> str:
@@ -57,9 +60,7 @@ def payload_digest(payload: Mapping[str, Any]) -> str:
     return f"sha256:{hashlib.sha256(canonical_payload(payload)).hexdigest()}"
 
 
-def sign_payload(
-    payload: Mapping[str, Any], *, private_key: Ed25519PrivateKey
-) -> str:
+def sign_payload(payload: Mapping[str, Any], *, private_key: Ed25519PrivateKey) -> str:
     """Sign the canonical payload; return the base64-encoded signature."""
     sig = private_key.sign(canonical_payload(payload))
     return base64.b64encode(sig).decode("ascii")

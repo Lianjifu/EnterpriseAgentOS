@@ -16,6 +16,8 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
+from eos_schema.ids import ApprovalId, PolicyId
+from eos_vault.actor import ActorContext
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from deos.modules.governance.adapter.http.dto import (
@@ -37,8 +39,6 @@ from deos.modules.governance.adapter.http.mappers import (
 )
 from deos.modules.governance.application.approval_service import ApprovalService
 from deos.modules.governance.application.policy_service import PolicyService
-from eos_schema.ids import ApprovalId, PolicyId
-from eos_vault.actor import ActorContext
 
 router = APIRouter(tags=["governance"])
 
@@ -91,7 +91,7 @@ async def create_policy(
 async def list_policies(
     actor: ActorDep,
     svc: Annotated[PolicyService, Depends(make_policy_service)],
-    workspace_id: UUID | None = Query(default=None),
+    workspace_id: UUID | None = Query(default=None),  # noqa: B008 — FastAPI idiom
     enabled_only: bool = Query(default=False),
     limit: int = Query(default=100, ge=1, le=500),
     cursor: str | None = Query(default=None),
@@ -163,9 +163,7 @@ async def list_approvals(
     limit: int = Query(default=100, ge=1, le=500),
 ) -> ApprovalListResponse:
     if pending_only:
-        approvals = await svc.list_pending(
-            tenant_id=actor.tenant_id, limit=limit
-        )
+        approvals = await svc.list_pending(tenant_id=actor.tenant_id, limit=limit)
     else:
         from deos.modules.governance.domain.value_objects import ApprovalStatus
 
@@ -174,9 +172,7 @@ async def list_approvals(
             status=ApprovalStatus.PENDING,
             limit=limit,
         )
-    return ApprovalListResponse(
-        items=[approval_to_response(a) for a in approvals]
-    )
+    return ApprovalListResponse(items=[approval_to_response(a) for a in approvals])
 
 
 @router.get("/v1/approvals/{approval_id}", response_model=ApprovalResponse)
@@ -186,7 +182,8 @@ async def get_approval(
     svc: Annotated[ApprovalService, Depends(make_approval_service)],
 ) -> ApprovalResponse:
     ap = await svc.get(
-        tenant_id=actor.tenant_id, approval_id=ApprovalId(approval_id)  # type: ignore[arg-type]
+        tenant_id=actor.tenant_id,
+        approval_id=ApprovalId(approval_id),  # type: ignore[arg-type]
     )
     return approval_to_response(ap)
 

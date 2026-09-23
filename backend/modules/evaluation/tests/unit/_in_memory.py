@@ -57,7 +57,8 @@ class InMemoryEvalDatasetRepository(EvalDatasetRepository):
         offset: int = 0,
     ) -> list[EvalDataset]:
         rows = [
-            d for (tid, _), d in self._by_id.items()
+            d
+            for (tid, _), d in self._by_id.items()
             if tid == tenant_id and d.workspace_id == workspace_id
         ]
         rows.sort(key=lambda d: d.created_at, reverse=True)
@@ -80,9 +81,7 @@ class InMemoryEvalDatasetRepository(EvalDatasetRepository):
     async def list_cases(
         self, *, tenant_id: TenantId, dataset_id: EvalDatasetId
     ) -> list[EvalCase]:
-        return list(
-            self._cases.get((tenant_id, dataset_id), ())
-        )
+        return list(self._cases.get((tenant_id, dataset_id), ()))
 
 
 # ── Runs ─────────────────────────────────────────────────────────────────
@@ -93,9 +92,7 @@ class InMemoryEvalRunRepository(EvalRunRepository):
         self._by_id: dict[tuple[UUID, UUID], EvalRun] = {}
         self._by_idem: dict[tuple[UUID, str], UUID] = {}
 
-    async def get(
-        self, *, tenant_id: TenantId, run_id: EvalRunId
-    ) -> EvalRun | None:
+    async def get(self, *, tenant_id: TenantId, run_id: EvalRunId) -> EvalRun | None:
         return self._by_id.get((tenant_id, run_id))
 
     async def get_by_idempotency_key(

@@ -77,9 +77,7 @@ class RunPlanUseCase:
         trace_id: UUID | None = None,
     ) -> WorkflowExecutionResult:
         # ── 1. resolve plan ──────────────────────────────────────────────
-        plan = await self.plan_repository.get(
-            tenant_id=tenant_id, plan_id=plan_id
-        )
+        plan = await self.plan_repository.get(tenant_id=tenant_id, plan_id=plan_id)
         if plan is None:
             raise PlanNotFound(f"plan {plan_id} not found in tenant {tenant_id}")
 
@@ -115,8 +113,7 @@ class RunPlanUseCase:
 
                 if existing.status == WorkflowRunStatus.RUNNING:
                     raise IdempotencyKeyConflict(
-                        f"idempotency_key {idempotency_key!r} "
-                        "is already in flight"
+                        f"idempotency_key {idempotency_key!r} is already in flight"
                     )
                 return WorkflowExecutionResult(
                     final_output=existing.final_output or {},
@@ -150,9 +147,7 @@ class RunPlanUseCase:
                     )
                 )
             except Exception:  # pragma: no cover - defensive
-                logger.exception(
-                    "publish WorkflowRunStarted failed for %s", run.id
-                )
+                logger.exception("publish WorkflowRunStarted failed for %s", run.id)
 
         # ── 6. execute ────────────────────────────────────────────────────
         if owner_id is None:
@@ -202,9 +197,7 @@ class RunPlanUseCase:
                     )
                 )
             except Exception:  # pragma: no cover - defensive
-                logger.exception(
-                    "publish WorkflowRunCompleted failed for %s", saved.id
-                )
+                logger.exception("publish WorkflowRunCompleted failed for %s", saved.id)
 
         # Replace the run on the result with the persisted one.
         return WorkflowExecutionResult(

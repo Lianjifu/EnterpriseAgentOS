@@ -16,13 +16,14 @@ Create Date: 2026-09-23
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence as _Seq  # noqa: F401
+    from collections.abc import Sequence as _Seq
 
 revision: str = "0019_plan_signing"
 down_revision: str | None = "0018_knowledge_signing"

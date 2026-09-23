@@ -374,9 +374,7 @@ class Container:
         return KafkaAuditConsumer(
             bootstrap_servers=self.settings.audit_kafka_bootstrap_servers,
             topic=self.settings.audit_kafka_topic,
-            group_id=resolve_consumer_group(
-                self.settings.audit_kafka_consumer_group
-            ),
+            group_id=resolve_consumer_group(self.settings.audit_kafka_consumer_group),
             audit_port=SqlAuditLogAdapter(self.session_factory().maker()),
             block_ms=self.settings.audit_kafka_block_ms,
         )
@@ -557,9 +555,7 @@ class Container:
         try:
             return build_cipher_from_env(master_key_hex=master)
         except Exception as exc:  # pragma: no cover - defensive boot path
-            raise RuntimeError(
-                f"EOS_MODEL_MASTER_KEY is invalid: {exc}"
-            ) from exc
+            raise RuntimeError(f"EOS_MODEL_MASTER_KEY is invalid: {exc}") from exc
 
     def model_service(self):
         """Assemble the ModelService with all adapter dependencies.

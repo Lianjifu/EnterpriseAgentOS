@@ -12,6 +12,7 @@ DingTalk delivers two kinds of payloads to the webhook:
 from __future__ import annotations
 
 import base64
+import contextlib
 import json
 from typing import Any
 
@@ -32,10 +33,8 @@ class DingTalkInboundAdapter(InboundAdapter):
 
         # Stream v2 encryption — placeholder; P10 implements decryption.
         if "encrypt" in payload and isinstance(payload.get("encrypt"), str):
-            try:
+            with contextlib.suppress(Exception):
                 base64.b64decode(payload["encrypt"], validate=False)
-            except Exception:
-                pass
             return ParsedMessage(
                 external_user_id="dingtalk-encrypted",
                 external_chat_id="dingtalk-encrypted",

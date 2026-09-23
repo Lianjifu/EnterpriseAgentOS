@@ -428,7 +428,11 @@ class ObservabilityRecorder:
             completed_at=completed_at,
             status=status,
             actor_id=actor_id,
-            metadata={k: v for k, v in payload.items() if k not in {"tenant_id", "workspace_id"}},
+            metadata={
+                k: v
+                for k, v in payload.items()
+                if k not in {"tenant_id", "workspace_id"}
+            },
         )
         await self.run_repo.add(run)
 
@@ -522,7 +526,9 @@ def _identity(
 
 
 def _actor_id(payload: dict[str, Any]) -> UserId | None:
-    raw = payload.get("actor_id") or payload.get("user_id") or payload.get("principal_id")
+    raw = (
+        payload.get("actor_id") or payload.get("user_id") or payload.get("principal_id")
+    )
     if raw is None:
         return None
     try:

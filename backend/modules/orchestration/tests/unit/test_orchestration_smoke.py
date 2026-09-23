@@ -67,18 +67,27 @@ def test_template_renders_variables_and_step_output() -> None:
 
 def test_condition_evaluator() -> None:
     evaluator = SafeConditionEvaluator()
-    assert evaluator.evaluate(
-        expression="variables.vip == true",
-        context={"variables": {"vip": True}},
-    ) is True
-    assert evaluator.evaluate(
-        expression="variables.tier in ['gold','platinum']",
-        context={"variables": {"tier": "gold"}},
-    ) is True
-    assert evaluator.evaluate(
-        expression="variables.score > 50 and not variables.archived",
-        context={"variables": {"score": 80, "archived": False}},
-    ) is True
+    assert (
+        evaluator.evaluate(
+            expression="variables.vip == true",
+            context={"variables": {"vip": True}},
+        )
+        is True
+    )
+    assert (
+        evaluator.evaluate(
+            expression="variables.tier in ['gold','platinum']",
+            context={"variables": {"tier": "gold"}},
+        )
+        is True
+    )
+    assert (
+        evaluator.evaluate(
+            expression="variables.score > 50 and not variables.archived",
+            context={"variables": {"score": 80, "archived": False}},
+        )
+        is True
+    )
 
 
 __all__: list[str] = []

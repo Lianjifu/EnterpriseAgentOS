@@ -87,7 +87,7 @@ class _FakeRedis:
     ) -> Any:
         stream = self.streams.setdefault(key, _FakeStream())
         if group in stream.groups:
-            raise RuntimeError(f"BUSYGROUP Consumer Group name already exists {key}")
+            raise RuntimeError(f"BUSYGROUP Consumer Group name already exists {key!r}")
         stream.groups.add(group)
         return b"OK"
 
@@ -177,7 +177,7 @@ def _envelope(tenant_id: UUID | None = None, name: str = "test.event") -> EventE
 @pytest.mark.asyncio
 async def test_publish_then_consumer_dispatches_to_subscribers() -> None:
     fake = _FakeRedis()
-    bus = RedisStreamBus(fake, block_ms=10, count=10)
+    bus = RedisStreamBus(fake, block_ms=10, count=10)  # type: ignore[arg-type]
     received: list[EventEnvelope] = []
 
     async def handler(env: EventEnvelope) -> None:
@@ -203,7 +203,7 @@ async def test_publish_then_consumer_dispatches_to_subscribers() -> None:
 @pytest.mark.asyncio
 async def test_publish_acks_when_no_subscribers() -> None:
     fake = _FakeRedis()
-    bus = RedisStreamBus(fake, block_ms=10, count=10)
+    bus = RedisStreamBus(fake, block_ms=10, count=10)  # type: ignore[arg-type]
     await bus.start()
     try:
         env = _envelope()
@@ -224,7 +224,7 @@ async def test_publish_acks_when_no_subscribers() -> None:
 @pytest.mark.asyncio
 async def test_handler_exception_retries_then_dlqs() -> None:
     fake = _FakeRedis()
-    bus = RedisStreamBus(fake, block_ms=10, count=10, max_retries=2)
+    bus = RedisStreamBus(fake, block_ms=10, count=10, max_retries=2)  # type: ignore[arg-type]
 
     async def always_fail(env: EventEnvelope) -> None:
         raise RuntimeError("boom")
@@ -241,16 +241,18 @@ async def test_handler_exception_retries_then_dlqs() -> None:
                 break
             await asyncio.sleep(0.05)
         dlq = fake.streams[dlq_key]
-        assert len(dlq.entries) == 1, f"expected DLQ to receive one entry; got {len(dlq.entries)}"
+        assert len(dlq.entries) == 1, (
+            f"expected DLQ to receive one entry; got {len(dlq.entries)}"
+        )
         _, fields = dlq.entries[0]
         assert fields[b"dlq_reason"] == b"max_retries_exceeded"
         # retry_count must exceed max_retries (3 attempts: 0 → 1 → 2 → DLQ at next_count=3)
         assert int(fields[b"retry_count"]) > 2
         # Source stream should be empty after retries finished
         src = fake.streams[b"eos:events:00000000-0000-0000-0000-000000000001"]
-        assert all(
-            int(f.get(b"retry_count", b"0")) <= 2 for _, f in src.entries
-        ), "retry_count must not exceed max_retries in source stream"
+        assert all(int(f.get(b"retry_count", b"0")) <= 2 for _, f in src.entries), (
+            "retry_count must not exceed max_retries in source stream"
+        )
     finally:
         await bus.stop()
 
@@ -258,7 +260,7 @@ async def test_handler_exception_retries_then_dlqs() -> None:
 @pytest.mark.asyncio
 async def test_handler_eventually_succeeds_within_retry_budget() -> None:
     fake = _FakeRedis()
-    bus = RedisStreamBus(fake, block_ms=10, count=10, max_retries=3)
+    bus = RedisStreamBus(fake, block_ms=10, count=10, max_retries=3)  # type: ignore[arg-type]
     attempts: list[int] = []
 
     async def flaky(env: EventEnvelope) -> None:
@@ -274,10 +276,15 @@ async def test_handler_eventually_succeeds_within_retry_budget() -> None:
             if fake.xack_calls:
                 break
             await asyncio.sleep(0.05)
-        assert len(attempts) == 2, f"expected 2 attempts (1 fail + 1 success); got {len(attempts)}"
+        assert len(attempts) == 2, (
+            f"expected 2 attempts (1 fail + 1 success); got {len(attempts)}"
+        )
         assert fake.xack_calls, "should have ACK'd the eventually-successful event"
         # No DLQ
-        assert b"eos:events:dlq" not in fake.streams or not fake.streams[b"eos:events:dlq"].entries
+        assert (
+            b"eos:events:dlq" not in fake.streams
+            or not fake.streams[b"eos:events:dlq"].entries
+        )
     finally:
         await bus.stop()
 
@@ -291,8 +298,8 @@ async def test_two_buses_with_distinct_names_fan_out() -> None:
     groups → every replica gets every event (fan-out, not load-balanced).
     """
     fake = _FakeRedis()
-    bus_a = RedisStreamBus(fake, consumer_name="replica-a", block_ms=10)
-    bus_b = RedisStreamBus(fake, consumer_name="replica-b", block_ms=10)
+    bus_a = RedisStreamBus(fake, consumer_name="replica-a", block_ms=10)  # type: ignore[arg-type]
+    bus_b = RedisStreamBus(fake, consumer_name="replica-b", block_ms=10)  # type: ignore[arg-type]
     received_a: list[EventEnvelope] = []
     received_b: list[EventEnvelope] = []
 
@@ -334,10 +341,10 @@ def test_consumer_name_property_reflects_resolved_name(
 ) -> None:
     monkeypatch.delenv("EOS_EVENT_REDIS_CONSUMER_NAME", raising=False)
     fake = _FakeRedis()
-    bus = RedisStreamBus(fake, consumer_name="")
+    bus = RedisStreamBus(fake, consumer_name="")  # type: ignore[arg-type]
     assert bus.consumer_name != ""
     # explicit name wins
-    bus2 = RedisStreamBus(fake, consumer_name="explicit")
+    bus2 = RedisStreamBus(fake, consumer_name="explicit")  # type: ignore[arg-type]
     assert bus2.consumer_name == "explicit"
 
 
@@ -347,7 +354,7 @@ def test_consumer_name_property_reflects_resolved_name(
 @pytest.mark.asyncio
 async def test_start_is_idempotent() -> None:
     fake = _FakeRedis()
-    bus = RedisStreamBus(fake, block_ms=10)
+    bus = RedisStreamBus(fake, block_ms=10)  # type: ignore[arg-type]
     await bus.start()
     task1 = bus._consumer_task  # type: ignore[attr-defined]
     await bus.start()  # second call must be a no-op
@@ -359,7 +366,7 @@ async def test_start_is_idempotent() -> None:
 @pytest.mark.asyncio
 async def test_stop_then_restart_replaces_task() -> None:
     fake = _FakeRedis()
-    bus = RedisStreamBus(fake, block_ms=10)
+    bus = RedisStreamBus(fake, block_ms=10)  # type: ignore[arg-type]
     await bus.start()
     task1 = bus._consumer_task  # type: ignore[attr-defined]
     await bus.stop()

@@ -237,9 +237,7 @@ class RedisStreamBus(EventBus):
             except asyncio.CancelledError:
                 raise
             except Exception:
-                logger.exception(
-                    "redis stream bus consumer loop error; sleeping 1s"
-                )
+                logger.exception("redis stream bus consumer loop error; sleeping 1s")
                 await asyncio.sleep(1.0)
 
     async def _discover_streams(self) -> dict[str | bytes, str]:
@@ -402,17 +400,34 @@ def _envelope_from_fields(fields: dict[bytes | str, bytes | str]) -> EventEnvelo
         s = _s(v)
         return s if s else ""
 
-    tenant_id = UUID(_s(fields[b"tenant_id" if b"tenant_id" in fields else "tenant_id"]))
+    tenant_id = UUID(
+        _s(fields[b"tenant_id" if b"tenant_id" in fields else "tenant_id"])
+    )
     return EventEnvelope(
         event_id=UUID(_s(fields[b"event_id" if b"event_id" in fields else "event_id"])),
-        event_name=_s(fields[b"event_name" if b"event_name" in fields else "event_name"]),
+        event_name=_s(
+            fields[b"event_name" if b"event_name" in fields else "event_name"]
+        ),
         tenant_id=tenant_id,
-        workspace_id=UUID(_s(fields[b"workspace_id" if b"workspace_id" in fields else "workspace_id"]))
+        workspace_id=UUID(
+            _s(fields[b"workspace_id" if b"workspace_id" in fields else "workspace_id"])
+        )
         if _u(fields[b"workspace_id" if b"workspace_id" in fields else "workspace_id"])
         else None,
-        trace_id=_u(fields[b"trace_id" if b"trace_id" in fields else "trace_id"]) or None,
-        occurred_at_ms=int(_s(fields[b"occurred_at_ms" if b"occurred_at_ms" in fields else "occurred_at_ms"])),
-        payload=json.loads(_s(fields[b"payload" if b"payload" in fields else "payload"])),
+        trace_id=_u(fields[b"trace_id" if b"trace_id" in fields else "trace_id"])
+        or None,
+        occurred_at_ms=int(
+            _s(
+                fields[
+                    b"occurred_at_ms"
+                    if b"occurred_at_ms" in fields
+                    else "occurred_at_ms"
+                ]
+            )
+        ),
+        payload=json.loads(
+            _s(fields[b"payload" if b"payload" in fields else "payload"])
+        ),
         metadata=json.loads(_s(fields.get(b"metadata", fields.get("metadata", "{}")))),
     )
 

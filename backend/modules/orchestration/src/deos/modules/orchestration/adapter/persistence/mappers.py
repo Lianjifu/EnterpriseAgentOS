@@ -103,7 +103,9 @@ def workflow_run_to_orm(entity: WorkflowRun) -> WorkflowRunORM:
         status=entity.status.value,
         variables=dict(entity.variables),
         input=dict(entity.input),
-        final_output=dict(entity.final_output) if entity.final_output is not None else None,
+        final_output=dict(entity.final_output)
+        if entity.final_output is not None
+        else None,
         error_code=entity.error_code,
         trace_id=entity.trace_id,
         idempotency_key=entity.idempotency_key,

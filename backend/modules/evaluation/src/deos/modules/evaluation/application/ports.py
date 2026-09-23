@@ -60,7 +60,7 @@ class EvalDatasetRepository(Protocol):
 
     async def list_cases(
         self, *, tenant_id: TenantId, dataset_id: EvalDatasetId
-    ) -> list[EvalCase]: ...
+    ) -> list[EvalCase]: ...  # type: ignore[valid-type]
 
 
 @runtime_checkable

@@ -34,7 +34,7 @@ def _vec_bind(embedding: list[float] | tuple[float, ...]) -> str:
     """
     from pgvector.sqlalchemy import VECTOR
 
-    return VECTOR().bind_processor(None)(list(embedding))
+    return VECTOR().bind_processor(None)(list(embedding))  # type: ignore[arg-type]
 
 
 def _jsonb_bind(value: Any) -> str:
@@ -120,8 +120,7 @@ class PgVectorStore(VectorStore):
                     )
                 key = f"f_{k}"
                 clauses.append(
-                    f"(payload ->> CAST(:{key} AS text)) "
-                    f"= CAST(:{key}_v AS text)"
+                    f"(payload ->> CAST(:{key} AS text)) = CAST(:{key}_v AS text)"
                 )
                 params[key] = k
                 params[f"{key}_v"] = str(v)

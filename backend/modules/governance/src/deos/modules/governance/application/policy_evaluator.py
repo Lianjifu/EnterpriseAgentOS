@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any
 
 from eos_vault.actor import ActorContext
@@ -42,7 +42,6 @@ from deos.modules.governance.domain.entities import (
 from deos.modules.governance.domain.errors import InvalidApproval
 from deos.modules.governance.domain.policy_match import action_precedence, match
 from deos.modules.governance.domain.value_objects import (
-    ApprovalStatus,
     PolicyEffect,
 )
 
@@ -61,7 +60,7 @@ class _RuleCache:
     semantics; rules are small.
     """
 
-    __slots__ = ("_ttl_seconds", "_store")
+    __slots__ = ("_store", "_ttl_seconds")
 
     def __init__(self, ttl_seconds: int = _DEFAULT_TTL_SECONDS) -> None:
         self._ttl_seconds = ttl_seconds

@@ -68,9 +68,7 @@ class TestListPlans:
 
         plan = await seeded_plan_repo.get_by_code(code="pro")
         assert plan is not None
-        await seeded_plan_repo.update(
-            replace(plan, status=PlanStatus.RETIRED)
-        )
+        await seeded_plan_repo.update(replace(plan, status=PlanStatus.RETIRED))
         svc = PlatformService.from_parts(
             plan_repo=seeded_plan_repo,
             subscription_repo=InMemorySubscriptionRepository(),
@@ -82,9 +80,7 @@ class TestListPlans:
         retired = await execute(status="retired")
         assert {p.code for p in retired} == {"pro"}
 
-    async def test_limit_offset(
-        self, seeded_plan_repo: InMemoryPlanRepository
-    ) -> None:
+    async def test_limit_offset(self, seeded_plan_repo: InMemoryPlanRepository) -> None:
         svc = PlatformService.from_parts(
             plan_repo=seeded_plan_repo,
             subscription_repo=InMemorySubscriptionRepository(),
@@ -129,9 +125,7 @@ class TestGetPlan:
         plan = await execute(plan_id=plan_id)
         assert plan.code == "free"
 
-    async def test_missing_raises_not_found(
-        self, service: PlatformService
-    ) -> None:
+    async def test_missing_raises_not_found(self, service: PlatformService) -> None:
         execute = get_plan.build(service)
         with pytest.raises(PlanNotFound):
             await execute(code="does-not-exist")
@@ -202,9 +196,7 @@ class TestAssignSubscription:
 
         plan = await seeded_plan_repo.get_by_code(code="pro")
         assert plan is not None
-        await seeded_plan_repo.update(
-            replace(plan, status=PlanStatus.RETIRED)
-        )
+        await seeded_plan_repo.update(replace(plan, status=PlanStatus.RETIRED))
         svc = PlatformService.from_parts(
             plan_repo=seeded_plan_repo,
             subscription_repo=service.subscription_repo,
@@ -213,9 +205,10 @@ class TestAssignSubscription:
         execute = assign_subscription.build(svc)
         with pytest.raises(Exception) as excinfo:
             await execute(tenant_id=_tenant_id(), plan_code="pro")
-        assert "retired" in str(excinfo.value).lower() or getattr(
-            excinfo.value, "code", ""
-        ) == "PLAN_RETIRED"
+        assert (
+            "retired" in str(excinfo.value).lower()
+            or getattr(excinfo.value, "code", "") == "PLAN_RETIRED"
+        )
 
     async def test_reassign_switches_plan(
         self, service: PlatformService, seeded_plan_repo: InMemoryPlanRepository
@@ -280,9 +273,7 @@ class TestUpsertSetting:
         assert len(rows) == 1
         assert rows[0].value == "gpt-4o-mini"
 
-    async def test_complex_value_round_trip(
-        self, service: PlatformService
-    ) -> None:
+    async def test_complex_value_round_trip(self, service: PlatformService) -> None:
         execute = upsert_setting.build(service)
         value = {"limits": {"max_turns": 1000}, "tiers": ["a", "b"]}
         setting = await execute(tenant_id=_tenant_id(), key="cfg", value=value)
@@ -355,9 +346,5 @@ class TestPortCompliance:
         )
 
         assert isinstance(InMemoryPlanRepository(), PlanRepository)
-        assert isinstance(
-            InMemorySubscriptionRepository(), SubscriptionRepository
-        )
-        assert isinstance(
-            InMemoryTenantSettingRepository(), TenantSettingRepository
-        )
+        assert isinstance(InMemorySubscriptionRepository(), SubscriptionRepository)
+        assert isinstance(InMemoryTenantSettingRepository(), TenantSettingRepository)

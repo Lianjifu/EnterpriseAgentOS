@@ -34,7 +34,7 @@ from sqlalchemy.dialects import postgresql
 from eos_persistence.pgvector import register_pgvector
 
 register_pgvector()
-from pgvector.sqlalchemy import Vector  # noqa: E402  (after register)
+from pgvector.sqlalchemy import Vector
 
 
 revision: str = "0009_knowledge"
@@ -263,9 +263,7 @@ def upgrade() -> None:
     )
 
     # ── knowledge_chunks_vec mirror (managed by eos_vector) ─────────────
-    op.execute(
-        "CREATE EXTENSION IF NOT EXISTS vector"
-    )
+    op.execute("CREATE EXTENSION IF NOT EXISTS vector")
     op.execute(
         f"""
         CREATE TABLE knowledge_chunks_vec (
@@ -277,10 +275,7 @@ def upgrade() -> None:
         )
         """
     )
-    op.execute(
-        "CREATE INDEX ix_knowledge_chunks_vec_tenant_id "
-        "ON knowledge_chunks_vec (tenant_id)"
-    )
+    op.execute("CREATE INDEX ix_knowledge_chunks_vec_tenant_id ON knowledge_chunks_vec (tenant_id)")
     op.execute(
         "CREATE INDEX ix_knowledge_chunks_vec_embedding_hnsw "
         "ON knowledge_chunks_vec USING hnsw (embedding vector_cosine_ops) "
@@ -300,9 +295,7 @@ def downgrade() -> None:
         "ix_knowledge_assets_tenant_id_workspace_id_package_id_status",
         table_name="knowledge_assets",
     )
-    op.drop_index(
-        "ix_knowledge_assets_tenant_id", table_name="knowledge_assets"
-    )
+    op.drop_index("ix_knowledge_assets_tenant_id", table_name="knowledge_assets")
     op.drop_table("knowledge_assets")
     op.drop_constraint(
         "uq_knowledge_packages_tenant_id_name",
@@ -313,7 +306,5 @@ def downgrade() -> None:
         "ix_knowledge_packages_tenant_id_workspace_id_status",
         table_name="knowledge_packages",
     )
-    op.drop_index(
-        "ix_knowledge_packages_tenant_id", table_name="knowledge_packages"
-    )
+    op.drop_index("ix_knowledge_packages_tenant_id", table_name="knowledge_packages")
     op.drop_table("knowledge_packages")

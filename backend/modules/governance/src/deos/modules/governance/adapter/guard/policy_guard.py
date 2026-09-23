@@ -47,7 +47,7 @@ class PolicyGuard:
             )
         if rec.effect is POL_EFFECT.REQUIRE_APPROVAL:
             raise ApprovalRequiredError(
-                approval_id=str(rec.approval_id) if rec.approval_id else None,
+                approval_id=str(rec.approval_id) if rec.approval_id else "",  # type: ignore[arg-type]
                 code="APPROVAL_REQUIRED",
                 details={
                     "action": action,

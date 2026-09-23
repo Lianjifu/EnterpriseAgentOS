@@ -310,10 +310,18 @@ def test_dsl_parallel_step() -> None:
                 "kind": "parallel",
                 "step_id": "par",
                 "branches": [
-                    {"kind": "tool", "step_id": "t1", "tool_name": "x",
-                     "arguments_template": {}},
-                    {"kind": "tool", "step_id": "t2", "tool_name": "y",
-                     "arguments_template": {}},
+                    {
+                        "kind": "tool",
+                        "step_id": "t1",
+                        "tool_name": "x",
+                        "arguments_template": {},
+                    },
+                    {
+                        "kind": "tool",
+                        "step_id": "t2",
+                        "tool_name": "y",
+                        "arguments_template": {},
+                    },
                 ],
                 "fail_fast": False,
             },
@@ -646,9 +654,7 @@ async def test_workflow_run_repo_lookup_by_idempotency_key() -> None:
         idempotency_key="k",
     )
     await repo.add(run)
-    found = await repo.get_by_idempotency_key(
-        tenant_id=tid, idempotency_key="k"
-    )
+    found = await repo.get_by_idempotency_key(tenant_id=tid, idempotency_key="k")
     assert found is not None
     assert found.id == run.id
 

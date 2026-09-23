@@ -49,9 +49,9 @@ DEFAULT_LLM_PRICING: dict[str, ModelPricing] = {
     ),
 }
 DEFAULT_TOOL_UNIT_COST: dict[str, Decimal] = {
-    "echo": Decimal("0"),
-    "reverse": Decimal("0"),
-    "clock": Decimal("0"),
+    "echo": Decimal(0),
+    "reverse": Decimal(0),
+    "clock": Decimal(0),
 }
 DEFAULT_SKILL_UNIT_COST: dict[str, Decimal] = {}
 DEFAULT_MEMORY_WRITE_COST_USD: Decimal = Decimal("0.00001")
@@ -95,8 +95,8 @@ class PricingCatalog:
         )
         if pricing is None:
             pricing = ModelPricing(
-                input_usd_per_1k=Decimal("0"),
-                output_usd_per_1k=Decimal("0"),
+                input_usd_per_1k=Decimal(0),
+                output_usd_per_1k=Decimal(0),
             )
         in_cost = (Decimal(input_tokens) / Decimal(1000)) * pricing.input_usd_per_1k
         out_cost = (Decimal(output_tokens) / Decimal(1000)) * pricing.output_usd_per_1k
@@ -105,10 +105,10 @@ class PricingCatalog:
     # ── Tool / Skill / Memory / Knowledge / Channel ─────────────────────
 
     def tool_cost(self, *, tool_name: str) -> Decimal:
-        return self.tool_unit_cost.get(tool_name, Decimal("0"))
+        return self.tool_unit_cost.get(tool_name, Decimal(0))
 
     def skill_cost(self, *, skill_name: str) -> Decimal:
-        return self.skill_unit_cost.get(skill_name, Decimal("0"))
+        return self.skill_unit_cost.get(skill_name, Decimal(0))
 
     def memory_write_cost(self) -> Decimal:
         return self.memory_write_unit_cost_usd
@@ -201,8 +201,8 @@ def _parse_llm_pricing(raw: str) -> dict[str, ModelPricing]:
         DEFAULT_LLM_PRICING.get(
             "default",
             ModelPricing(
-                input_usd_per_1k=Decimal("0"),
-                output_usd_per_1k=Decimal("0"),
+                input_usd_per_1k=Decimal(0),
+                output_usd_per_1k=Decimal(0),
             ),
         ),
     )

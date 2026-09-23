@@ -10,10 +10,10 @@ expose ``.list_runs()`` / ``.list_costs()`` / ``.aggregate_costs()`` /
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Awaitable, Callable
-from uuid import UUID
+from typing import Any
 
 from eos_schema.ids import (
     AgentTemplateId,
@@ -33,7 +33,6 @@ from deos.modules.observability_module.domain.value_objects import (
     CostType,
     RunType,
 )
-
 
 # Aggregator row shape: list[dict[str, Any]] returned from repo.sum_*.
 AggregateRow = dict[str, Any]

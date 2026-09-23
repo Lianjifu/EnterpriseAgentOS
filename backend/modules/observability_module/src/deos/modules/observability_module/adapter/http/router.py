@@ -74,8 +74,9 @@ def build_router() -> APIRouter:
         limit: int = Query(50, ge=1, le=200),
         offset: int = Query(0, ge=0),
     ) -> RunRecordListResponse:
-        from deos.modules.observability_module.domain.value_objects import RunType
         from eos_schema.ids import TenantId, WorkspaceId
+
+        from deos.modules.observability_module.domain.value_objects import RunType
 
         rt_enum: RunType | None = None
         if run_type is not None:
@@ -113,8 +114,9 @@ def build_router() -> APIRouter:
         limit: int = Query(200, ge=1, le=500),
         offset: int = Query(0, ge=0),
     ):
-        from deos.modules.observability_module.domain.value_objects import CostType
         from eos_schema.ids import TenantId, WorkspaceId
+
+        from deos.modules.observability_module.domain.value_objects import CostType
 
         ct_enum: CostType | None = None
         if cost_type is not None:

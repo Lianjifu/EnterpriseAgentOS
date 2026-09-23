@@ -7,7 +7,6 @@ narrowed to that workspace.
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from eos_schema.ids import TenantId, WorkspaceId

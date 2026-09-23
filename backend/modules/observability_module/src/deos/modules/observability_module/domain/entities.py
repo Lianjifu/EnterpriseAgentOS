@@ -139,7 +139,7 @@ class CostRecord:
         metadata: dict[str, Any] | None = None,
         cost_id: CostRecordId | None = None,
     ) -> CostRecord:
-        if amount_usd < Decimal("0"):
+        if amount_usd < Decimal(0):
             raise ValueError("CostRecord.amount_usd must be >= 0")
         if not unit or len(unit) > 16:
             raise ValueError("CostRecord.unit must be 1..16 chars")

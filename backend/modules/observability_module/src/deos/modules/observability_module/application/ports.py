@@ -28,7 +28,6 @@ from deos.modules.observability_module.domain.value_objects import (
     RunType,
 )
 
-
 # ── Repositories ─────────────────────────────────────────────────────────
 
 

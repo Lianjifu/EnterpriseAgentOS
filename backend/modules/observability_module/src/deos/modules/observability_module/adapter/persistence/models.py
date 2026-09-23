@@ -28,7 +28,6 @@ from sqlalchemy import (
     Integer,
     Numeric,
     String,
-    Text,
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB

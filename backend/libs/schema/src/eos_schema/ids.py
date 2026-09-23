@@ -19,6 +19,7 @@ ApiKeyId = NewType("ApiKeyId", UUID)
 # ── Agent runtime ─────────────────────────────────────────────────────────
 AgentId = NewType("AgentId", UUID)
 AgentTemplateId = NewType("AgentTemplateId", UUID)
+AgentVersionId = NewType("AgentVersionId", UUID)
 SessionId = NewType("SessionId", UUID)
 TurnId = NewType("TurnId", UUID)
 
@@ -54,3 +55,9 @@ QuotaCounterId = NewType("QuotaCounterId", UUID)
 ChannelId = NewType("ChannelId", UUID)
 ChannelSecretId = NewType("ChannelSecretId", UUID)
 ChannelDeliveryId = NewType("ChannelDeliveryId", UUID)
+
+# ── Agent factory / Evaluation (P8) ───────────────────────────────────────
+ReleaseId = NewType("ReleaseId", UUID)
+EvalDatasetId = NewType("EvalDatasetId", UUID)
+EvalCaseId = NewType("EvalCaseId", UUID)
+EvalRunId = NewType("EvalRunId", UUID)

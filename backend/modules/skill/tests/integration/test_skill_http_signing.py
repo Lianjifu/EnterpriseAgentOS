@@ -29,9 +29,9 @@ from deos.modules.skill.domain.errors import (
 )
 from deos.modules.skill.domain.signing import (
     SkillPackPayload,
-    public_key_id,
     sign_payload,
 )
+from eos_pack_signing import public_key_id
 
 
 def _tenant() -> UUID:

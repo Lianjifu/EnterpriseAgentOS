@@ -20,6 +20,10 @@ from pathlib import Path
 from uuid import uuid4
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from eos_pack_signing import (
+    public_key_id,
+    public_key_to_pem,
+)
 
 from deos.modules.skill.adapter.persistence.mappers import (
     skill_package_domain_to_orm,
@@ -37,8 +41,6 @@ from deos.modules.skill.domain.errors import (
 )
 from deos.modules.skill.domain.signing import (
     SkillPackPayload,
-    public_key_id,
-    public_key_to_pem,
     sign_payload,
 )
 

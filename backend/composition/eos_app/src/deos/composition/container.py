@@ -21,6 +21,7 @@ from eos_messaging.in_process import InProcessBus
 from eos_persistence.session_factory import SessionFactory, create_engine
 from eos_sandbox.local import LocalSandbox
 from eos_sandbox.sandbox import Sandbox
+from eos_vault.hashicorp_vault import HashicorpVaultSecretsResolver
 from eos_vault.resolver import VaultSecretsResolver
 from eos_vector.store import VectorStore
 
@@ -33,6 +34,9 @@ class Container:
         self._services: dict[type, Any] = {}
         self._kafka_audit_producer: object | None = None
         self._skill_vetter: object | None = None
+        self._kv_resolver: HashicorpVaultSecretsResolver | None = None
+        self._knowledge_vetter: object | None = None
+        self._plan_vetter: object | None = None
 
     # ── infra ───────────────────────────────────────────────────────────────
     def engine(self):
@@ -145,7 +149,10 @@ class Container:
         * ``disabled`` → :class:`NoOpSkillVetter` (explicit dev/test opt-out).
         * ``local``    → :class:`LocalTrustStoreSkillVetter`; construction
           itself fails-loud if the trust dir is missing/empty.
-        * ``vault``    → not implemented in A6; raises ``NotImplementedError``.
+        * ``vault``    → :class:`VaultBackedSkillVetter`; reads trust keys
+          from ``EOS_VAULT_SKILL_TRUST_REF`` via ``kv_resolver()`` and
+          re-fetches every ``EOS_VAULT_SKILL_TRUST_REFRESH_SECONDS``.
+          Requires ``vault_mode=vault`` (``EOS_VAULT_URL`` + token).
         """
         if self._skill_vetter is None:
             from deos.modules.skill.application.vetter import (
@@ -161,13 +168,93 @@ class Container:
                     trust_dir=self.settings.skill_trust_dir,
                 )
             elif mode == "vault":
-                raise NotImplementedError(
-                    "skill_signing_mode='vault' requires VaultBackedSkillVetter "
-                    "(Tier B follow-up)"
+                kv = self.kv_resolver()
+                if kv is None:
+                    raise RuntimeError(
+                        "EOS_SKILL_SIGNING_MODE=vault requires vault_mode=vault "
+                        "(EOS_VAULT_URL + EOS_VAULT_TOKEN must be set)"
+                    )
+                from deos.modules.skill.application.vetter_vault import (
+                    VaultBackedSkillVetter,
+                )
+
+                self._skill_vetter = VaultBackedSkillVetter(
+                    kv_resolver=kv,
+                    trust_ref=self.settings.vault_skill_trust_ref,
+                    refresh_seconds=self.settings.vault_skill_trust_refresh_seconds,
+                    min_keys=self.settings.vault_skill_trust_min_keys,
                 )
             else:
                 raise ValueError(f"unknown skill_signing_mode={mode!r}")
         return self._skill_vetter
+
+    def kv_resolver(self) -> HashicorpVaultSecretsResolver | None:
+        """Singleton KV resolver — used by ``VaultBackedSkillVetter`` and
+        future Vault-direct readers.
+
+        Returns ``None`` unless ``EOS_VAULT_MODE=vault`` so the rest of the
+        app can degrade gracefully (the A1 env/file resolvers stay in
+        place for ``EOS_*_SECRET_REF`` lookups via ``secrets_resolver()``).
+        """
+        if self._kv_resolver is not None:
+            return self._kv_resolver
+        if self.settings.vault_mode != "vault":
+            return None
+        from eos_vault.hashicorp_vault import HashicorpVaultSecretsResolver
+
+        self._kv_resolver = HashicorpVaultSecretsResolver(
+            url=self.settings.vault_url,
+            token=self.settings.vault_token,
+            cache_ttl_seconds=30.0,
+            cache_max_entries=256,
+        )
+        return self._kv_resolver
+
+    def knowledge_vetter(self):
+        """Singleton knowledge vetter.
+
+        ``EOS_KNOWLEDGE_SIGNING_MODE`` ∈ {``disabled``, ``local``}.  Tier B
+        intentionally does not wire a ``vault`` branch — symmetric to the
+        Skill ``vault`` branch but tracked as a separate ticket (see
+        ``doc/12`` Tier B list).
+        """
+        if self._knowledge_vetter is not None:
+            return self._knowledge_vetter
+        from deos.modules.knowledge.application.vetter import (
+            LocalTrustStoreKnowledgeVetter,
+            NoOpKnowledgeVetter,
+        )
+
+        mode = self.settings.knowledge_signing_mode
+        if mode == "disabled":
+            self._knowledge_vetter = NoOpKnowledgeVetter()
+        elif mode == "local":
+            self._knowledge_vetter = LocalTrustStoreKnowledgeVetter(
+                trust_dir=self.settings.knowledge_trust_dir,
+            )
+        else:
+            raise ValueError(f"unknown knowledge_signing_mode={mode!r}")
+        return self._knowledge_vetter
+
+    def plan_vetter(self):
+        """Singleton plan vetter — mirrors :meth:`knowledge_vetter`."""
+        if self._plan_vetter is not None:
+            return self._plan_vetter
+        from deos.modules.orchestration.application.vetter import (
+            LocalTrustStorePlanVetter,
+            NoOpPlanVetter,
+        )
+
+        mode = self.settings.plan_signing_mode
+        if mode == "disabled":
+            self._plan_vetter = NoOpPlanVetter()
+        elif mode == "local":
+            self._plan_vetter = LocalTrustStorePlanVetter(
+                trust_dir=self.settings.plan_trust_dir,
+            )
+        else:
+            raise ValueError(f"unknown plan_signing_mode={mode!r}")
+        return self._plan_vetter
 
     # ── P5 secrets ──────────────────────────────────────────────────────────
     def secrets_resolver(self) -> VaultSecretsResolver | None:

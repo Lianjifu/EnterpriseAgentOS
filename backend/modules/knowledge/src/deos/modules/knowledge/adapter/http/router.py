@@ -125,6 +125,9 @@ def build_router() -> APIRouter:
             description=body.description,
             metadata=body.metadata,
             created_by=UserId(x_user_id),
+            signature=body.signature,
+            signer_key_id=body.signer_key_id,
+            image_digest=body.image_digest,
         )
         return package_to_dto(pkg)
 

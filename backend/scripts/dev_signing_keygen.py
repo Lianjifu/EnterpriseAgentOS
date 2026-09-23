@@ -21,8 +21,9 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 # Allow ``python scripts/dev_signing_keygen.py`` from anywhere in the repo.
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO_ROOT))
+sys.path.insert(0, str(_REPO_ROOT / "libs" / "pack_signing" / "src"))
 
-from deos.modules.skill.domain.signing import (  # noqa: E402 — sys.path tweak above
+from eos_pack_signing import (  # noqa: E402 — sys.path tweak above
     private_key_to_pem,
     public_key_id,
     public_key_to_pem,

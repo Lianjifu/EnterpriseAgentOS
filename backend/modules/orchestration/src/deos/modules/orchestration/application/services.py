@@ -37,6 +37,7 @@ from deos.modules.orchestration.application.use_cases.list_runs import (
 from deos.modules.orchestration.application.use_cases.run_plan import (
     RunPlanUseCase,
 )
+from deos.modules.orchestration.application.vetter import PlanVetter
 from deos.modules.orchestration.domain.value_objects import (
     DEFAULT_STEP_TIMEOUT_SECONDS,
     MAX_TOTAL_STEPS,
@@ -58,6 +59,7 @@ class OrchestrationService:
     policy_guard: object | None = None
     max_total_steps: int = MAX_TOTAL_STEPS
     default_step_timeout_seconds: int = DEFAULT_STEP_TIMEOUT_SECONDS
+    plan_vetter: PlanVetter | None = None
 
     create_plan: CreatePlanUseCase | None = None
     get_plan: GetPlanUseCase | None = None
@@ -87,6 +89,7 @@ class OrchestrationService:
             repository=self.plan_repository,
             publisher=self.publisher,
             policy_guard=self.policy_guard,
+            vetter=self.plan_vetter,
         )
         self.get_plan = GetPlanUseCase(repository=self.plan_repository)
         self.list_plans = ListPlansUseCase(repository=self.plan_repository)
@@ -123,6 +126,7 @@ class OrchestrationService:
         policy_guard: object | None = None,
         max_total_steps: int = MAX_TOTAL_STEPS,
         default_step_timeout_seconds: int = DEFAULT_STEP_TIMEOUT_SECONDS,
+        plan_vetter: PlanVetter | None = None,
     ) -> OrchestrationService:
         return cls(
             plan_repository=plan_repository,
@@ -137,6 +141,7 @@ class OrchestrationService:
             policy_guard=policy_guard,
             max_total_steps=max_total_steps,
             default_step_timeout_seconds=default_step_timeout_seconds,
+            plan_vetter=plan_vetter,
         )
 
 

@@ -41,12 +41,36 @@ class KnowledgePackageNameConflict(KnowledgeError, ConflictError):
     status = 409
 
 
+class KnowledgeSignatureInvalid(KnowledgeError):
+    """Knowledge pack signature missing / malformed / failed verification."""
+
+    code = "KNOWLEDGE_SIGNATURE_INVALID"
+    status = 422
+
+
+class KnowledgeSignerUntrusted(KnowledgeError):
+    """Signing key is not in the workspace's trust store."""
+
+    code = "KNOWLEDGE_SIGNER_UNTRUSTED"
+    status = 403
+
+
+class KnowledgeImageDigestMismatch(KnowledgeError):
+    """``image_digest`` does not match the digest that was signed."""
+
+    code = "KNOWLEDGE_IMAGE_DIGEST_MISMATCH"
+    status = 422
+
+
 __all__ = [
     "KnowledgeAlreadyRevoked",
     "KnowledgeAssetNotFound",
     "KnowledgeChunkNotFound",
     "KnowledgeError",
+    "KnowledgeImageDigestMismatch",
     "KnowledgePackageNameConflict",
     "KnowledgePackageNotFound",
+    "KnowledgeSignatureInvalid",
+    "KnowledgeSignerUntrusted",
     "KnowledgeValidationError",
 ]

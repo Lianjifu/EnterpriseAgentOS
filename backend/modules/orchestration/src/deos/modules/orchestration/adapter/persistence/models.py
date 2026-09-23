@@ -62,6 +62,18 @@ class PlanORM(TenantScopedMixin, Base):
     created_by: Mapped[UUID | None] = mapped_column(
         PgUUID(as_uuid=True), nullable=True
     )
+    # Tier B signing triple — mirrors ``skill_packages.signature``.
+    # NOT NULL DEFAULT '' so existing rows satisfy the constraint;
+    # partial-triple invariant is enforced in ``Plan.create()``.
+    signature: Mapped[str] = mapped_column(
+        Text, nullable=False, default="", server_default=text("''")
+    )
+    signer_key_id: Mapped[str] = mapped_column(
+        String(64), nullable=False, default="", server_default=text("''")
+    )
+    image_digest: Mapped[str] = mapped_column(
+        String(128), nullable=False, default="", server_default=text("''")
+    )
 
     __table_args__ = (
         CheckConstraint(

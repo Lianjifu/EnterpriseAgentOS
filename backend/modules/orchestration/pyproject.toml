@@ -8,6 +8,7 @@ dependencies = [
     "eos-schema",
     "eos-persistence",
     "eos-messaging",
+    "eos-pack-signing",
     "pydantic>=2.9",
 ]
 

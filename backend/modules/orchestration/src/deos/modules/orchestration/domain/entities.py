@@ -71,6 +71,13 @@ class Plan:
     created_by: UserId
     created_at: datetime
     updated_at: datetime
+    # Tier B signing triple — same shape as SkillPackage.signature etc.
+    # Positioned after the required ``created_at`` / ``updated_at`` so the
+    # ``@dataclass`` slot ordering keeps required fields before optional
+    # ones.  ``Plan.create()`` enforces "all three set or all empty".
+    signature: str = ""
+    signer_key_id: str = ""
+    image_digest: str = ""
 
     @classmethod
     def create(
@@ -86,6 +93,9 @@ class Plan:
         created_by: UserId,
         plan_id: PlanId | None = None,
         now: datetime | None = None,
+        signature: str = "",
+        signer_key_id: str = "",
+        image_digest: str = "",
     ) -> Plan:
         if not name or not name.strip():
             raise ValueError("Plan.name must be non-empty")
@@ -96,6 +106,11 @@ class Plan:
         if not 1 <= max_total_steps <= 256:
             raise ValueError(
                 f"Plan.max_total_steps must be in [1, 256], got {max_total_steps}"
+            )
+        signing_fields = (bool(signature), bool(signer_key_id), bool(image_digest))
+        if any(signing_fields) and not all(signing_fields):
+            raise ValueError(
+                "signature / signer_key_id / image_digest must all be set together"
             )
         ts = now or _utcnow()
         return cls(
@@ -108,6 +123,9 @@ class Plan:
             max_total_steps=max_total_steps,
             metadata=dict(metadata or {}),
             created_by=created_by,
+            signature=signature,
+            signer_key_id=signer_key_id,
+            image_digest=image_digest,
             created_at=ts,
             updated_at=ts,
         )

@@ -33,6 +33,7 @@ members = [
     "eos-llm",
     "eos-messaging",
     "eos-observability",
+    "eos-pack-signing",
     "eos-persistence",
     "eos-sandbox",
     "eos-schema",
@@ -1042,6 +1043,7 @@ source = { editable = "modules/knowledge" }
 dependencies = [
     { name = "eos-kernel" },
     { name = "eos-messaging" },
+    { name = "eos-pack-signing" },
     { name = "eos-persistence" },
     { name = "eos-schema" },
     { name = "eos-vector" },
@@ -1052,6 +1054,7 @@ dependencies = [
 requires-dist = [
     { name = "eos-kernel", editable = "libs/kernel" },
     { name = "eos-messaging", editable = "libs/messaging" },
+    { name = "eos-pack-signing", editable = "libs/pack_signing" },
     { name = "eos-persistence", editable = "libs/persistence" },
     { name = "eos-schema", editable = "libs/schema" },
     { name = "eos-vector", editable = "libs/vector" },
@@ -1140,6 +1143,7 @@ source = { editable = "modules/orchestration" }
 dependencies = [
     { name = "eos-kernel" },
     { name = "eos-messaging" },
+    { name = "eos-pack-signing" },
     { name = "eos-persistence" },
     { name = "eos-schema" },
     { name = "pydantic" },
@@ -1149,6 +1153,7 @@ dependencies = [
 requires-dist = [
     { name = "eos-kernel", editable = "libs/kernel" },
     { name = "eos-messaging", editable = "libs/messaging" },
+    { name = "eos-pack-signing", editable = "libs/pack_signing" },
     { name = "eos-persistence", editable = "libs/persistence" },
     { name = "eos-schema", editable = "libs/schema" },
     { name = "pydantic", specifier = ">=2.9" },
@@ -1204,9 +1209,11 @@ dependencies = [
     { name = "eos-http" },
     { name = "eos-kernel" },
     { name = "eos-messaging" },
+    { name = "eos-pack-signing" },
     { name = "eos-persistence" },
     { name = "eos-sandbox" },
     { name = "eos-schema" },
+    { name = "eos-vault" },
     { name = "fastapi" },
     { name = "pydantic" },
 ]
@@ -1218,9 +1225,11 @@ requires-dist = [
     { name = "eos-http", editable = "libs/http" },
     { name = "eos-kernel", editable = "libs/kernel" },
     { name = "eos-messaging", editable = "libs/messaging" },
+    { name = "eos-pack-signing", editable = "libs/pack_signing" },
     { name = "eos-persistence", editable = "libs/persistence" },
     { name = "eos-sandbox", editable = "libs/sandbox" },
     { name = "eos-schema", editable = "libs/schema" },
+    { name = "eos-vault", editable = "libs/vault" },
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "pydantic", specifier = ">=2.9" },
 ]
@@ -1341,7 +1350,7 @@ requires-dist = [
     { name = "python-multipart", specifier = ">=0.0.32" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.7.4" },
     { name = "sqlalchemy", extras = ["asyncio"], marker = "extra == 'dev'", specifier = ">=2.0.36" },
-    { name = "testcontainers", extras = ["postgres", "redis"], marker = "extra == 'dev'", specifier = ">=4.8.0" },
+    { name = "testcontainers", extras = ["postgres", "redis", "kafka"], marker = "extra == 'dev'", specifier = ">=4.8.0" },
 ]
 provides-extras = ["dev"]
 
@@ -1528,6 +1537,17 @@ requires-dist = [
     { name = "prometheus-client", specifier = ">=0.21.0" },
     { name = "structlog", specifier = ">=24.4.0" },
 ]
+
+[[package]]
+name = "eos-pack-signing"
+version = "0.1.0"
+source = { editable = "libs/pack_signing" }
+dependencies = [
+    { name = "cryptography" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "cryptography", specifier = ">=42.0.0" }]
 
 [[package]]
 name = "eos-persistence"

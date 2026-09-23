@@ -42,6 +42,9 @@ def plan_to_domain(row: PlanORM) -> Plan:
         max_total_steps=row.max_total_steps,
         metadata=dict(row.metadata_ or {}),
         created_by=UserId(row.created_by) if row.created_by else None,
+        signature=row.signature,
+        signer_key_id=row.signer_key_id,
+        image_digest=row.image_digest,
         created_at=row.created_at,
         updated_at=row.updated_at,
     )
@@ -58,6 +61,9 @@ def plan_to_orm(entity: Plan) -> PlanORM:
         max_total_steps=entity.max_total_steps,
         metadata_=dict(entity.metadata),
         created_by=entity.created_by,
+        signature=entity.signature,
+        signer_key_id=entity.signer_key_id,
+        image_digest=entity.image_digest,
         created_at=entity.created_at,
         updated_at=entity.updated_at,
     )

@@ -27,6 +27,9 @@ def package_to_dto(pkg: KnowledgePackage) -> KnowledgePackageResponse:
         asset_count=pkg.asset_count,
         metadata=_stringify_metadata(pkg.metadata),
         created_by=str(pkg.created_by) if pkg.created_by else None,
+        signature=pkg.signature,
+        signer_key_id=pkg.signer_key_id,
+        image_digest=pkg.image_digest,
         created_at=pkg.created_at.isoformat(),
         updated_at=pkg.updated_at.isoformat(),
     )

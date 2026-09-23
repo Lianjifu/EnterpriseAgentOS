@@ -18,14 +18,17 @@ import pytest
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from deos.modules.skill.domain.signing import (
-    SkillPackPayload,
-    canonical_payload,
+from eos_pack_signing import (
     load_private_key_pem,
     load_public_key_pem,
     private_key_to_pem,
     public_key_id,
     public_key_to_pem,
+)
+
+from deos.modules.skill.domain.signing import (
+    SkillPackPayload,
+    canonical_payload,
     verify_signature,
 )
 
@@ -74,6 +77,7 @@ def test_pack_sign_writes_signature_and_verifies(tmp_path: Path) -> None:
         [
             sys.executable,
             str(_SCRIPT),
+            "skill",
             str(pack_dir),
             "-k",
             str(priv_path),
@@ -120,7 +124,7 @@ def test_pack_sign_tampered_manifest_fails_verification(tmp_path: Path) -> None:
     priv_path, key = _write_key(tmp_path)
 
     result = subprocess.run(
-        [sys.executable, str(_SCRIPT), str(pack_dir), "-k", str(priv_path)],
+        [sys.executable, str(_SCRIPT), "skill", str(pack_dir), "-k", str(priv_path)],
         check=False,
         capture_output=True,
         text=True,
@@ -163,7 +167,7 @@ def test_pack_sign_rejects_manifest_missing_required_field(tmp_path: Path) -> No
     priv_path, _ = _write_key(tmp_path)
 
     result = subprocess.run(
-        [sys.executable, str(_SCRIPT), str(pack_dir), "-k", str(priv_path)],
+        [sys.executable, str(_SCRIPT), "skill", str(pack_dir), "-k", str(priv_path)],
         check=False,
         capture_output=True,
         text=True,
@@ -179,7 +183,7 @@ def test_pack_sign_overwrites_existing_signature(tmp_path: Path) -> None:
     _write_manifest(pack_dir)
     priv_path, _ = _write_key(tmp_path)
     subprocess.run(
-        [sys.executable, str(_SCRIPT), str(pack_dir), "-k", str(priv_path)],
+        [sys.executable, str(_SCRIPT), "skill", str(pack_dir), "-k", str(priv_path)],
         check=True,
         capture_output=True,
     )
@@ -191,7 +195,7 @@ def test_pack_sign_overwrites_existing_signature(tmp_path: Path) -> None:
     manifest["description"] = "updated"
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True))
     subprocess.run(
-        [sys.executable, str(_SCRIPT), str(pack_dir), "-k", str(priv_path)],
+        [sys.executable, str(_SCRIPT), "skill", str(pack_dir), "-k", str(priv_path)],
         check=True,
         capture_output=True,
     )
@@ -207,7 +211,7 @@ def test_pack_sign_uses_canonical_payload_helper(tmp_path: Path) -> None:
     priv_path, key = _write_key(tmp_path)
 
     result = subprocess.run(
-        [sys.executable, str(_SCRIPT), str(pack_dir), "-k", str(priv_path)],
+        [sys.executable, str(_SCRIPT), "skill", str(pack_dir), "-k", str(priv_path)],
         check=True,
         capture_output=True,
         text=True,
@@ -270,7 +274,14 @@ def test_pack_sign_rejects_missing_priv_key(tmp_path: Path) -> None:
     _write_manifest(pack_dir)
     missing_priv = tmp_path / "no-such-key.pem"
     result = subprocess.run(
-        [sys.executable, str(_SCRIPT), str(pack_dir), "-k", str(missing_priv)],
+        [
+            sys.executable,
+            str(_SCRIPT),
+            "skill",
+            str(pack_dir),
+            "-k",
+            str(missing_priv),
+        ],
         check=False,
         capture_output=True,
         text=True,
@@ -283,7 +294,14 @@ def test_pack_sign_rejects_missing_pack_dir(tmp_path: Path) -> None:
     priv_path, _ = _write_key(tmp_path)
     missing_pack = tmp_path / "no-such-pack"
     result = subprocess.run(
-        [sys.executable, str(_SCRIPT), str(missing_pack), "-k", str(priv_path)],
+        [
+            sys.executable,
+            str(_SCRIPT),
+            "skill",
+            str(missing_pack),
+            "-k",
+            str(priv_path),
+        ],
         check=False,
         capture_output=True,
         text=True,

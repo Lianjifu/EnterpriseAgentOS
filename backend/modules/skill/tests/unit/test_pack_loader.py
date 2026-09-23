@@ -21,6 +21,7 @@ from typing import Self
 from uuid import UUID
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from eos_pack_signing import public_key_id, public_key_to_pem
 from eos_schema.ids import TenantId, UserId, WorkspaceId
 
 from deos.modules.skill.application.use_cases.register_skill import (
@@ -32,8 +33,6 @@ from deos.modules.skill.application.vetter import (
 from deos.modules.skill.domain.entities import SkillPackage
 from deos.modules.skill.domain.errors import SkillAlreadyExists
 from deos.modules.skill.domain.signing import (
-    public_key_id,
-    public_key_to_pem,
     sign_payload,
 )
 
@@ -349,9 +348,9 @@ def test_office_packs_sign_against_dev_trust_key() -> None:
 
         from deos.modules.skill.domain.signing import (
             SkillPackPayload,
-            load_public_key_pem,
             verify_signature,
         )
+        from eos_pack_signing import load_public_key_pem
 
         pub_key = load_public_key_pem(key_path.read_bytes())
         payload = SkillPackPayload(

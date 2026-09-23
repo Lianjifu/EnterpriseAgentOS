@@ -17,12 +17,11 @@ Why a Protocol and not a concrete class?
 ----------------------------------------
 The composition root wires the Vetter based on environment:
 
-* ``LocalTrustStoreSkillVetter`` (dev / staging) reads PEM keys from
-  ``EOS_SKILL_TRUST_DIR`` and pins them in memory.
-* ``VaultBackedSkillVetter`` (prod) fetches PEM-encoded keys from
-  ``eos_vault`` at first use and re-fetches on rotation.  See
-  follow-up commit.
-* A no-op vetter is provided for tests that don't care about signing.
+* :class:`LocalTrustStoreSkillVetter` (dev / staging) reads PEM keys from
+  ``EOS_SKILL_TRUST_DIR`` via ``eos_pack_signing.scan_trust_dir``.
+* :class:`VaultBackedSkillVetter` (prod) fetches PEM-encoded keys from
+  ``eos_vault`` at first use and re-fetches on rotation.
+* :class:`NoOpSkillVetter` is provided for tests that don't care about signing.
 
 All three satisfy :class:`SkillVetter` so the use case stays the same.
 """
@@ -35,6 +34,7 @@ from pathlib import Path
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+from eos_pack_signing import scan_trust_dir
 
 from deos.modules.skill.domain.entities import SkillPackage
 from deos.modules.skill.domain.errors import (
@@ -44,8 +44,6 @@ from deos.modules.skill.domain.errors import (
 )
 from deos.modules.skill.domain.signing import (
     SkillPackPayload,
-    load_public_key_pem,
-    public_key_id,
     verify_signature,
 )
 
@@ -106,8 +104,7 @@ class LocalTrustStoreSkillVetter(SkillVetter):
     ----------
     trust_dir:
         Directory holding ``<key_id>.pub.pem`` files.  ``key_id`` is
-        the SHA-256 of the PEM, hex-encoded (see
-        :func:`public_key_id`).
+        the SHA-256 of the PEM, hex-encoded.
     require_signature:
         If ``False`` the vetter becomes a no-op for unsigned packs
         (still rejects on a known-bad signature).  Defaults to ``True``
@@ -123,7 +120,11 @@ class LocalTrustStoreSkillVetter(SkillVetter):
         self._trust_dir = Path(trust_dir)
         self._require_signature = require_signature
         # Eager scan — fail-loud if no keys are present.
-        self._keys: dict[str, Ed25519PublicKey] = self._scan_trust_dir()
+        self._keys: dict[str, Ed25519PublicKey] = scan_trust_dir(
+            self._trust_dir,
+            label="skill",
+            signer_untrusted_exc=SkillSignerUntrusted,
+        )
 
     @property
     def trust_dir(self) -> Path:
@@ -133,35 +134,6 @@ class LocalTrustStoreSkillVetter(SkillVetter):
     def trust_key_count(self) -> int:
         return len(self._keys)
 
-    def _scan_trust_dir(self) -> dict[str, Ed25519PublicKey]:
-        if not self._trust_dir.is_dir():
-            raise SkillSignerUntrusted(
-                f"skill trust dir {self._trust_dir} does not exist or is not "
-                f"a directory (set EOS_SKILL_SIGNING_MODE=disabled for dev)"
-            )
-        keys: dict[str, Ed25519PublicKey] = {}
-        for path in sorted(self._trust_dir.glob("*.pub.pem")):
-            pem = path.read_bytes()
-            try:
-                key = load_public_key_pem(pem)
-            except (TypeError, ValueError) as exc:
-                raise SkillSignerUntrusted(
-                    f"trust store key {path.name!r} is not a valid Ed25519 PEM"
-                ) from exc
-            key_id = public_key_id(key)
-            if key_id != path.stem.removesuffix(".pub"):
-                raise SkillSignerUntrusted(
-                    f"trust store key {path.name!r} filename does not match "
-                    f"key content (expected {key_id}.pub.pem)"
-                )
-            keys[key_id] = key
-        if not keys:
-            raise SkillSignerUntrusted(
-                f"skill trust dir {self._trust_dir} is empty — refusing to "
-                f"run LocalTrustStoreSkillVetter with zero trusted keys"
-            )
-        return keys
-
     async def vet(self, package: SkillPackage) -> None:
         if not package.signature:
             if self._require_signature:
@@ -169,7 +141,12 @@ class LocalTrustStoreSkillVetter(SkillVetter):
                     f"skill pack {package.name}@{package.version} has no signature"
                 )
             return
-        key = self._lookup_key(package.signer_key_id)
+        key = self._keys.get(package.signer_key_id)
+        if key is None:
+            raise SkillSignerUntrusted(
+                f"signing key {package.signer_key_id!r} not in trust store "
+                f"{self._trust_dir}"
+            )
         try:
             verify_signature(
                 _payload_of(package), signature_b64=package.signature, public_key=key
@@ -178,14 +155,6 @@ class LocalTrustStoreSkillVetter(SkillVetter):
             raise SkillSignatureInvalid(
                 f"signature for {package.name}@{package.version} failed verification"
             ) from exc
-
-    def _lookup_key(self, key_id: str) -> Ed25519PublicKey:
-        key = self._keys.get(key_id)
-        if key is None:
-            raise SkillSignerUntrusted(
-                f"signing key {key_id!r} not in trust store {self._trust_dir}"
-            )
-        return key
 
 
 class InMemoryTrustStoreSkillVetter(SkillVetter):
@@ -200,7 +169,13 @@ class InMemoryTrustStoreSkillVetter(SkillVetter):
         self._keys: dict[str, Ed25519PublicKey] = dict(keys or {})
         self._require_signature = require_signature
 
+    @property
+    def trust_key_count(self) -> int:
+        return len(self._keys)
+
     def add(self, key: Ed25519PublicKey) -> str:
+        from eos_pack_signing import public_key_id
+
         key_id = public_key_id(key)
         self._keys[key_id] = key
         return key_id

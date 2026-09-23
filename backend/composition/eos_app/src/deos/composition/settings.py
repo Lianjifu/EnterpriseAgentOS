@@ -114,6 +114,37 @@ class Settings(BaseSettings):
     skill_signing_mode: Literal["disabled", "local", "vault"] = "disabled"
     skill_trust_dir: str = "./.eos/skill-trust"
 
+    # Tier B — knowledge / plan pack signing (mirrors skill signing).
+    # ``disabled`` = NoOp*Vetter; ``local`` = LocalTrustStore*Vetter.
+    # ``vault`` is intentionally not wired here — symmetric to skill
+    # ``vault`` branch but tracked as a separate ticket.
+    knowledge_signing_mode: Literal["disabled", "local"] = "disabled"
+    knowledge_trust_dir: str = "./.eos/knowledge-trust"
+    plan_signing_mode: Literal["disabled", "local"] = "disabled"
+    plan_trust_dir: str = "./.eos/plan-trust"
+
+    # Tier B — vault-backed SkillVetter (mode="vault" wiring).
+    # ``vault_skill_trust_ref`` is the KV v2 ref the vetter polls;
+    # payload is ``{key_id: <PEM>}``.  ``refresh_seconds`` is the
+    # in-process TTL between Vault re-reads (rotate-after-rotate lag).
+    vault_skill_trust_ref: str = "vault:secret/data/eos/skill-trust/keys"
+    vault_skill_trust_refresh_seconds: float = 300.0
+    vault_skill_trust_min_keys: int = 1
+
+    # Tier B — office seed walkers for knowledge + plan packs.  Same
+    # shape as ``platform_seed_office_skill_packs`` (A6).
+    platform_seed_office_knowledge_packs: bool = True
+    platform_seed_office_plan_packs: bool = True
+    platform_office_knowledge_packs_root: str = "packs/office/knowledge"
+    platform_office_plan_packs_root: str = "packs/office/plans"
+
+    # Vault-backed KV resolver (Tier B, mode="vault").  Mirrors the
+    # ``EOS_VAULT_URL`` / ``EOS_VAULT_TOKEN`` pattern used elsewhere;
+    # HashicorpVaultSecretsResolver pulls URL + token from these fields
+    # before falling back to ``VAULT_ADDR`` / ``VAULT_TOKEN``.
+    vault_url: str = ""
+    vault_token: str = ""
+
     # cors
     cors_allow_origins: str = "http://localhost:5173,http://localhost:3000"
     cors_allow_credentials: bool = True

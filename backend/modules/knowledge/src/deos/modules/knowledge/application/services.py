@@ -50,6 +50,7 @@ from deos.modules.knowledge.application.use_cases.search_knowledge import (
 from deos.modules.knowledge.application.use_cases.upload_asset import (
     UploadKnowledgeAssetUseCase,
 )
+from deos.modules.knowledge.application.vetter import KnowledgeVetter
 from deos.modules.knowledge.domain.entities import KnowledgeAsset, KnowledgePackage
 from deos.modules.knowledge.domain.value_objects import (
     DEFAULT_CHUNK_OVERLAP,
@@ -70,6 +71,7 @@ class KnowledgeService:
     policy_guard: object | None = None
     default_chunk_size: int = DEFAULT_CHUNK_SIZE
     default_chunk_overlap: int = DEFAULT_CHUNK_OVERLAP
+    vetter: KnowledgeVetter | None = None
 
     create_package: CreateKnowledgePackageUseCase | None = None
     get_package: GetKnowledgePackageUseCase | None = None
@@ -87,6 +89,7 @@ class KnowledgeService:
             repository=self.repository,
             publisher=self.publisher,
             policy_guard=self.policy_guard,
+            vetter=self.vetter,
         )
         self.get_package = GetKnowledgePackageUseCase(repository=self.repository)
         self.list_packages = ListKnowledgePackagesUseCase(repository=self.repository)
@@ -172,6 +175,7 @@ class KnowledgeService:
         policy_guard: object | None = None,
         default_chunk_size: int = DEFAULT_CHUNK_SIZE,
         default_chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
+        vetter: KnowledgeVetter | None = None,
     ) -> KnowledgeService:
         return cls(
             repository=repository,
@@ -183,6 +187,7 @@ class KnowledgeService:
             policy_guard=policy_guard,
             default_chunk_size=default_chunk_size,
             default_chunk_overlap=default_chunk_overlap,
+            vetter=vetter,
         )
 
 

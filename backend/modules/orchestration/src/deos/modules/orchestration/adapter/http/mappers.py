@@ -30,6 +30,9 @@ def plan_to_dto(plan: Plan) -> PlanResponse:
         max_total_steps=plan.max_total_steps,
         metadata=dict(plan.metadata),
         created_by=str(plan.created_by) if plan.created_by else None,
+        signature=plan.signature,
+        signer_key_id=plan.signer_key_id,
+        image_digest=plan.image_digest,
         created_at=_iso(plan.created_at),
         updated_at=_iso(plan.updated_at),
     )

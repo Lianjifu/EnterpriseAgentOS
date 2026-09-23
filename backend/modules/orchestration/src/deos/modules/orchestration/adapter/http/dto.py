@@ -23,6 +23,12 @@ class CreatePlanRequest(BaseModel):
     entry_dsl: dict[str, Any]
     max_total_steps: int = Field(default=64, ge=1, le=256)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    # Tier B signing triple — all three must be set together when
+    # ``EOS_PLAN_SIGNING_MODE != "disabled"``; the vetter enforces
+    # this on the use-case side.
+    signature: str = ""
+    signer_key_id: str = ""
+    image_digest: str = ""
 
 
 class PlanResponse(BaseModel):
@@ -37,6 +43,9 @@ class PlanResponse(BaseModel):
     max_total_steps: int
     metadata: dict[str, Any]
     created_by: str | None
+    signature: str
+    signer_key_id: str
+    image_digest: str
     created_at: str
     updated_at: str
 

@@ -355,6 +355,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 default_chunk_overlap=(
                     container.settings.knowledge_default_chunk_overlap
                 ),
+                vetter=container.knowledge_vetter(),
             )
 
     app.state.knowledge_service_factory = _KnowledgeFactory()
@@ -434,6 +435,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 default_step_timeout_seconds=(
                     container.settings.orchestration_default_step_timeout_seconds
                 ),
+                plan_vetter=container.plan_vetter(),
             )
 
     app.state.orchestration_service_factory = _OrchestrationFactory()
@@ -521,6 +523,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # pack root doesn't exist (e.g. tests, ephemeral deploys).
     if container.settings.platform_seed_office_skill_packs:
         await _seed_office_skill_packs(app, container)
+
+    # Tier B — Office knowledge + plan packs mirror the skill seeder.
+    # Both honor their own ``*SigningMode`` setting so a pack signed for
+    # a local trust dir is rejected when ``disabled`` is in effect.
+    if container.settings.platform_seed_office_knowledge_packs:
+        await _seed_office_knowledge_packs(app, container)
+    if container.settings.platform_seed_office_plan_packs:
+        await _seed_office_plan_packs(app, container)
 
     # ── P8 agent_factory (depends on evaluation; this is the P8-6 closed
     # loop — agent_factory reads the latest passed eval run via
@@ -1020,6 +1030,282 @@ async def _seed_office_skill_packs(app: FastAPI, container: Container) -> None:
                 skipped_existing,
                 len(rejected),
             )
+
+
+async def _seed_office_knowledge_packs(app: FastAPI, container: Container) -> None:
+    """Tier B — walk ``packs/office/knowledge/*/`` and register every pack.
+
+    For every ``<pack_dir>/manifest.json`` + ``<pack_dir>/signature.json``
+    pair, calls :class:`CreateKnowledgePackageUseCase` against the demo
+    tenant + workspace using the wired vetter (``LocalTrustStoreKnowledgeVetter``
+    or ``NoOpKnowledgeVetter`` depending on ``EOS_KNOWLEDGE_SIGNING_MODE``).
+
+    Idempotent — :class:`KnowledgePackageNameConflict` is swallowed per-pack.
+    Malformed packs (missing fields, bad signature) are logged at
+    ``warning`` and skipped — the boot never crashes on a bad pack.
+    """
+    import json
+    from pathlib import Path
+
+    from deos.modules.identity.adapter.persistence.repositories import (
+        SqlTenantRepository,
+        SqlWorkspaceRepository,
+    )
+    from deos.modules.knowledge.domain.errors import (
+        KnowledgePackageNameConflict,
+        KnowledgeSignatureInvalid,
+        KnowledgeSignerUntrusted,
+        KnowledgeValidationError,
+    )
+    from eos_schema.ids import TenantId, WorkspaceId
+
+    packs_root = Path(container.settings.platform_office_knowledge_packs_root)
+    if not packs_root.is_absolute():
+        packs_root = (Path(__file__).parents[3] / packs_root).resolve()
+    if not packs_root.is_dir():
+        _log.info(
+            "office knowledge packs root %s does not exist; skipping", packs_root
+        )
+        return
+
+    vetter = container.knowledge_vetter()
+    vetter_label = type(vetter).__name__
+    trust_key_count = getattr(vetter, "trust_key_count", None)
+
+    factory = getattr(app.state, "knowledge_service_factory", None)
+    if factory is None:
+        _log.warning(
+            "knowledge_service_factory not wired; skipping office knowledge pack seed"
+        )
+        return
+
+    sf = container.session_factory()
+    async with sf.session() as session:
+        tenant_repo = SqlTenantRepository(session)
+        workspace_repo = SqlWorkspaceRepository(session)
+
+        demo_tenant = await tenant_repo.get_by_slug("demo")
+        if demo_tenant is None:
+            _log.info("demo tenant not present; skipping office knowledge pack seed")
+            return
+        workspaces = await workspace_repo.list_for_tenant(
+            tenant_id=demo_tenant.id, limit=1, offset=0
+        )
+        if not workspaces:
+            _log.info(
+                "demo workspace not present; skipping office knowledge pack seed"
+            )
+            return
+        demo_workspace = workspaces[0]
+
+    svc = factory.for_session()
+    create_uc = svc.create_package
+
+    seeded = 0
+    skipped_existing = 0
+    rejected: list[tuple[str, str]] = []
+    for pack_dir in sorted(packs_root.iterdir()):
+        if not pack_dir.is_dir():
+            continue
+        manifest_path = pack_dir / "manifest.json"
+        signature_path = pack_dir / "signature.json"
+        if not manifest_path.is_file():
+            _log.warning(
+                "office knowledge pack %s: missing manifest.json; skipping",
+                pack_dir.name,
+            )
+            continue
+        if not signature_path.is_file():
+            _log.warning(
+                "office knowledge pack %s: missing signature.json; skipping",
+                pack_dir.name,
+            )
+            continue
+        try:
+            manifest = json.loads(manifest_path.read_text())
+            signature_doc = json.loads(signature_path.read_text())
+            metadata = dict(manifest.get("metadata") or {})
+            await create_uc.execute(
+                tenant_id=TenantId(demo_tenant.id),
+                workspace_id=WorkspaceId(demo_workspace.id),
+                name=str(manifest["name"]),
+                description=str(manifest.get("description", "")),
+                metadata=metadata,
+                signature=str(signature_doc.get("signature", "")),
+                signer_key_id=str(signature_doc.get("signer_key_id", "")),
+                image_digest=str(manifest.get("image_digest", "")),
+            )
+            seeded += 1
+        except KnowledgePackageNameConflict:
+            skipped_existing += 1
+        except KnowledgeValidationError as exc:
+            rejected.append((pack_dir.name, f"INVALID_KNOWLEDGE_SPEC: {exc}"))
+        except KnowledgeSignatureInvalid as exc:
+            rejected.append(
+                (pack_dir.name, f"KNOWLEDGE_SIGNATURE_INVALID: {exc}")
+            )
+        except KnowledgeSignerUntrusted as exc:
+            rejected.append((pack_dir.name, f"KNOWLEDGE_SIGNER_UNTRUSTED: {exc}"))
+        except Exception as exc:  # noqa: BLE001 — pack loader must never crash boot
+            rejected.append((pack_dir.name, f"{type(exc).__name__}: {exc}"))
+
+    for name, reason in rejected:
+        _log.warning("office knowledge pack rejected: %s — %s", name, reason)
+    if trust_key_count is not None:
+        _log.info(
+            "seeded %d office knowledge packs (vetter=%s, trust_keys=%d, "
+            "skipped_existing=%d, rejected=%d)",
+            seeded,
+            vetter_label,
+            trust_key_count,
+            skipped_existing,
+            len(rejected),
+        )
+    else:
+        _log.info(
+            "seeded %d office knowledge packs (vetter=%s, skipped_existing=%d, "
+            "rejected=%d)",
+            seeded,
+            vetter_label,
+            skipped_existing,
+            len(rejected),
+        )
+
+
+async def _seed_office_plan_packs(app: FastAPI, container: Container) -> None:
+    """Tier B — walk ``packs/office/plans/*/`` and register every pack.
+
+    Mirrors :func:`_seed_office_knowledge_packs` but for :class:`Plan`.
+    Each pack's ``manifest.json`` carries a ``plan_dsl`` field that
+    becomes ``Plan.entry_dsl``; the vetter rejects unsigned / untrusted
+    plans before they reach the DB.
+    """
+    import json
+    from pathlib import Path
+
+    from deos.modules.identity.adapter.persistence.repositories import (
+        SqlTenantRepository,
+        SqlWorkspaceRepository,
+    )
+    from deos.modules.orchestration.domain.errors import (
+        PlanNameConflict,
+        PlanSignatureInvalid,
+        PlanSignerUntrusted,
+    )
+    from eos_schema.ids import TenantId, WorkspaceId
+
+    packs_root = Path(container.settings.platform_office_plan_packs_root)
+    if not packs_root.is_absolute():
+        packs_root = (Path(__file__).parents[3] / packs_root).resolve()
+    if not packs_root.is_dir():
+        _log.info(
+            "office plan packs root %s does not exist; skipping", packs_root
+        )
+        return
+
+    vetter = container.plan_vetter()
+    vetter_label = type(vetter).__name__
+    trust_key_count = getattr(vetter, "trust_key_count", None)
+
+    factory = getattr(app.state, "orchestration_service_factory", None)
+    if factory is None:
+        _log.warning(
+            "orchestration_service_factory not wired; skipping office plan pack seed"
+        )
+        return
+
+    sf = container.session_factory()
+    async with sf.session() as session:
+        tenant_repo = SqlTenantRepository(session)
+        workspace_repo = SqlWorkspaceRepository(session)
+
+        demo_tenant = await tenant_repo.get_by_slug("demo")
+        if demo_tenant is None:
+            _log.info("demo tenant not present; skipping office plan pack seed")
+            return
+        workspaces = await workspace_repo.list_for_tenant(
+            tenant_id=demo_tenant.id, limit=1, offset=0
+        )
+        if not workspaces:
+            _log.info(
+                "demo workspace not present; skipping office plan pack seed"
+            )
+            return
+        demo_workspace = workspaces[0]
+
+    svc = factory.for_session()
+    create_uc = svc.create_plan
+
+    seeded = 0
+    skipped_existing = 0
+    rejected: list[tuple[str, str]] = []
+    for pack_dir in sorted(packs_root.iterdir()):
+        if not pack_dir.is_dir():
+            continue
+        manifest_path = pack_dir / "manifest.json"
+        signature_path = pack_dir / "signature.json"
+        if not manifest_path.is_file():
+            _log.warning(
+                "office plan pack %s: missing manifest.json; skipping",
+                pack_dir.name,
+            )
+            continue
+        if not signature_path.is_file():
+            _log.warning(
+                "office plan pack %s: missing signature.json; skipping",
+                pack_dir.name,
+            )
+            continue
+        try:
+            manifest = json.loads(manifest_path.read_text())
+            signature_doc = json.loads(signature_path.read_text())
+            metadata = dict(manifest.get("metadata") or {})
+            entry_dsl = dict(manifest["plan_dsl"])
+            await create_uc.execute(
+                tenant_id=TenantId(demo_tenant.id),
+                workspace_id=WorkspaceId(demo_workspace.id),
+                name=str(manifest["name"]),
+                description=str(manifest.get("description", "")),
+                entry_dsl=entry_dsl,
+                max_total_steps=int(manifest.get("max_total_steps", 64)),
+                metadata=metadata,
+                signature=str(signature_doc.get("signature", "")),
+                signer_key_id=str(signature_doc.get("signer_key_id", "")),
+                image_digest=str(manifest.get("image_digest", "")),
+            )
+            seeded += 1
+        except PlanNameConflict:
+            skipped_existing += 1
+        except ValueError as exc:
+            rejected.append((pack_dir.name, f"INVALID_PLAN_DSL: {exc}"))
+        except PlanSignatureInvalid as exc:
+            rejected.append((pack_dir.name, f"PLAN_SIGNATURE_INVALID: {exc}"))
+        except PlanSignerUntrusted as exc:
+            rejected.append((pack_dir.name, f"PLAN_SIGNER_UNTRUSTED: {exc}"))
+        except Exception as exc:  # noqa: BLE001 — pack loader must never crash boot
+            rejected.append((pack_dir.name, f"{type(exc).__name__}: {exc}"))
+
+    for name, reason in rejected:
+        _log.warning("office plan pack rejected: %s — %s", name, reason)
+    if trust_key_count is not None:
+        _log.info(
+            "seeded %d office plan packs (vetter=%s, trust_keys=%d, "
+            "skipped_existing=%d, rejected=%d)",
+            seeded,
+            vetter_label,
+            trust_key_count,
+            skipped_existing,
+            len(rejected),
+        )
+    else:
+        _log.info(
+            "seeded %d office plan packs (vetter=%s, skipped_existing=%d, "
+            "rejected=%d)",
+            seeded,
+            vetter_label,
+            skipped_existing,
+            len(rejected),
+        )
 
 
 async def ensure_default_resources(container: Container) -> None:

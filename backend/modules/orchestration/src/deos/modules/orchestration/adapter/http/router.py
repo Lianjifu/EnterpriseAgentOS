@@ -95,6 +95,9 @@ def build_router() -> APIRouter:
                 max_total_steps=body.max_total_steps,
                 metadata=body.metadata,
                 created_by=UserId(x_user_id),
+                signature=body.signature,
+                signer_key_id=body.signer_key_id,
+                image_digest=body.image_digest,
             )
         except (PlanValidationError, ValueError) as exc:
             raise HTTPException(status_code=422, detail=str(exc))

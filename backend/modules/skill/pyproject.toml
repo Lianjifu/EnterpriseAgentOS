@@ -11,7 +11,9 @@ dependencies = [
     "eos-auth",
     "eos-messaging",
     "eos-http",
+    "eos-pack-signing",
     "eos-sandbox",
+    "eos-vault",
     "fastapi>=0.115.0",
     "pydantic>=2.9",
 ]

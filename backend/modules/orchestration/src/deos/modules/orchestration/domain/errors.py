@@ -101,13 +101,37 @@ class IdempotencyKeyConflict(OrchestrationError, ConflictError):
     status = 409
 
 
+class PlanSignatureInvalid(OrchestrationError):
+    """Plan pack signature missing / malformed / failed verification."""
+
+    code = "PLAN_SIGNATURE_INVALID"
+    status = 422
+
+
+class PlanSignerUntrusted(OrchestrationError):
+    """Signing key is not in the workspace's trust store."""
+
+    code = "PLAN_SIGNER_UNTRUSTED"
+    status = 403
+
+
+class PlanImageDigestMismatch(OrchestrationError):
+    """``image_digest`` does not match the digest that was signed."""
+
+    code = "PLAN_IMAGE_DIGEST_MISMATCH"
+    status = 422
+
+
 __all__ = [
     "IdempotencyKeyConflict",
     "InvalidConditionExpression",
     "OrchestrationError",
     "OrchestrationPolicyDenied",
+    "PlanImageDigestMismatch",
     "PlanNameConflict",
     "PlanNotFound",
+    "PlanSignatureInvalid",
+    "PlanSignerUntrusted",
     "PlanValidationError",
     "StepRunNotFound",
     "WorkflowCanceled",

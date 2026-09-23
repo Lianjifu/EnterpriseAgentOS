@@ -260,6 +260,13 @@ class KnowledgePackage:
     asset_count: int = 0
     metadata: dict[str, Any] = field(default_factory=dict)
     created_by: UserId | None = None
+    # Tier B signing triple — same shape as SkillPackage.signature etc.
+    # Defaults are "" so existing seeds / tests keep constructing
+    # without explicit signing; the vetter enforces "all three set or all
+    # empty" once ``EOS_KNOWLEDGE_SIGNING_MODE != "disabled"``.
+    signature: str = ""
+    signer_key_id: str = ""
+    image_digest: str = ""
     created_at: datetime = field(default_factory=_utcnow)
     updated_at: datetime = field(default_factory=_utcnow)
 
@@ -275,6 +282,9 @@ class KnowledgePackage:
         created_by: UserId | None = None,
         id: KnowledgePackageId | None = None,
         now: datetime | None = None,
+        signature: str = "",
+        signer_key_id: str = "",
+        image_digest: str = "",
     ) -> KnowledgePackage:
         if not name or not name.strip():
             raise KnowledgeValidationError(
@@ -283,6 +293,12 @@ class KnowledgePackage:
         if len(name) > 128:
             raise KnowledgeValidationError(
                 f"package name too long ({len(name)} > 128)",
+                code="INVALID_KNOWLEDGE_SPEC",
+            )
+        signing_fields = (bool(signature), bool(signer_key_id), bool(image_digest))
+        if any(signing_fields) and not all(signing_fields):
+            raise KnowledgeValidationError(
+                "signature / signer_key_id / image_digest must all be set together",
                 code="INVALID_KNOWLEDGE_SPEC",
             )
         ts = now or _utcnow()
@@ -296,6 +312,9 @@ class KnowledgePackage:
             asset_count=0,
             metadata=dict(metadata or {}),
             created_by=created_by,
+            signature=signature,
+            signer_key_id=signer_key_id,
+            image_digest=image_digest,
             created_at=ts,
             updated_at=ts,
         )
@@ -317,6 +336,9 @@ class KnowledgePackage:
             asset_count=self.asset_count,
             metadata=dict(self.metadata),
             created_by=self.created_by,
+            signature=self.signature,
+            signer_key_id=self.signer_key_id,
+            image_digest=self.image_digest,
             created_at=self.created_at,
             updated_at=ts,
         )
@@ -340,6 +362,9 @@ class KnowledgePackage:
             asset_count=asset_count,
             metadata=dict(self.metadata),
             created_by=self.created_by,
+            signature=self.signature,
+            signer_key_id=self.signer_key_id,
+            image_digest=self.image_digest,
             created_at=self.created_at,
             updated_at=ts,
         )

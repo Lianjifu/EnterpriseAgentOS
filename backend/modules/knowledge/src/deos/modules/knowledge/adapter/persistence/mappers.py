@@ -48,6 +48,9 @@ def package_to_domain(row: KnowledgePackageORM) -> KnowledgePackage:
         asset_count=row.asset_count,
         metadata=dict(row.metadata_ or {}),
         created_by=UserId(row.created_by) if row.created_by else None,
+        signature=row.signature,
+        signer_key_id=row.signer_key_id,
+        image_digest=row.image_digest,
         created_at=row.created_at,
         updated_at=row.updated_at,
     )
@@ -64,6 +67,9 @@ def package_to_orm(entity: KnowledgePackage) -> KnowledgePackageORM:
         asset_count=entity.asset_count,
         metadata_=dict(entity.metadata),
         created_by=entity.created_by,
+        signature=entity.signature,
+        signer_key_id=entity.signer_key_id,
+        image_digest=entity.image_digest,
         created_at=entity.created_at,
         updated_at=entity.updated_at,
     )

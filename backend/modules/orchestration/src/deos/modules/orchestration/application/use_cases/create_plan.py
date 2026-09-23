@@ -4,6 +4,12 @@ Validates the Plan DSL (via :class:`PlanDSL`), enforces name uniqueness
 inside the workspace, and persists the new :class:`Plan`.  Raises
 :class:`PlanNameConflict` on collision and :class:`PlanValidationError`
 on a malformed DSL.
+
+Tier B: funnels every plan creation through a :class:`PlanVetter` so
+unsigned / untrusted packs are rejected before they land in the DB.  The
+vetter is a port — production wiring decides whether it's a no-op
+(``EOS_PLAN_SIGNING_MODE=disabled``), file-backed (``local``), or
+in-memory (tests).
 """
 
 from __future__ import annotations
@@ -23,6 +29,7 @@ from deos.modules.orchestration.application.ports import (
     OrchestrationEventPublisher,
     PlanRepository,
 )
+from deos.modules.orchestration.application.vetter import PlanVetter
 from deos.modules.orchestration.domain.entities import Plan
 from deos.modules.orchestration.domain.events import PlanCreated
 
@@ -34,6 +41,7 @@ class CreatePlanUseCase:
     repository: PlanRepository
     publisher: OrchestrationEventPublisher | None = None
     policy_guard: object | None = None
+    vetter: PlanVetter | None = None
 
     async def execute(
         self,
@@ -47,6 +55,9 @@ class CreatePlanUseCase:
         metadata: dict[str, Any] | None = None,
         created_by: UserId | None = None,
         plan_id: PlanId | None = None,
+        signature: str = "",
+        signer_key_id: str = "",
+        image_digest: str = "",
     ) -> Plan:
         # Policy gate (optional).
         if self.policy_guard is not None:
@@ -87,7 +98,15 @@ class CreatePlanUseCase:
             metadata=metadata,
             created_by=created_by or UserId(__import__("uuid").uuid4()),  # type: ignore[arg-type]
             plan_id=plan_id,
+            signature=signature,
+            signer_key_id=signer_key_id,
+            image_digest=image_digest,
         )
+        # Vetter runs BEFORE the persistence write so unsigned /
+        # untrusted plans never reach the DB.
+        if self.vetter is not None:
+            await self.vetter.vet(plan)
+
         saved = await self.repository.add(plan)
 
         if self.publisher is not None:

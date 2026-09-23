@@ -19,6 +19,12 @@ class CreateKnowledgePackageRequest(BaseModel):
     name: str = Field(min_length=1, max_length=128)
     description: str = Field(default="", max_length=4096)
     metadata: dict[str, str] = Field(default_factory=dict)
+    # Tier B signing triple — all three must be set together when
+    # ``EOS_KNOWLEDGE_SIGNING_MODE != "disabled"``; the vetter enforces
+    # this on the use-case side.
+    signature: str = ""
+    signer_key_id: str = ""
+    image_digest: str = ""
 
 
 class KnowledgePackageResponse(BaseModel):
@@ -33,6 +39,9 @@ class KnowledgePackageResponse(BaseModel):
     asset_count: int
     metadata: dict[str, str]
     created_by: str | None
+    signature: str
+    signer_key_id: str
+    image_digest: str
     created_at: str
     updated_at: str
 

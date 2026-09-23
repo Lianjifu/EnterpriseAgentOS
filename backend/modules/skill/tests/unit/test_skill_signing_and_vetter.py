@@ -18,6 +18,10 @@ from uuid import UUID
 import pytest
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from eos_pack_signing import (
+    public_key_id,
+    public_key_to_pem,
+)
 
 from deos.modules.skill.application.vetter import (
     InMemoryTrustStoreSkillVetter,
@@ -34,11 +38,6 @@ from deos.modules.skill.domain.errors import (
 from deos.modules.skill.domain.signing import (
     SkillPackPayload,
     canonical_payload,
-    load_private_key_pem,
-    load_public_key_pem,
-    private_key_to_pem,
-    public_key_id,
-    public_key_to_pem,
     sign_payload,
     verify_signature,
 )
@@ -127,6 +126,12 @@ def test_malformed_signature_b64_raises() -> None:
 
 
 def test_pem_helpers_roundtrip() -> None:
+    from eos_pack_signing import (
+        load_private_key_pem,
+        load_public_key_pem,
+        private_key_to_pem,
+    )
+
     key = _new_key()
     pem_priv = private_key_to_pem(key)
     pem_pub = public_key_to_pem(key.public_key())
@@ -139,6 +144,8 @@ def test_pem_helpers_roundtrip() -> None:
 
 
 def test_load_public_key_rejects_non_ed25519(tmp_path: Path) -> None:
+    from eos_pack_signing import load_public_key_pem
+
     # write an obviously-wrong PEM
     p = tmp_path / "x.pub.pem"
     p.write_text(

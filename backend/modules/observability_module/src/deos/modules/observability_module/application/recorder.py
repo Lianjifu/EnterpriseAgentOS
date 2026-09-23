@@ -84,7 +84,9 @@ class ObservabilityRecorder:
                 _log.warning("observability dropped: no tenant_id on %s", event_name)
                 return
             if workspace_id is None:
-                workspace_id = WorkspaceId(_ZERO_WORKSPACE_HEX)
+                from uuid import UUID as _UUID
+
+                workspace_id = WorkspaceId(_UUID(_ZERO_WORKSPACE_HEX))
             await self._route(event_name, envelope, payload, tenant_id, workspace_id)
         except Exception as exc:  # noqa: BLE001 — observability must not raise
             (self.logger or _log).warning(
@@ -433,7 +435,7 @@ class ObservabilityRecorder:
 # ── subscriber installer ─────────────────────────────────────────────────
 
 
-async def install(
+def install(
     event_bus: Any,
     recorder: ObservabilityRecorder,
     *,
@@ -446,7 +448,7 @@ async def install(
         if topic in seen:
             continue
         seen.add(topic)
-        await event_bus.subscribe(topic, handler)
+        event_bus.subscribe(topic, handler)
     (logger or _log).info("observability recorder installed topics=%d", len(seen))
 
 
@@ -490,19 +492,25 @@ def _identity(
     raw_wid = payload.get("workspace_id")
     if raw_wid is None and not isinstance(envelope, dict):
         raw_wid = getattr(envelope, "workspace_id", None)
-    try:
-        tenant_id = TenantId(raw_tid) if raw_tid is not None else None
-    except (TypeError, ValueError):
-        tenant_id = None
-    try:
-        workspace_id = (
-            WorkspaceId(raw_wid)
-            if raw_wid is not None and str(raw_wid) != _ZERO_WORKSPACE_HEX
-            else None
-        )
-    except (TypeError, ValueError):
-        workspace_id = None
-    return tenant_id, workspace_id
+    from uuid import UUID
+
+    def _to_uuid(raw: Any) -> UUID | None:
+        if raw is None:
+            return None
+        if isinstance(raw, UUID):
+            return raw
+        try:
+            return UUID(str(raw))
+        except (TypeError, ValueError):
+            return None
+
+    tid = _to_uuid(raw_tid)
+    wid = _to_uuid(raw_wid)
+    if wid is not None and str(wid) == _ZERO_WORKSPACE_HEX:
+        wid = None
+    return (TenantId(tid) if tid is not None else None), (
+        WorkspaceId(wid) if wid is not None else None
+    )
 
 
 def _actor_id(payload: dict[str, Any]) -> UserId | None:

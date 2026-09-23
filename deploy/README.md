@@ -55,8 +55,17 @@ when running under k8s.
 G7 / G8 from `doc/prelaunch-checklist.md`. Locally it can already run
 G5 (gitleaks), G6 (promtool check rules + config), and G7 (Grafana
 dashboard JSON schema). Setting `EOS_STABLE_URL` + `EOS_CANARY_URL`
-adds G2 (dual `/readyz` 200), G3 (bench P95 ≤ 10 s on stable), and
-G8 (smoke happy path against both rings).
+adds G2 (dual `/readyz` 200), G8 (smoke happy path against both rings).
+G3 also needs `EOS_BENCH_TOKEN`, `EOS_BENCH_TENANT`,
+`EOS_BENCH_WORKSPACE`, `EOS_BENCH_AGENT_ID` — without these the bench
+script exits 2 and the gate skips with a clear message (skipped gates
+don't fail the runner).
+
+Note: G8 smoke (`backend/tests/e2e/smoke.py`) hits
+`/v1/identity/tenants` without an `Authorization` header, so it expects
+a dev-mode deployment (`EOS_AUTH_MODE=disabled` or similar). Against a
+prod deployment with auth on, G8 will fail with 401 — gate it as ⊘ or
+run smoke in a staging ring.
 
 ```bash
 # local-only gates
@@ -65,7 +74,6 @@ uv run python deploy/burn_in.py
 # full gates after deployment
 EOS_STABLE_URL=https://eos-stable.example.com \
 EOS_CANARY_URL=https://eos-canary.example.com \
-EOS_SMOKE_BEARER_TOKEN=... \
   uv run python deploy/burn_in.py
 ```
 

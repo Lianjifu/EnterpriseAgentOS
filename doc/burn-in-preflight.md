@@ -140,8 +140,22 @@ kubectl rollout status deploy/eos-app-stable -n eos-prod
 ```bash
 export EOS_STABLE_URL=https://eos-stable.example.com
 export EOS_CANARY_URL=https://eos-canary.example.com
-export EOS_SMOKE_BEARER_TOKEN=<admin-token>   # 见 backend/tests/e2e/smoke.py
+
+# G3 还需要 tenant 域 env vars（bootstrapped by smoke / staging seed）
+export EOS_BENCH_TOKEN=<admin-bearer>
+export EOS_BENCH_TENANT=<tenant-uuid>
+export EOS_BENCH_WORKSPACE=<workspace-uuid>
+export EOS_BENCH_AGENT_ID=<agent-uuid>
 ```
+
+如果 `EOS_BENCH_*` 缺，runner 会以 ⊘ skip G3（而非 ✗ fail），exit code 仍
+是 0 — 即 Stage B 仍可退出，但 G3 需要补 stage 或在凭据就绪后单跑。
+
+G8 smoke (`backend/tests/e2e/smoke.py`) 以无 `Authorization` header
+请求 `/v1/identity/tenants`，因此**仅在 dev-mode deployment
+(`EOS_AUTH_MODE=disabled`) 下可跑**。生产环境下应把 smoke 放到 staging
+ring（`EOS_RING=stable` 但 `auth=disabled` 的旁路），或在 prod gate 上
+显式标记 ⊘。
 
 ### B.3 跑 burn-in runner（一条命令覆盖 G2/G3/G5/G6/G7/G8）
 
@@ -158,12 +172,14 @@ cd backend && make burn-in
 [✓] G6 prometheus rules + config           ← 4 alert + 4 recording VALID
 [✓] G7 grafana dashboards JSON + live load ← eos-overview 5 panels, eos-costs 3 panels
 [✓] G2 /readyz 200 (stable + canary)       ← 200/200
-[✓] G3 bench P95 ≤ 10s                     ← P95 < 10s
-[✓] G8 smoke happy path (stable + canary)   ← session/turn/tool/memory 全绿
+[✓] G3 bench P95 ≤ 10s                     ← P95 < 10s（需要 EOS_BENCH_*）
+[✓] G8 smoke happy path (stable + canary)  ← session/turn/tool/memory 全绿
 === 0 failed, 0 skipped ===
 ```
 
-退出码 0 → G1-G8 全绿，可以进 Stage C。
+G3 / G8 在缺少前置 env 时会 ⊘ skip 而非 ✗ fail（exit code 仍 = 0），
+便于 stage 期间分段补齐；但 Stage B 退出条件要求 **0 failed, 0 skipped**
+才算完全 Stage B 出口。
 
 ### B.4 部署 canary
 

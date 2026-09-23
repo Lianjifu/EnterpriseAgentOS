@@ -10,10 +10,10 @@ Usage::
     # local-only gates (no URLs needed)
     uv run python deploy/burn_in.py
 
-    # full gates (requires deployed stable + canary)
+    # full gates (requires deployed stable + canary; G3 also needs
+    # EOS_BENCH_TOKEN/TENANT/WORKSPACE/AGENT_ID — see g3_bench)
     EOS_STABLE_URL=https://eos-stable.example.com \
     EOS_CANARY_URL=https://eos-canary.example.com \
-    EOS_SMOKE_BEARER_TOKEN=... \
     uv run python deploy/burn_in.py
 
 Exit code is the number of gates that failed (0 = all green).
@@ -35,10 +35,15 @@ GITLEAKS = shutil.which("gitleaks")
 PROMTOOL = shutil.which("promtool")
 
 
-def _run(cmd: Sequence[str], cwd: Path | None = None) -> tuple[int, str, str]:
+def _run(
+    cmd: Sequence[str],
+    cwd: Path | None = None,
+    env: dict[str, str] | None = None,
+) -> tuple[int, str, str]:
     p = subprocess.run(
         list(cmd),
         cwd=cwd or REPO_ROOT,
+        env=env,
         capture_output=True,
         text=True,
         check=False,
@@ -159,7 +164,9 @@ def g8_smoke(stable_url: str | None, canary_url: str | None) -> tuple[bool, str]
         return False, (
             "skipping — set EOS_STABLE_URL and/or EOS_CANARY_URL to run "
             "the happy-path smoke. Script: tests/e2e/smoke.py (uses "
-            "EOS_SMOKE_BASE_URL + EOS_SMOKE_BEARER_TOKEN env vars)."
+            "EOS_SMOKE_BASE_URL; no auth required — smoke hits /healthz + "
+            "/v1/identity/tenants, so it expects an open / dev-mode "
+            "deployment, NOT prod with auth on)."
         )
     script = REPO_ROOT / "backend" / "tests" / "e2e" / "smoke.py"
     if not script.is_file():
@@ -173,6 +180,7 @@ def g8_smoke(stable_url: str | None, canary_url: str | None) -> tuple[bool, str]
         rc, out, err = _run(
             ["uv", "run", "--frozen", "python", str(script)],
             cwd=REPO_ROOT / "backend",
+            env=env,
         )
         msgs.append(f"--- {label} ({base}) rc={rc} ---")
         msgs.append((out or err).strip().splitlines()[-12:].__str__().strip("[]'"))
@@ -189,13 +197,25 @@ def g3_bench(stable_url: str | None) -> tuple[bool, str]:
             "backend/tests/perf/bench_turn_latency.py. Threshold P95 ≤ 10s "
             "per doc/prelaunch-checklist.md G3."
         )
+    # The bench script requires tenant-scoped IDs that an operator must
+    # seed once; if any are missing we skip rather than fabricate.
+    bench_env_required = ("EOS_BENCH_TOKEN", "EOS_BENCH_TENANT",
+                          "EOS_BENCH_WORKSPACE", "EOS_BENCH_AGENT_ID")
+    missing = [n for n in bench_env_required if not os.environ.get(n)]
+    if missing:
+        return False, (
+            "skipping — bench needs tenant-scoped env vars to construct "
+            "an authenticated turn; set " + ", ".join(missing) +
+            " (or run `make smoke` first to bootstrap a tenant + workspace)."
+        )
     script = REPO_ROOT / "backend" / "tests" / "perf" / "bench_turn_latency.py"
     if not script.is_file():
         return False, f"bench script missing: {script}"
-    env = {**os.environ, "EOS_BENCH_BASE_URL": stable_url}
+    env = {**os.environ, "EOS_BENCH_URL": stable_url}
     rc, out, err = _run(
         ["uv", "run", "--frozen", "python", str(script)],
         cwd=REPO_ROOT / "backend",
+        env=env,
     )
     msgs = (out or err).strip().splitlines()[-15:]
     return rc == 0, "\n".join(msgs)

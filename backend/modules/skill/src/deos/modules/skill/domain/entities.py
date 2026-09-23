@@ -95,6 +95,9 @@ class SkillPackage:
     timeout_seconds: int = 30
     enabled: bool = True
     version_lock: int = 1
+    signature: str = ""
+    signer_key_id: str = ""
+    image_digest: str = ""
     created_at: datetime = field(default_factory=_utcnow)
     updated_at: datetime = field(default_factory=_utcnow)
 
@@ -115,6 +118,9 @@ class SkillPackage:
         cpu_quota: float | None = None,
         memory_bytes: int | None = None,
         timeout_seconds: int = 30,
+        signature: str = "",
+        signer_key_id: str = "",
+        image_digest: str = "",
     ) -> Self:
         if not 1 <= len(name) <= 128:
             raise InvalidSkillSpec(
@@ -149,6 +155,14 @@ class SkillPackage:
                 f"memory_bytes {memory_bytes} must be >= 1MiB",
                 code="INVALID_SKILL_SPEC",
             )
+        # Signing fields must come as a triple (or be all empty for the
+        # unsigned dev path, gated by the vetter — see RegisterSkillUseCase).
+        signing_fields = (bool(signature), bool(signer_key_id), bool(image_digest))
+        if any(signing_fields) and not all(signing_fields):
+            raise InvalidSkillSpec(
+                "signature / signer_key_id / image_digest must all be set together",
+                code="INVALID_SKILL_SPEC",
+            )
         now = _utcnow()
         return cls(
             id=SkillId(uuid4()),
@@ -167,6 +181,9 @@ class SkillPackage:
             timeout_seconds=timeout_seconds,
             enabled=True,
             version_lock=1,
+            signature=signature,
+            signer_key_id=signer_key_id,
+            image_digest=image_digest,
             created_at=now,
             updated_at=now,
         )
@@ -185,6 +202,9 @@ class SkillPackage:
         memory_bytes: int | None = None,
         timeout_seconds: int | None = None,
         enabled: bool | None = None,
+        signature: str | None = None,
+        signer_key_id: str | None = None,
+        image_digest: str | None = None,
     ) -> Self:
         if (
             expected_version_lock is not None
@@ -199,6 +219,15 @@ class SkillPackage:
         if not 1 <= new_timeout <= 30:
             raise InvalidSkillSpec(
                 f"timeout_seconds {new_timeout} not in [1,30]",
+                code="INVALID_SKILL_SPEC",
+            )
+        new_sig = self.signature if signature is None else signature
+        new_signer = self.signer_key_id if signer_key_id is None else signer_key_id
+        new_digest = self.image_digest if image_digest is None else image_digest
+        signing_fields = (bool(new_sig), bool(new_signer), bool(new_digest))
+        if any(signing_fields) and not all(signing_fields):
+            raise InvalidSkillSpec(
+                "signature / signer_key_id / image_digest must all be set together",
                 code="INVALID_SKILL_SPEC",
             )
         return type(self)(
@@ -224,6 +253,9 @@ class SkillPackage:
             timeout_seconds=new_timeout,
             enabled=self.enabled if enabled is None else enabled,
             version_lock=self.version_lock + 1,
+            signature=new_sig,
+            signer_key_id=new_signer,
+            image_digest=new_digest,
             created_at=self.created_at,
             updated_at=_utcnow(),
         )

@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Skill module: package CRUD, install with RunToken, sandbox invocation lifecycle"
 requires-python = ">=3.12"
 dependencies = [
+    "cryptography>=42.0.0",
     "eos-kernel",
     "eos-schema",
     "eos-persistence",

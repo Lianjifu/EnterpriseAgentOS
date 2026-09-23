@@ -71,3 +71,24 @@ class SandboxTimeout(SkillError):
 
 class SkillArtifactNotFound(SkillError, NotFoundError):
     code = "SKILL_ARTIFACT_NOT_FOUND"
+
+
+class SkillSignatureInvalid(SkillError):
+    """Pack signature missing / malformed / failed verification."""
+
+    code = "SKILL_SIGNATURE_INVALID"
+    status = 422
+
+
+class SkillSignerUntrusted(SkillError):
+    """Signing key is not in the workspace's trust store."""
+
+    code = "SKILL_SIGNER_UNTRUSTED"
+    status = 403
+
+
+class SkillImageDigestMismatch(SkillError):
+    """``image_digest`` does not match the digest that was signed."""
+
+    code = "SKILL_IMAGE_DIGEST_MISMATCH"
+    status = 422

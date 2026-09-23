@@ -36,6 +36,7 @@ from deos.modules.skill.application.use_cases import (
     RegisterSkillUseCase,
     UpdateSkillUseCase,
 )
+from deos.modules.skill.application.vetter import SkillVetter
 
 
 @dataclass(slots=True)
@@ -49,6 +50,7 @@ class SkillService:
     invocation_repository: SkillInvocationRepository
     artifacts: SkillArtifactStore
     run_token_ttl_seconds: int = 300
+    vetter: SkillVetter | None = None
 
     register_skill: RegisterSkillUseCase | None = None
     update_skill: UpdateSkillUseCase | None = None
@@ -63,8 +65,13 @@ class SkillService:
     get_active_install: GetActiveInstallUseCase | None = None
 
     def __post_init__(self) -> None:
+        from deos.modules.skill.application.vetter import NoOpSkillVetter
+
+        vetter = self.vetter or NoOpSkillVetter()
         self.register_skill = RegisterSkillUseCase(
-            uow_factory=self.uow_factory, publisher=self.publisher
+            uow_factory=self.uow_factory,
+            publisher=self.publisher,
+            vetter=vetter,
         )
         self.update_skill = UpdateSkillUseCase(
             uow_factory=self.uow_factory, publisher=self.publisher

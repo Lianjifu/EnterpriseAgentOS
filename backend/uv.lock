@@ -1137,6 +1137,7 @@ name = "deos-skill"
 version = "0.1.0"
 source = { editable = "modules/skill" }
 dependencies = [
+    { name = "cryptography" },
     { name = "eos-auth" },
     { name = "eos-http" },
     { name = "eos-kernel" },
@@ -1150,6 +1151,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "cryptography", specifier = ">=42.0.0" },
     { name = "eos-auth", editable = "libs/auth" },
     { name = "eos-http", editable = "libs/http" },
     { name = "eos-kernel", editable = "libs/kernel" },

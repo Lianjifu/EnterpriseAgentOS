@@ -2,6 +2,9 @@
 
 Creates a new SkillPackage row. Raises `SkillAlreadyExists` if a row with
 the same `(tenant_id, workspace_id, name, version)` already exists.
+
+The use case funnels every registration through a :class:`SkillVetter`
+so unsigned / untrusted packs are rejected before they land in the DB.
 """
 
 from __future__ import annotations
@@ -14,6 +17,7 @@ from deos.modules.skill.application.ports import (
     SkillEventPublisher,
     UnitOfWork,
 )
+from deos.modules.skill.application.vetter import SkillVetter
 from deos.modules.skill.domain.entities import (
     NetworkPolicy,
     SkillPackage,
@@ -26,6 +30,7 @@ from deos.modules.skill.domain.events import SkillRegistered
 class RegisterSkillUseCase:
     uow_factory: type[UnitOfWork]
     publisher: SkillEventPublisher
+    vetter: SkillVetter
 
     async def execute(
         self,
@@ -44,7 +49,33 @@ class RegisterSkillUseCase:
         cpu_quota: float | None = None,
         memory_bytes: int | None = None,
         timeout_seconds: int = 30,
+        signature: str = "",
+        signer_key_id: str = "",
+        image_digest: str = "",
     ) -> SkillPackage:
+        package = SkillPackage.create(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            name=name,
+            version=version,
+            description=description,
+            entrypoint=entrypoint,
+            image=image,
+            parameters_schema=parameters_schema,
+            artifact_uri=artifact_uri,
+            network_policy=network_policy,
+            cpu_quota=cpu_quota,
+            memory_bytes=memory_bytes,
+            timeout_seconds=timeout_seconds,
+            signature=signature,
+            signer_key_id=signer_key_id,
+            image_digest=image_digest,
+        )
+        # Vetter runs BEFORE the persistence write so unsigned /
+        # untrusted packs never reach the DB.  It also enforces the
+        # image_digest match against the signed payload.
+        await self.vetter.vet(package)
+
         async with self.uow_factory() as uow:
             existing = await uow.skills.get_by_name(
                 tenant_id=tenant_id, workspace_id=workspace_id, name=name
@@ -54,21 +85,6 @@ class RegisterSkillUseCase:
                     f"skill {name}@{version} already registered",
                     code="SKILL_ALREADY_EXISTS",
                 )
-            package = SkillPackage.create(
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                name=name,
-                version=version,
-                description=description,
-                entrypoint=entrypoint,
-                image=image,
-                parameters_schema=parameters_schema,
-                artifact_uri=artifact_uri,
-                network_policy=network_policy,
-                cpu_quota=cpu_quota,
-                memory_bytes=memory_bytes,
-                timeout_seconds=timeout_seconds,
-            )
             await uow.skills.add(package)
             await uow.commit()
             await self.publisher.publish(

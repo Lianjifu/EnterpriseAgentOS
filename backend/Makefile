@@ -71,6 +71,12 @@ bench-turn-latency:
 bench-obs-ingest:
 	$(UV) run python -m tests.perf.bench_observability_ingest --events 1000 --warmup 50
 
+# ---------- Burn-in runner ----------
+# Runs G5 (gitleaks) + G6 (promtool) + G7 (grafana JSON) locally.
+# Set EOS_STABLE_URL + EOS_CANARY_URL to also run G2 / G3 / G8.
+burn-in:
+	$(UV) run python ../deploy/burn_in.py
+
 db-upgrade:
 	$(UV) run alembic -c migrations/alembic.ini upgrade head
 

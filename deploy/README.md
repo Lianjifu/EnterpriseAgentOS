@@ -49,6 +49,28 @@ are accepted (both implemented in `libs/vault`):
 See `infra/k8s/secret.example.yaml` for the matching k8s SecretProviderClass
 when running under k8s.
 
+## Burn-in gate runner
+
+`deploy/burn_in.py` orchestrates the prelaunch gates G2 / G3 / G5 / G6 /
+G7 / G8 from `doc/prelaunch-checklist.md`. Locally it can already run
+G5 (gitleaks), G6 (promtool check rules + config), and G7 (Grafana
+dashboard JSON schema). Setting `EOS_STABLE_URL` + `EOS_CANARY_URL`
+adds G2 (dual `/readyz` 200), G3 (bench P95 ≤ 10 s on stable), and
+G8 (smoke happy path against both rings).
+
+```bash
+# local-only gates
+uv run python deploy/burn_in.py
+
+# full gates after deployment
+EOS_STABLE_URL=https://eos-stable.example.com \
+EOS_CANARY_URL=https://eos-canary.example.com \
+EOS_SMOKE_BEARER_TOKEN=... \
+  uv run python deploy/burn_in.py
+```
+
+Exit code = number of failed gates (skipped gates don't count).
+
 ## Scaling
 
 ```bash

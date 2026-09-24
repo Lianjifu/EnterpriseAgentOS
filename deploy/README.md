@@ -1,27 +1,39 @@
-# Enterprise-Agent-OS — Production Compose
+# Enterprise-Agent-OS — Deploy / Sandbox
 
-Single-namespace prod profile. Two app pools (stable + canary) sharing
-PG / Redis / MinIO. Image built from `infra/docker/Dockerfile.app`.
+Two deploy paths live here:
 
-## Quick start
+- **`deploy/docker-compose.prod.yml`** — production compose (full prod
+  path: stable + canary pools, PG/Redis/MinIO, ingress profile).
+- **`deploy/run-staging.sh`** — single-host sandbox for local dev /
+  staging. Two modes:
+  - `docker` (default) — postgres + eos-app:prod in two containers;
+    entrypoint picks gunicorn vs uvicorn per `EOS_GUNICORN_WORKERS`.
+  - `uvicorn` — postgres in docker, app runs on the host via
+    `uv run uvicorn --reload` (no image build, hot reload, debugger
+    attach, ~150 MB less memory than the gunicorn-4 path).
+
+## Sandbox quick start
 
 ```bash
-cd enterprise-agent-os
+# 1. create env file (gitignored)
+cp deploy/env.staging.example deploy/env.staging
 
-# 1. create .env.prod (NEVER commit real secrets)
-cp deploy/env.prod.example .env.prod
-$EDITOR .env.prod
+# 2a. docker mode — both containers, single-worker uvicorn inside
+./deploy/run-staging.sh up docker
+curl http://localhost:8102/readyz
 
-# 2. build image
-docker compose -f deploy/docker-compose.prod.yml --profile prod build
+# 2b. uvicorn mode — PG in docker, app on host with hot reload
+./deploy/run-staging.sh up uvicorn
 
-# 3. start stable pool + canary + deps
-docker compose -f deploy/docker-compose.prod.yml --profile prod up -d
-
-# 4. verify
-curl -fsS http://127.0.0.1:8102/livez   # stable
-curl -fsS http://127.0.0.1:8103/livez   # canary
+# 3. teardown
+./deploy/run-staging.sh stop
 ```
+
+`run-staging.sh` subcommands: `up [docker|uvicorn]` / `stop` / `logs` /
+`ps` / `migrate`. PG image is `pgvector/pgvector:pg16` (the `vector`
+extension is required by migration `0009_knowledge.py`).
+
+## Production compose
 
 ## Traffic split
 

@@ -1,5 +1,6 @@
 # Enterprise-Agent-OS — prod runtime image
-# Multi-stage build: deps via uv sync --no-dev, gunicorn for prod.
+# Multi-stage build: deps via uv sync --no-dev, entrypoint picks
+# gunicorn vs uvicorn based on EOS_GUNICORN_WORKERS.
 
 FROM python:3.12-slim AS base
 
@@ -9,11 +10,17 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/backend/src \
     EOS_ENV=production
 
+# libpq5 = asyncpg runtime; libssl3 = cryptography/tls deps.
+# curl / tini intentionally omitted:
+#   - HEALTHCHECK uses python urllib (no shell binary)
+#   - PID 1 is /entrypoint.sh which uses ``exec`` so zombie reaping is
+#     handled by docker run --init (default on Docker Desktop) or the
+#     container runtime's init.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libpq5 libssl3 curl tini \
+        libpq5 libssl3 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir uv gunicorn
+RUN pip install --no-cache-dir uv
 
 WORKDIR /app
 
@@ -39,7 +46,9 @@ WORKDIR /app
 
 EXPOSE 8102
 
+# python urllib replaces the curl binary — same semantics, one fewer
+# apt package and ~3 MB smaller image.
 HEALTHCHECK --interval=15s --timeout=5s --retries=5 \
-    CMD curl -fsS http://localhost:8102/livez || exit 1
+    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8102/livez', timeout=3).status == 200 else 1)" || exit 1
 
-ENTRYPOINT ["/usr/bin/tini", "--", "/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]

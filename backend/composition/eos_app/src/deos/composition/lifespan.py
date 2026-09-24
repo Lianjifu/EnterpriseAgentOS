@@ -102,12 +102,22 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
 
     # P6: model_service may be None when EOS_MODEL_MASTER_KEY is unset
-    # (e.g. legacy dev shells); LLMPortAdapter gracefully degrades to
-    # the default LLMClient when model_service is absent.
+    # in dev/test. In production this is a hard fail — the
+    # ``_validate_production_secrets`` gate in Container.__init__ will
+    # have already raised, so reaching this branch in prod means a
+    # later RuntimeError from ``model_credential_cipher``; surface it
+    # as a boot failure rather than silently degrading to a non-
+    # functional runtime.
     model_service = None
     try:
         model_service = container.model_service()
     except RuntimeError as exc:
+        if getattr(container.settings, "env", "development") == "production":
+            raise RuntimeError(
+                f"production boot requires model_service: {exc}. "
+                "Set EOS_MODEL_MASTER_KEY to a non-development value via "
+                "EOS_MODEL_MASTER_KEY_REF or your secrets manager."
+            ) from exc
         _log.warning("model_service disabled: %s", exc)
 
     class _AgentRuntimeFactory:
@@ -156,7 +166,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     channel_service_obj = None
     try:
         channel_service_obj = container.channel_service()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
+        if getattr(container.settings, "env", "development") == "production":
+            raise RuntimeError(
+                f"production boot requires channel_service: {exc}. "
+                "channel outbound depends on EOS_MODEL_MASTER_KEY and the "
+                "channel credentials in your secrets manager."
+            ) from exc
         _log.warning("channel_service disabled: %s", exc)
 
     app.state.channel_service = channel_service_obj

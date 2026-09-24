@@ -56,12 +56,29 @@ class Container:
         Anything starting with ``dev-`` (case-insensitive) is treated as
         a development sentinel.  Operators must set every secret to a
         non-sentinel value before the prod pod starts.
+
+        In addition to raw-secret sentinel detection, this gate refuses
+        to boot prod with any of the *default* dev/test backends:
+
+        - signing modes must not be ``"disabled"`` (skill / knowledge /
+          plan vetters fall through to NoOp variants)
+        - ``embedding_provider`` must not be ``"noop"`` (memory &
+          knowledge writes embed to a fake zero vector — semantic
+          recall silently breaks)
+        - ``vault_mode`` must be ``"csi"`` or ``"vault"`` (raw
+          ``os.environ`` reads bypass the secrets manager)
+        - ``event_bus`` must be ``"redis-stream"`` (cross-replica
+          publishes are silently dropped with ``inprocess``)
+        - ``model_master_key`` must be set + non-sentinel (model
+          credential cipher refuses otherwise; we surface it here so
+          the boot report is one consolidated failure)
         """
         sentinel_prefixes = ("dev-", "dev_")
         checks: tuple[tuple[str, str], ...] = (
             ("EOS_JWT_SECRET", settings.jwt_secret),
             ("EOS_RUN_TOKEN_SECRET", settings.run_token_secret),
             ("EOS_DEV_ADMIN_PASSWORD", settings.dev_admin_password),
+            ("EOS_MODEL_MASTER_KEY", settings.model_master_key),
         )
         offenders: list[str] = []
         for name, value in checks:
@@ -72,8 +89,44 @@ class Container:
             joined = ", ".join(offenders)
             raise RuntimeError(
                 f"production env refuses to boot with development secrets: {joined}. "
-                "Set EOS_JWT_SECRET / EOS_RUN_TOKEN_SECRET / EOS_DEV_ADMIN_PASSWORD to "
-                "real values via the EOS_*_REF indirection or your secrets manager."
+                "Set EOS_JWT_SECRET / EOS_RUN_TOKEN_SECRET / EOS_DEV_ADMIN_PASSWORD "
+                "/ EOS_MODEL_MASTER_KEY to real values via the EOS_*_REF indirection "
+                "or your secrets manager."
+            )
+
+        # ── default-backend refusal ────────────────────────────────────
+        # Each entry: (env var, current value, set of forbidden values).
+        # Forbidding the dev default stops the prod path from silently
+        # degrading to NoOp / NoOp-vetter / in-process bus.
+        backend_checks: tuple[tuple[str, str, frozenset[str]], ...] = (
+            ("EOS_SKILL_SIGNING_MODE", settings.skill_signing_mode,
+             frozenset({"disabled"})),
+            ("EOS_KNOWLEDGE_SIGNING_MODE", settings.knowledge_signing_mode,
+             frozenset({"disabled"})),
+            ("EOS_PLAN_SIGNING_MODE", settings.plan_signing_mode,
+             frozenset({"disabled"})),
+            ("EOS_EMBEDDING_PROVIDER", settings.embedding_provider,
+             frozenset({"noop"})),
+            ("EOS_VAULT_MODE", settings.vault_mode,
+             frozenset({"env", "noop"})),
+            ("EOS_EVENT_BUS", settings.event_bus,
+             frozenset({"inprocess"})),
+        )
+        backend_offenders: list[str] = []
+        for name, value, forbidden in backend_checks:
+            if value in forbidden:
+                backend_offenders.append(
+                    f"{name}={value!r} (must not be any of {sorted(forbidden)})"
+                )
+        if backend_offenders:
+            joined = ", ".join(backend_offenders)
+            raise RuntimeError(
+                "production env refuses to boot with dev-default backends: "
+                f"{joined}. Set EOS_SKILL_SIGNING_MODE / EOS_KNOWLEDGE_SIGNING_MODE "
+                "/ EOS_PLAN_SIGNING_MODE to 'local' or 'vault'; "
+                "EOS_EMBEDDING_PROVIDER to 'openai' or 'http'; "
+                "EOS_VAULT_MODE to 'csi' or 'vault'; "
+                "EOS_EVENT_BUS to 'redis-stream'."
             )
 
     def engine(self):

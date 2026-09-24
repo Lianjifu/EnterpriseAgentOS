@@ -58,6 +58,9 @@ tests/.artifacts/
 # doc/burn-in-preflight.md §A.2 — every secret must use *_REF; raw
 # values must never be committed).
 .env.prod
+# Staging sandbox env rendered from deploy/env.staging.example — local
+# docker run only; raw secrets allowed (single-host sandbox).
+deploy/env.staging
 
 # Postgres data (volume mount)
 data/

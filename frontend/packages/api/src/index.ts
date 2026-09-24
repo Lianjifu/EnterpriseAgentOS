@@ -3,6 +3,8 @@
  * Mock 适配器仅在应用入口显式注入时启用（VITE_USE_MOCK=true）。
  */
 import type { ApiResponse } from '@de/web-types';
+import { translateApiPath, type HttpMethod } from './pathMap';
+import { applyResponseAdapter } from './responseAdapters';
 
 export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -72,14 +74,18 @@ export class ApiClient {
       ...this.getContextHeaders(),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
+    const method = (opts.method?.toUpperCase() ?? 'GET') as HttpMethod;
+    const translated = translateApiPath(path, method);
     if (this.mockHandler) {
+      // mock 模式：保留原 /api/... 路径喂给 mockHandler 的 if/else ladder；
+      // 响应经 mockAdapter 出口时已经走 adapters，形状与真模式对齐。
       const data = await this.mockHandler(path, { ...opts, headers: requestHeaders });
       return data as T;
     }
     const controller = new AbortController();
     const t = setTimeout(() => controller.abort(), opts.timeoutMs ?? DEFAULT_TIMEOUT);
     try {
-      const url = resolveRequestURL(this.baseURL, path, opts.query);
+      const url = resolveRequestURL(this.baseURL, translated.backendPath, opts.query);
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         ...sanitizeHeaders(requestHeaders),
@@ -117,7 +123,8 @@ export class ApiClient {
         throw new ApiError(code, json.error?.message ?? '请求失败', res.status);
       }
       // 后端偶发返回 data: null（Go nil slice）；对数组消费方统一兜底为 []，避免 .filter 崩溃
-      return (json.data ?? null) as T;
+      const rawData = (json.data ?? null) as T;
+      return applyResponseAdapter(method, translated.backendPath, rawData) as T;
     } finally {
       clearTimeout(t);
     }
@@ -164,7 +171,8 @@ export class ApiClient {
     const controller = new AbortController();
     const t = setTimeout(() => controller.abort(), opts.timeoutMs ?? DEFAULT_TIMEOUT);
     try {
-      const url = resolveRequestURL(this.baseURL, path, opts.query);
+      const uploadTranslated = translateApiPath(path, 'POST');
+      const url = resolveRequestURL(this.baseURL, uploadTranslated.backendPath, opts.query);
       const headers = sanitizeHeaders(requestHeaders);
       // 不要手动设置 Content-Type，由浏览器带 multipart boundary
       let res: Response;
@@ -217,3 +225,7 @@ export function getApiClient(): ApiClient {
 export * from './mock';
 import * as mockModule from './mock';
 export const mock = mockModule;
+
+export { mockHandlerWithAdapters } from './mockAdapter';
+export { translateApiPath } from './pathMap';
+export { applyResponseAdapter } from './responseAdapters';

@@ -6,7 +6,7 @@ import App from './App';
 import { I18nProvider } from './i18n';
 import './styles/global.css';
 import 'reactflow/dist/style.css';
-import { setApiClient, ApiClient, mockHandler } from '@de/web-api';
+import { setApiClient, ApiClient, mockHandlerWithAdapters } from '@de/web-api';
 import { useWorkspaceStore } from './stores/workspaceStore';
 import { useAuthStore } from './stores/authStore';
 import { apiBaseURL, isDemoApiMode } from './lib/api-mode';
@@ -14,23 +14,26 @@ import { resolveWorkspaceHeader } from './lib/workspace-header';
 
 function installApiClient() {
   // 默认真实 API；仅演示模式注入本地 Handler。
+  const demoMode = isDemoApiMode();
   setApiClient(
     new ApiClient(
       apiBaseURL(),
       () => localStorage.getItem('token'),
-      isDemoApiMode() ? mockHandler : undefined,
+      demoMode ? mockHandlerWithAdapters : undefined,
       () => {
         const user = useAuthStore.getState().user;
-        return {
+        const base: Record<string, string> = {
           'x-workspace-id': resolveWorkspaceHeader(),
-          ...(user ? {
-            'x-tenant-id': user.tenantId,
-            ...(isDemoApiMode() ? {
-              'x-mock-role': user.role,
-              'x-mock-actor': user.name,
-              'x-mock-user-id': user.id,
-              'x-mock-permissions': user.permissions.join(','),
-            } : {}),
+        };
+        if (!user) return base;
+        return {
+          ...base,
+          'x-tenant-id': user.tenantId,
+          ...(demoMode ? {
+            'x-mock-role': user.role,
+            'x-mock-actor': user.name,
+            'x-mock-user-id': user.id,
+            'x-mock-permissions': user.permissions.join(','),
           } : {}),
         };
       },

@@ -80,4 +80,37 @@ describe('translateApiPath', () => {
   it('rule count grows as we add batches', () => {
     expect(_routeTableSize()).toBeGreaterThan(60);
   });
+
+  it('rewrites /api/release-approvals/:id/reject → /v1/approvals/:id/deny', () => {
+    // 后端 governance 用 /deny 不是 /reject
+    const out = translateApiPath('/api/release-approvals/req-1/reject', 'POST');
+    expect(out.backendPath).toBe('/v1/approvals/req-1/deny');
+  });
+
+  it('rewrites /api/zero-trust/policies → /v1/policies (no ZT subpath in backend)', () => {
+    const out = translateApiPath('/api/zero-trust/policies', 'GET');
+    expect(out.backendPath).toBe('/v1/policies');
+  });
+
+  it('rewrites /api/model-providers → /v1/model-credentials', () => {
+    const out = translateApiPath('/api/model-providers', 'GET');
+    expect(out.backendPath).toBe('/v1/model-credentials');
+  });
+
+  it('rewrites /api/model-routing/policies → /v1/routing-policies', () => {
+    const out = translateApiPath('/api/model-routing/policies', 'GET');
+    expect(out.backendPath).toBe('/v1/routing-policies');
+  });
+
+  it('rewrites /api/tools/:id/invoke → /v1/tools/:id/invoke', () => {
+    const out = translateApiPath('/api/tools/t-1/invoke', 'POST');
+    expect(out.backendPath).toBe('/v1/tools/t-1/invoke');
+  });
+
+  it('does not invent /v1/orchestration/tasks (backend has no such endpoint)', () => {
+    // backend orchestration 只有 plans + runs,无 /tasks
+    const out = translateApiPath('/api/tasks', 'GET');
+    expect(out.matched).toBe(false);
+    expect(out.backendPath).toBe('/api/tasks');
+  });
 });

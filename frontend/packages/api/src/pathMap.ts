@@ -143,17 +143,70 @@ const ROUTE_TABLE: Array<{ key: string; rule: RouteRule }> = [
   { key: '/api/evaluations/:id', rule: { method: 'GET', backendPath: '/v1/eval/:id' } },
   { key: '/api/evaluations', rule: { method: 'GET', backendPath: '/v1/eval' } },
 
+  // ── Phase B+ batch 9:platform(platform module: /v1/platform) ────────
+  { key: '/api/tenant/profile', rule: { method: 'PATCH', backendPath: '/v1/platform/tenants/me' } },
+  { key: '/api/billing', rule: { method: 'GET', backendPath: '/v1/platform/subscriptions/me' } },
+
+  // ── Phase B+ batch 10:governance(/v1/policies + /v1/approvals) ───────
+  // 实际后端路径:approval 用 /deny 不是 /reject
+  { key: '/api/release-approvals', rule: { method: 'GET', backendPath: '/v1/approvals' } },
+  { key: '/api/release-approvals', rule: { method: 'POST', backendPath: '/v1/approvals' } },
+  { key: '/api/release-approvals/:id/approve', rule: { method: 'POST', backendPath: '/v1/approvals/:id/approve' } },
+  { key: '/api/release-approvals/:id/reject', rule: { method: 'POST', backendPath: '/v1/approvals/:id/deny' } },
+  // zero-trust policies → backend 实际在 /v1/policies(无 zero-trust 子路径)
+  { key: '/api/zero-trust/policies', rule: { method: 'GET', backendPath: '/v1/policies' } },
+  { key: '/api/zero-trust/policies', rule: { method: 'POST', backendPath: '/v1/policies' } },
+  { key: '/api/zero-trust/policies/:id', rule: { method: 'PATCH', backendPath: '/v1/policies/:id' } },
+  // zero-trust/evaluate → backend governance 无此端点;fallback 透传
+  // zero-trust/events → 同上
+
+  // ── Phase B+ batch 11:observability(/v1/observability) ───────────────
+  { key: '/api/observability/runs', rule: { method: 'GET', backendPath: '/v1/observability/runs' } },
+  { key: '/api/observability/costs', rule: { method: 'GET', backendPath: '/v1/observability/costs' } },
+  // 注意 backend 的 quality 端点需要 template_id + version_id,前端如果只传
+  // /quality 时 fallback 透传(后续按需扩展 query 参数规则)
+
+  // ── Phase B+ batch 12:tools(tool module: /v1/tools) ──────────────────
+  { key: '/api/tools', rule: { method: 'POST', backendPath: '/v1/tools' } },
+  { key: '/api/tools', rule: { method: 'GET', backendPath: '/v1/tools' } },
+  { key: '/api/tools/:id', rule: { method: 'GET', backendPath: '/v1/tools/:id' } },
+  { key: '/api/tools/:id', rule: { method: 'DELETE', backendPath: '/v1/tools/:id' } },
+  { key: '/api/tools/:id', rule: { method: 'PATCH', backendPath: '/v1/tools/:id' } },
+  { key: '/api/tools/:id/invoke', rule: { method: 'POST', backendPath: '/v1/tools/:id/invoke' } },
+
+  // ── Phase B+ batch 13:models(model module: /v1/model-credentials + /v1/models + /v1/routing-policies) ─
+  { key: '/api/model-providers', rule: { method: 'GET', backendPath: '/v1/model-credentials' } },
+  { key: '/api/model-providers', rule: { method: 'POST', backendPath: '/v1/model-credentials' } },
+  { key: '/api/model-providers/:id', rule: { method: 'PATCH', backendPath: '/v1/model-credentials/:id' } },
+  { key: '/api/model-providers/:id', rule: { method: 'DELETE', backendPath: '/v1/model-credentials/:id' } },
+  { key: '/api/model-providers/:id/rotate', rule: { method: 'POST', backendPath: '/v1/model-credentials/:id/rotate' } },
+  { key: '/api/models', rule: { method: 'GET', backendPath: '/v1/models' } },
+  { key: '/api/models/:id', rule: { method: 'GET', backendPath: '/v1/models/:id' } },
+  { key: '/api/models/:id/invoke', rule: { method: 'POST', backendPath: '/v1/models/:id/invoke' } },
+  { key: '/api/model-routing/policies', rule: { method: 'GET', backendPath: '/v1/routing-policies' } },
+  { key: '/api/model-routing/policies', rule: { method: 'POST', backendPath: '/v1/routing-policies' } },
+  { key: '/api/model-routing/policies/:id/draft', rule: { method: 'PATCH', backendPath: '/v1/routing-policies/:id/draft' } },
+  { key: '/api/model-routing/policies/:id/validate', rule: { method: 'POST', backendPath: '/v1/routing-policies/:id/validate' } },
+  { key: '/api/model-routing/policies/:id/publish', rule: { method: 'POST', backendPath: '/v1/routing-policies/:id/publish' } },
+
+  // ── Phase B+ batch 14:self-evolution(/v1/evolve) ─────────────────────
+  { key: '/api/evolve/candidates', rule: { method: 'GET', backendPath: '/v1/evolve/candidates' } },
+  { key: '/api/evolve/candidates/:id/approve', rule: { method: 'POST', backendPath: '/v1/evolve/candidates/:id/approve' } },
+  { key: '/api/evolve/candidates/:id/reject', rule: { method: 'POST', backendPath: '/v1/evolve/candidates/:id/reject' } },
+  { key: '/api/evolve/candidates/:id/apply', rule: { method: 'POST', backendPath: '/v1/evolve/candidates/:id/apply' } },
+
   // ── TODO(后续 ticket):仍 mock-only 的路径 ──────────────────────────────
   // - /api/digital-employees/*        → 后端在 /v1/agents 但形状差异大
   // - /api/audit-center               → 后端只有分模块 audit,无 unified feed
-  // - /api/audit-stream               → 同上
+  // - /api/audit-stream               → SSE endpoints in different modules
   // - /api/backups                    → 后端无对应
-  // - /api/billing                    → 后端无对应
   // - /api/home/{kpis,events,team,...}→ 后端无 aggregate endpoint
   // - /api/copilot/*                  → agent_runtime 路径不一致
   // - /api/agents/{metrics,calls,alerts,trend} → agent_runtime 不暴露聚合
   // - /api/channel-control/*          → channel 路径不同
-  // - /api/zero-trust/*               → governance 无 zero-trust 专用端点
+  // - /api/skill-integrations/*       → 需进一步核对
+  // - /api/tasks                      → orchestration 无 /tasks 端点(只有 plans + runs)
+  // - /api/zero-trust/{evaluate,events,authorizations} → governance 无专用端点
 ];
 
 export interface TranslatedRoute {

@@ -7,12 +7,21 @@ for every topic returned by ``recorder.topics()``.  The handler is
 
 from __future__ import annotations
 
+import inspect
 from collections.abc import Callable, Coroutine
 from typing import Any
 
 from deos.modules.governance.application.audit_recorder import AuditRecorder
 
 SubscriberHandler = Callable[[Any], Coroutine[Any, Any, None]]
+
+
+async def _subscribe(event_bus: Any, topic: str, handler: Any) -> None:
+    """``EventBus.subscribe`` is sync in the in-process adapter and
+    async in redis_stream / kafka adapters; await transparently."""
+    result = event_bus.subscribe(topic, handler)
+    if inspect.isawaitable(result):
+        await result
 
 
 async def install(
@@ -24,7 +33,7 @@ async def install(
     """Subscribe the recorder to its topics; invalidate cache on
     governance.policy.* mutations.
 
-    ``event_bus`` must expose ``subscribe(topic, handler)``.
+    ``event_bus`` must expose ``subscribe(topic, handler)`` (sync or async).
     """
     handler = recorder.handle
 
@@ -35,7 +44,7 @@ async def install(
         if topic in seen:
             continue
         seen.add(topic)
-        await event_bus.subscribe(topic, handler)
+        await _subscribe(event_bus, topic, handler)
 
     # policy lifecycle → invalidate evaluator cache.
     # We register a separate handler rather than wrap ``handler`` so the
@@ -66,7 +75,7 @@ async def install(
             "governance.policy.updated",
             "governance.policy.deleted",
         ):
-            await event_bus.subscribe(topic, _policy_changed)
+            await _subscribe(event_bus, topic, _policy_changed)
 
 
 __all__ = ["install"]

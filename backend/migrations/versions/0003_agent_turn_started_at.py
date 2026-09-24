@@ -1,10 +1,15 @@
-"""agent_runtime: add agent_turns.started_at column.
+"""agent_runtime: agent_turns.started_at — no-op reconciliation.
 
-The P1 migration (0002) shipped with `created_at` only, but the domain
-`Turn` entity distinguishes "when this turn began" (`started_at`) from
-"when the row was inserted" (`created_at`). Both are populated at insert
-time today but the semantic split lets future schema revisions add an
-index on `started_at` without a backfill.
+The original intent of this migration was to add `started_at` to
+`agent_turns`, but 0002_agent_runtime already ships the column (the
+"Turn" semantic split from `created_at` was put in place from day 1
+during the agent_runtime P1 cutover). Re-running the ADD COLUMN here
+fails with ``DuplicateColumnError`` on a fresh database.
+
+This revision is kept in the chain so environments that previously
+applied it remain at the same head, but the upgrade is now a no-op:
+``started_at`` is guaranteed by 0002. Downgrade is also a no-op for the
+same reason.
 
 Revision ID: 0003_agent_turn_started_at
 Revises: 0002_agent_runtime
@@ -15,7 +20,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Union
 
-import sqlalchemy as sa
 from alembic import op
 
 if TYPE_CHECKING:
@@ -28,19 +32,10 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "agent_turns",
-        sa.Column(
-            "started_at",
-            sa.DateTime(timezone=True),
-            nullable=False,
-            server_default=sa.text("now()"),
-        ),
-    )
-    # Existing rows already have a non-null `created_at`; backfill `started_at`
-    # from it so the new NOT NULL column is satisfied without a full rewrite.
-    op.execute("UPDATE agent_turns SET started_at = created_at WHERE started_at IS NULL")
+    # No-op: 0002_agent_runtime already creates agent_turns.started_at.
+    pass
 
 
 def downgrade() -> None:
-    op.drop_column("agent_turns", "started_at")
+    # No-op: dropping the column would also need to undo 0002.
+    pass

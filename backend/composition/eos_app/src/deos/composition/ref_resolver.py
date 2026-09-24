@@ -150,10 +150,40 @@ async def resolve_ref_env() -> int:
 
 
 def resolve_ref_env_sync() -> int:
-    """Synchronous wrapper for boot-time use (no event loop running).
+    """Synchronous wrapper for boot-time use.
 
-    ``create_app()`` runs before uvicorn / gunicorn starts its event
-    loop, so we drive ``resolve_ref_env`` via :func:`asyncio.run` rather
-    than spawning a worker thread or blocking on a future.
+    ``create_app()`` is normally invoked before uvicorn / gunicorn
+    starts its event loop, so we drive ``resolve_ref_env`` via
+    :func:`asyncio.run`. Under ``uvicorn --reload`` the app factory is
+    called *inside* a running loop (the reloader subprocess), so we
+    cannot reuse it. Instead we spin up a dedicated loop on a side
+    thread — a fresh event loop lets us ``run_until_complete`` the
+    coroutine to completion without colliding with the caller's loop.
     """
-    return asyncio.run(resolve_ref_env())
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(resolve_ref_env())
+    # Running inside an event loop — drive the coroutine on a fresh
+    # loop so we don't violate the "no nested loops" invariant.
+    import threading
+
+    holder: list[int] = []
+    exc: list[BaseException] = []
+
+    def _worker() -> None:
+        new_loop = asyncio.new_event_loop()
+        try:
+            asyncio.set_event_loop(new_loop)
+            holder.append(new_loop.run_until_complete(resolve_ref_env()))
+        except BaseException as e:  # pragma: no cover - propagated below
+            exc.append(e)
+        finally:
+            new_loop.close()
+
+    t = threading.Thread(target=_worker, name="eos-boot-ref-resolver", daemon=True)
+    t.start()
+    t.join()
+    if exc:
+        raise exc[0]
+    return holder[0]

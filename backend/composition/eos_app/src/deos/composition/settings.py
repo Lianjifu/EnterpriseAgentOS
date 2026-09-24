@@ -160,7 +160,7 @@ class Settings(BaseSettings):
     policy_enabled: bool = True
     policy_cache_ttl_seconds: int = 30
     policy_approval_ttl_seconds: int = 3600
-    vault_mode: Literal["env", "file", "noop"] = "env"
+    vault_mode: Literal["env", "file", "noop", "csi", "vault"] = "env"
     vault_file_root: str = "/etc/eos/vault"
     embedding_provider: Literal["openai", "http", "noop"] = "noop"
 

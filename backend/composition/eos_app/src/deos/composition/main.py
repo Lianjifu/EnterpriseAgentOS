@@ -24,6 +24,20 @@ from deos.composition.settings import get_settings
 
 
 def create_app() -> FastAPI:
+    # Resolve EOS_*_REF env vars (deploy/env.prod.example) into bare
+    # EOS_* BEFORE Settings() reads env — Pydantic does not understand
+    # the *_REF indirection.  Sync wrapper because no event loop runs
+    # yet (uvicorn / gunicorn boots after this returns).
+    from deos.composition.ref_resolver import resolve_ref_env_sync
+
+    _resolved = resolve_ref_env_sync()
+    if _resolved:
+        import logging
+
+        logging.getLogger(__name__).info(
+            "boot: resolved %d EOS_*_REF env vars", _resolved
+        )
+
     settings = get_settings()
     container = Container(settings)
 

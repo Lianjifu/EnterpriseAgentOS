@@ -274,6 +274,19 @@ class Container:
             from eos_vault.file_vault import FileVaultSecretsResolver
 
             return FileVaultSecretsResolver(allowed_root=self.settings.vault_file_root)
+        if mode == "csi":
+            from eos_vault.csi_vault import CSIVaultSecretsResolver
+
+            return CSIVaultSecretsResolver()
+        if mode == "vault":
+            from eos_vault.hashicorp_vault import HashicorpVaultSecretsResolver
+
+            return HashicorpVaultSecretsResolver(
+                url=self.settings.vault_url,
+                token=self.settings.vault_token,
+                cache_ttl_seconds=30.0,
+                cache_max_entries=256,
+            )
         raise RuntimeError(f"unknown vault_mode: {mode}")
 
     # ── P4 memory + P5 governance clock / id generator ─────────────────────

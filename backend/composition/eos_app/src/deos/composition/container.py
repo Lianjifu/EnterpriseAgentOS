@@ -747,10 +747,19 @@ class Container:
         )
         from deos.modules.channel.domain.value_objects import ChannelType
 
+        # Inject channel-specific encryption material so the
+        # encrypted inbound adapters (DingTalk Stream v2 AES-CBC,
+        # Wecom JSON v2 AES-CBC) can decrypt ciphertext at parse time.
+        # An empty secret keeps the legacy ``kind=encrypted``
+        # placeholder behaviour so dev / unit tests stay green.
         return {
             ChannelType.FEISHU: FeishuInboundAdapter(),
-            ChannelType.DINGTALK: DingTalkInboundAdapter(),
-            ChannelType.WECHATWORK: WeChatWorkInboundAdapter(),
+            ChannelType.DINGTALK: DingTalkInboundAdapter(
+                app_secret=self.settings.dingtalk_app_secret,
+            ),
+            ChannelType.WECHATWORK: WeChatWorkInboundAdapter(
+                encoding_aes_key=self.settings.wechatwork_encoding_aes_key,
+            ),
             ChannelType.WEB: WebInboundAdapter(),
         }
 

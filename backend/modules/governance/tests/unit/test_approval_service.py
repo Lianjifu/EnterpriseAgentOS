@@ -199,3 +199,54 @@ async def test_approval_entity_returns_new_instance():
     assert ap.status is ApprovalStatus.PENDING
     assert approved.status is ApprovalStatus.APPROVED
     assert ap is not approved
+
+
+async def test_list_all_returns_every_status_in_newest_first_order():
+    """list_all fans out across every ApprovalStatus and dedupes.
+
+    Regression for the prior bug where ``GET /v1/approvals?
+    pending_only=false`` silently filtered to PENDING — admins got
+    empty history pages even when there were APPROVED / DENIED rows.
+    """
+    svc, _repo, _pub, clock = _service()
+    a = await svc.create(
+        tenant_id=TID,
+        requester_id=USER_A,
+        action="tool:execute:reverse",
+        resource={"k": 1},
+    )
+    clock.advance(seconds=60)
+    b = await svc.create(
+        tenant_id=TID,
+        requester_id=USER_A,
+        action="tool:execute:reverse",
+        resource={"k": 2},
+    )
+    clock.advance(seconds=60)
+    await svc.approve(tenant_id=TID, approval_id=a.id, approver_id=USER_B)
+    clock.advance(seconds=60)
+    await svc.deny(
+        tenant_id=TID, approval_id=b.id, approver_id=USER_B, reason="nope"
+    )
+
+    rows = await svc.list_all(tenant_id=TID, limit=10)
+    statuses = [r.status for r in rows]
+    # Both decided rows must be present — the prior bug filtered
+    # everything to PENDING.
+    assert ApprovalStatus.APPROVED in statuses
+    assert ApprovalStatus.DENIED in statuses
+    # Newest first.
+    assert rows[0].created_at >= rows[-1].created_at
+
+
+async def test_list_all_respects_limit():
+    svc, _repo, _pub, _clock = _service()
+    for i in range(5):
+        await svc.create(
+            tenant_id=TID,
+            requester_id=USER_A,
+            action="tool:execute:reverse",
+            resource={"i": i},
+        )
+    rows = await svc.list_all(tenant_id=TID, limit=3)
+    assert len(rows) == 3

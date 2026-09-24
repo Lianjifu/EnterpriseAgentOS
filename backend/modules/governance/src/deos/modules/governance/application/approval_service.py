@@ -151,6 +151,35 @@ class ApprovalService:
             tenant_id=tenant_id, now=self._clock.now(), limit=limit
         )
 
+    async def list_all(
+        self, *, tenant_id: TenantId, limit: int = 200
+    ) -> list[Approval]:
+        """Return every approval for the tenant regardless of status.
+
+        Backs ``GET /v1/approvals?pending_only=false`` — used by admin
+        dashboards to render the full decision history. Implemented by
+        fan-out across the canonical :class:`ApprovalStatus` values
+        because the underlying SQL repo has only ``list_pending`` /
+        ``list_by_status`` (no ``OFFSET`` cursor — the data volume is
+        bounded by the active workspace so this is cheap enough).
+        """
+        seen: dict[UUID, Approval] = {}
+        for status in (
+            ApprovalStatus.PENDING,
+            ApprovalStatus.APPROVED,
+            ApprovalStatus.DENIED,
+            ApprovalStatus.EXPIRED,
+        ):
+            for approval in await self._repo.list_by_status(
+                tenant_id=tenant_id, status=status, limit=limit
+            ):
+                seen[approval.id] = approval
+        approvals = list(seen.values())
+        # Sort newest-first so the response is deterministic regardless
+        # of which fan-out branch produced each row.
+        approvals.sort(key=lambda a: a.created_at, reverse=True)
+        return approvals[:limit]
+
     # ── helpers ────────────────────────────────────────────────────────
 
     def _ensure_pending(self, approval: Approval) -> None:

@@ -130,11 +130,21 @@ async def resolve_ref_env() -> int:
 
         scheme, _, _ = ref.partition(":")
         if scheme not in resolvers:
-            # Unknown / unsupported scheme — leave the var untouched so
-            # downstream code (which may itself read it) sees the same
-            # value.  We do NOT fail-loud here because some operators
-            # legitimately set ``EOS_*_REF`` to literal placeholders in
-            # dev.
+            # Unknown / unsupported scheme. In dev/test/ci we leave the
+            # var untouched — operators legitimately set
+            # ``EOS_*_REF`` to literal placeholders there. In
+            # production / staging we fail-loud: a misconfigured
+            # scheme means the resolved secret will never land, which
+            # downstream code would then read as an empty / sentinel
+            # value and silently degrade.
+            from os import getenv as _getenv
+
+            if _getenv("EOS_ENV", "development") in {"production", "staging"}:
+                raise RuntimeError(
+                    f"boot: unknown EOS_*_REF scheme {scheme!r} in "
+                    f"{ref_key}={ref!r}. Known schemes: "
+                    f"{sorted(resolvers)}"
+                )
             continue
         resolver = resolvers[scheme]
         try:
@@ -176,7 +186,7 @@ def resolve_ref_env_sync() -> int:
         try:
             asyncio.set_event_loop(new_loop)
             holder.append(new_loop.run_until_complete(resolve_ref_env()))
-        except BaseException as e:  # pragma: no cover - propagated below
+        except BaseException as e:  # pragma: no cover - propagated below  # noqa: BLE001
             exc.append(e)
         finally:
             new_loop.close()

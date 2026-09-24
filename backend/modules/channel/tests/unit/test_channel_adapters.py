@@ -110,6 +110,86 @@ def test_wechatwork_parses_encrypted_placeholder() -> None:
     assert msg.metadata["kind"] == "encrypted"
 
 
+def test_dingtalk_decrypts_aes_cbc_stream_payload() -> None:
+    """End-to-end AES-256-CBC + PKCS#7 round trip on the Stream v2 path."""
+    import base64
+    import hashlib
+    import json
+
+    from cryptography.hazmat.primitives import padding as sym_padding
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+    secret = "dingtalk-test-secret-1234"
+    key = hashlib.sha256(secret.encode("utf-8")).digest()
+    iv = b"\x00" * 16  # deterministic IV for the test
+    inner = json.dumps(
+        {
+            "msgtype": "text",
+            "text": {"content": "hi from dingtalk"},
+            "senderId": "staff-1",
+            "conversationId": "conv-9",
+            "msgId": "m-42",
+        }
+    ).encode("utf-8")
+    padder = sym_padding.PKCS7(128).padder()
+    padded = padder.update(inner) + padder.finalize()
+    enc = Cipher(algorithms.AES(key), modes.CBC(iv)).encryptor()
+    ciphertext = enc.update(padded) + enc.finalize()
+    frame = iv + ciphertext
+    body = json.dumps({"encrypt": base64.b64encode(frame).decode("ascii")}).encode()
+
+    adapter = DingTalkInboundAdapter(app_secret=secret)
+    msg = adapter.parse_webhook(body=body, headers={})
+    assert msg.metadata["kind"] == "decrypted"
+    assert msg.external_user_id == "staff-1"
+    assert msg.external_chat_id == "conv-9"
+    assert msg.text == "hi from dingtalk"
+    assert msg.external_message_id == "m-42"
+
+
+def test_dingtalk_bad_ciphertext_returns_failed_metadata() -> None:
+    adapter = DingTalkInboundAdapter(app_secret="anything")
+    msg = adapter.parse_webhook(body=b'{"encrypt":"AAAA"}', headers={})
+    assert msg.metadata["kind"] == "encrypted"
+    assert msg.metadata["decrypt"] == "frame_too_short"
+
+
+def test_wechatwork_decrypts_aes_cbc_json_payload() -> None:
+    """End-to-end AES-256-CBC round trip on the Wecom JSON v2 path."""
+    import base64
+    import json
+
+    from cryptography.hazmat.primitives import padding as sym_padding
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+    # 43-char base64 key, decode-pad → 32 bytes, IV = key[:16]
+    raw_key = b"k" * 32
+    eak = base64.b64encode(raw_key).decode("ascii").rstrip("=")[:43]
+    key = base64.b64decode(eak + "=" * ((4 - len(eak) % 4) % 4))
+    iv = key[:16]
+    inner = (
+        b"<xml><MsgType>text</MsgType>"
+        b"<FromUserName>UserID1</FromUserName>"
+        b"<ToUserName>corpid</ToUserName>"
+        b"<ChatId>chat-1</ChatId>"
+        b"<MsgId>m-7</MsgId>"
+        b"<Content>hello wecom</Content></xml>"
+    )
+    padder = sym_padding.PKCS7(128).padder()
+    padded = padder.update(inner) + padder.finalize()
+    enc = Cipher(algorithms.AES(key), modes.CBC(iv)).encryptor()
+    ciphertext = enc.update(padded) + enc.finalize()
+    body = json.dumps({"encrypt": base64.b64encode(ciphertext).decode("ascii")}).encode()
+
+    adapter = WeChatWorkInboundAdapter(encoding_aes_key=eak)
+    msg = adapter.parse_webhook(body=body, headers={})
+    assert msg.metadata["kind"] == "decrypted"
+    assert msg.external_user_id == "UserID1"
+    assert msg.external_chat_id == "chat-1"
+    assert msg.text == "hello wecom"
+    assert msg.external_message_id == "m-7"
+
+
 def test_wechatwork_handles_empty() -> None:
     msg = WeChatWorkInboundAdapter().parse_webhook(body=b"", headers={})
     assert msg.metadata["kind"] == "empty"

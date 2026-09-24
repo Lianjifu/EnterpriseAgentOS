@@ -261,6 +261,34 @@ def create_app() -> FastAPI:
         auth_verifier=container.jwt_verifier(),
     )
 
+    # ── boot-time sanity check ────────────────────────────────────────
+    # Each module router declares a `_require_actor` /
+    # `_require_admin` placeholder dependency that returns 401. The
+    # override wiring above replaces them with the real auth chain —
+    # if we forgot to wire one (e.g. a new module was added without
+    # updating this function), every endpoint protected by the
+    # missing module would silently 401 instead of 500'ing at boot.
+    # Surface that mistake at boot so it can't lurk into prod.
+    #
+    # Each router imports its own copy of `_require_actor` (e.g.
+    # ``as evolution_require_actor``), so the override dict holds one
+    # entry per module — we verify by value (the resolved
+    # ``_resolve_actor`` / ``_resolve_admin`` function) and require at
+    # least the four core modules to be wired.
+    overrides = app.dependency_overrides
+    for fn_name, label in (("_resolve_actor", "actor"), ("_resolve_admin", "admin")):
+        seen = {
+            getattr(v, "__module__", "")
+            for v in overrides.values()
+            if getattr(v, "__name__", "") == fn_name
+        }
+        if not seen:
+            raise RuntimeError(
+                f"create_app: dependency_overrides for {label} "
+                f"({fn_name}) not wired. Check that all module routers' "
+                "placeholder deps are overridden before returning the app."
+            )
+
     return app
 
 

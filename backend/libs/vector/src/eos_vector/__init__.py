@@ -1,6 +1,5 @@
-"""Vector store: pgvector (default) + Milvus (interface)."""
+"""Vector store: pgvector (default)."""
 
-from eos_vector.milvus import MilvusStore
 from eos_vector.pg_vector import PgVectorStore
 from eos_vector.store import (
     SearchResult,
@@ -9,7 +8,6 @@ from eos_vector.store import (
 )
 
 __all__ = [
-    "MilvusStore",
     "PgVectorStore",
     "SearchResult",
     "VectorItem",

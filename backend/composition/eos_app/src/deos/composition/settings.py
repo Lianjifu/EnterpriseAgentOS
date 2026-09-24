@@ -221,6 +221,13 @@ class Settings(BaseSettings):
     # P6 channel
     channel_webhook_signature_tolerance_seconds: int = 300
     channel_default_inbound_max_body_bytes: int = 1 * 1024 * 1024
+    # DingTalk Stream v2 encryption — the app secret is the AES key
+    # material for inbound webhook payloads. Leave empty in dev to
+    # preserve the legacy placeholder behaviour.
+    dingtalk_app_secret: str = ""
+    # WeChat Work (企业微信) JSON v2 callback — base64-decoded
+    # EncodingAESKey (43 chars). Empty in dev keeps the placeholder.
+    wechatwork_encoding_aes_key: str = ""
 
     def llm_config(self) -> LLMConfig:
         return LLMConfig(

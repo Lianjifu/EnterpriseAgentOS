@@ -165,13 +165,11 @@ async def list_approvals(
     if pending_only:
         approvals = await svc.list_pending(tenant_id=actor.tenant_id, limit=limit)
     else:
-        from deos.modules.governance.domain.value_objects import ApprovalStatus
-
-        approvals = await svc._repo.list_by_status(  # type: ignore[attr-defined]
-            tenant_id=actor.tenant_id,
-            status=ApprovalStatus.PENDING,
-            limit=limit,
-        )
+        # ``pending_only=false`` returns every approval for the tenant
+        # (PENDING + APPROVED + DENIED + EXPIRED). Goes through the
+        # service so audit events / clock tick / row-bounded limit are
+        # applied consistently with the rest of the codebase.
+        approvals = await svc.list_all(tenant_id=actor.tenant_id, limit=limit)
     return ApprovalListResponse(items=[approval_to_response(a) for a in approvals])
 
 

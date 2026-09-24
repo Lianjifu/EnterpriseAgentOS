@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-import pytest
-
 from eos_vector.store import SearchResult, VectorItem
 
 
@@ -24,13 +22,3 @@ def test_vector_item_construction() -> None:
 def test_search_result_immutable() -> None:
     r = SearchResult(id=uuid4(), score=0.95, payload={"k": "v"})
     assert r.score == 0.95
-
-
-def test_milvus_placeholder_raises() -> None:
-    from eos_vector.milvus import MilvusStore
-
-    s = MilvusStore(host="localhost")
-    with pytest.raises(NotImplementedError):
-        import asyncio
-
-        asyncio.run(s.upsert([]))

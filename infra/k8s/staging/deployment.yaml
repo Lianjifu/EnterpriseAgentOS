@@ -1,0 +1,170 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eos-app-stable
+  namespace: eos-staging
+  labels:
+    app: eos
+    ring: stable
+spec:
+  replicas: 3
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: eos
+      ring: stable
+  template:
+    metadata:
+      labels:
+        app: eos
+        ring: stable
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9102"
+        prometheus.io/path: "/metrics"
+        # Triggers rollouts on ConfigMap / Secret changes
+        # (managed separately by ArgoCD or kustomize)
+    spec:
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+        - name: app
+          image: eos-app:prod
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8102
+            - name: metrics
+              containerPort: 9102
+          envFrom:
+            - configMapRef:
+                name: eos-app-config
+            - secretRef:
+                name: eos-app-secret
+          env:
+            - name: EOS_RING
+              value: "stable"
+            - name: EOS_INSTANCE_ID
+              valueFrom:
+                fieldRef: { fieldPath: metadata.name }
+          startupProbe:
+            httpGet: { path: /readyz, port: 8102 }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet: { path: /readyz, port: 8102 }
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: { path: /livez, port: 8102 }
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits:   { cpu: 1,    memory: 1Gi  }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eos-app-canary
+  namespace: eos-staging
+  labels:
+    app: eos
+    ring: canary
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: eos
+      ring: canary
+  template:
+    metadata:
+      labels:
+        app: eos
+        ring: canary
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9102"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+        - name: app
+          image: eos-app:prod
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8102
+            - name: metrics
+              containerPort: 9102
+          envFrom:
+            - configMapRef:
+                name: eos-app-config
+            - secretRef:
+                name: eos-app-secret
+          env:
+            - name: EOS_RING
+              value: "canary"
+            - name: EOS_INSTANCE_ID
+              valueFrom:
+                fieldRef: { fieldPath: metadata.name }
+          startupProbe:
+            httpGet: { path: /readyz, port: 8102 }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet: { path: /readyz, port: 8102 }
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: { path: /livez, port: 8102 }
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits:   { cpu: 1,    memory: 1Gi  }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

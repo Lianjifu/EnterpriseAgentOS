@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: eos-staging
+  labels:
+    name: eos-staging
+    purpose: enterprise-agent-os
+    environment: production

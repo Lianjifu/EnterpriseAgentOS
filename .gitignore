@@ -75,3 +75,4 @@ data/
 # Real SecretProviderClass / Secret rendered from infra/k8s/secret.example.yaml
 # (per doc/burn-in-preflight.md §A.4 — gitleaks G5 will catch any leak).
 infra/k8s/secret.yaml
+infra/k8s/staging/secret.yaml

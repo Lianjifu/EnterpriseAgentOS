@@ -619,13 +619,11 @@ class Container:
                 dim=self.settings.llm_embedding_dim,
             )
         if provider == "http":
-            import httpx
             from deos.modules.memory.adapter.embedding.http_adapter import (
                 HttpEmbeddingAdapter,
             )
 
             return HttpEmbeddingAdapter(
-                client=httpx.AsyncClient(timeout=30.0),
                 base_url=self.settings.embedding_runtime_url,
                 api_key=self.settings.embedding_runtime_api_key,
             )

@@ -69,8 +69,25 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# URL from env wins over the placeholder in alembic.ini
-database_url = os.environ.get("EOS_DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+# URL from env wins over the placeholder in alembic.ini.
+#
+# alembic runs OUTSIDE the main application process (a separate pod in
+# staging / prod), so it reads the raw ``EOS_DATABASE_URL`` env var
+# rather than going through the ``EOS_*_REF`` indirection. In
+# production this must be injected by an init container or the
+# secrets manager via the pod spec — never baked into alembic.ini.
+# We deliberately do not raise on a missing value here because the
+# local alembic.ini default (``postgresql+asyncpg://postgres:...
+# @localhost:5432/eos_dev``) is sufficient for sandbox / dev shells.
+database_url = os.environ.get("EOS_DATABASE_URL") or config.get_main_option(
+    "sqlalchemy.url"
+)
+if not database_url:
+    raise RuntimeError(
+        "EOS_DATABASE_URL is required for alembic. In prod this is "
+        "injected by the secrets manager / CSI driver; locally set "
+        "EOS_DATABASE_URL or configure sqlalchemy.url in alembic.ini."
+    )
 config.set_main_option("sqlalchemy.url", database_url)
 
 target_metadata = Base.metadata

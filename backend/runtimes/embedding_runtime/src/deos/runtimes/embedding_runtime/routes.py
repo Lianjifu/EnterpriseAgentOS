@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
@@ -60,8 +59,10 @@ def build_router() -> APIRouter:
     async def healthz(
         adapter: Annotated[EmbeddingAdapter, Depends(adapter_dependency)],
     ) -> HealthResponse:
+        from deos.runtimes.embedding_runtime.settings import get_settings
+
         return HealthResponse(
-            status="ok", provider=os.environ.get("EMBEDDING_PROVIDER", "noop")
+            status="ok", provider=get_settings().embedding_provider
         )
 
     return router

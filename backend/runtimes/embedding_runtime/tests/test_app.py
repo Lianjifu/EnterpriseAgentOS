@@ -77,14 +77,17 @@ def test_openai_app_embeds_via_mock_client() -> None:
 
 
 def test_openai_without_key_raises_at_startup() -> None:
-    # Reset module-level os.environ for this test
-    os.environ.pop("OPENAI_API_KEY", None)
-    with pytest.raises(RuntimeError, match="OPENAI_API_KEY required"):
+    # Reset module-level Settings cache + os.environ for this test
+    from deos.runtimes.embedding_runtime.settings import reset_settings_cache
+
+    os.environ.pop("EOS_OPENAI_API_KEY", None)
+    reset_settings_cache()
+    with pytest.raises(RuntimeError, match="EOS_OPENAI_API_KEY required"):
         create_app(provider="openai")
 
 
 def test_unknown_provider_raises() -> None:
-    with pytest.raises(RuntimeError, match="unknown EMBEDDING_PROVIDER"):
+    with pytest.raises(RuntimeError, match="unknown EOS_EMBEDDING_PROVIDER"):
         create_app(provider="bogus")
 
 

@@ -3,11 +3,16 @@
 Calls the ``embedding_runtime`` FastAPI service at ``POST /embed``.
 Production deployments use this; the openai adapter is for the
 embedding_runtime process itself when it talks to OpenAI directly.
+
+The adapter is fully injected — ``base_url`` / ``api_key`` come from
+the composition container which reads them through Settings
+(``EOS_EMBEDDING_RUNTIME_URL`` / ``EOS_EMBEDDING_RUNTIME_API_KEY``).
+We do NOT touch ``os.environ`` directly here so the ``EOS_*_REF``
+indirection that the main app uses actually wires through.
 """
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, field
 
 import httpx
@@ -67,8 +72,4 @@ class HttpEmbeddingAdapter(EmbeddingPort):
             self._client = None
 
 
-def default_base_url() -> str:
-    return os.environ.get("EMBEDDING_RUNTIME_URL", "http://127.0.0.1:8102")
-
-
-__all__ = ["HttpEmbeddingAdapter", "default_base_url"]
+__all__ = ["HttpEmbeddingAdapter"]

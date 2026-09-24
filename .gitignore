@@ -79,3 +79,19 @@ data/
 # (per doc/burn-in-preflight.md §A.4 — gitleaks G5 will catch any leak).
 infra/k8s/secret.yaml
 infra/k8s/staging/secret.yaml
+
+# ── Frontend (pnpm + Vite + TS) ────────────────────────────────────────────
+# Frontend lives under frontend/ — pnpm workspace with web/ + packages/*.
+# Source frontend/.gitignore handles package-local ignores; these root-level
+# patterns are a defense-in-depth layer for tooling that walks the repo root.
+frontend/**/node_modules/
+frontend/**/dist/
+frontend/**/*.tsbuildinfo
+frontend/**/.vite/
+frontend/**/coverage/
+frontend/**/.next/   # reserved for future Next.js migration
+frontend/**/.cache/
+frontend/web/.env.local
+frontend/web/.env.*.local
+frontend/**/*.log
+frontend/.DS_Store

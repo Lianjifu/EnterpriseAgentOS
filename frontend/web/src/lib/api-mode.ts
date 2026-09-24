@@ -1,0 +1,37 @@
+/**
+ * API 运行模式：默认走真实控制面（de-gateway）；仅当显式演示模式时注入本地 Handler。
+ * VITE_USE_DEMO=true 或兼容旧名 VITE_USE_MOCK=true。
+ */
+export function isDemoApiMode(): boolean {
+  return import.meta.env.VITE_USE_DEMO === 'true' || import.meta.env.VITE_USE_MOCK === 'true';
+}
+
+/** @deprecated 使用 isDemoApiMode */
+export function isMockApiMode(): boolean {
+  return isDemoApiMode();
+}
+
+function isLoopbackBase(url: string): boolean {
+  try {
+    const host = new URL(url).hostname;
+    return host === '127.0.0.1' || host === 'localhost' || host === '::1';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 开发态默认走同源 `/api`（Vite proxy → de-gateway :8089），避免浏览器/Cursor 沙箱
+ * 无法直连环回地址导致控制面读取失败。
+ * 需要直连时设置 `VITE_API_DIRECT=true` 并填写非空 `VITE_API_BASE`。
+ */
+export function apiBaseURL(): string {
+  const raw = (import.meta.env.VITE_API_BASE as string | undefined)?.trim();
+  const forceDirect = import.meta.env.VITE_API_DIRECT === 'true';
+
+  if (import.meta.env.DEV && !forceDirect) {
+    if (!raw || isLoopbackBase(raw)) return '';
+  }
+  if (!raw) return '';
+  return raw.replace(/\/$/, '');
+}

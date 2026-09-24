@@ -51,7 +51,7 @@ services:
     profiles: ["prod"]
 
   postgres:
-    image: postgres:16
+    image: pgvector/pgvector:pg16
     container_name: eos-postgres
     restart: unless-stopped
     environment:

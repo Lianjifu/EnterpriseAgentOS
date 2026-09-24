@@ -42,4 +42,42 @@ describe('translateApiPath', () => {
     const out = translateApiPath('/api/auth/login', 'GET');
     expect(out.method).toBe('POST');
   });
+
+  it('matches the longest prefix first', () => {
+    // /api/skills/governance/overview 应优先于 /api/skills/:id 命中
+    const out = translateApiPath('/api/skills/governance/overview', 'GET');
+    expect(out.backendPath).toBe('/v1/skills/governance/overview');
+  });
+
+  it('rewrites /api/skills/:id/install → /v1/skills/:id/install', () => {
+    const out = translateApiPath('/api/skills/sk-1/install', 'POST');
+    expect(out.backendPath).toBe('/v1/skills/sk-1/install');
+    expect(out.matched).toBe(true);
+  });
+
+  it('rewrites /api/workflows/:id/run → /v1/orchestration/plans/:id/runs', () => {
+    const out = translateApiPath('/api/workflows/wf-1/run', 'POST');
+    expect(out.backendPath).toBe('/v1/orchestration/plans/wf-1/runs');
+  });
+
+  it('rewrites /api/knowledge/doc/:id → /v1/knowledge/assets/:id', () => {
+    const out = translateApiPath('/api/knowledge/doc/kb-7', 'GET');
+    expect(out.backendPath).toBe('/v1/knowledge/assets/kb-7');
+  });
+
+  it('picks method-aware rule for same path', () => {
+    const get = translateApiPath('/api/memory/records', 'GET');
+    expect(get.backendPath).toBe('/v1/memories');
+    const post = translateApiPath('/api/memory/records', 'POST');
+    expect(post.backendPath).toBe('/v1/memories');
+    // GET /api/memory/records/:id/expire 没有单独条目,应 fallback 到 path 匹配
+    // (即走到 POST 规则,这是已知的 fallback 行为 —— 不静默改写)
+    const delete_ = translateApiPath('/api/memory/records', 'DELETE');
+    expect(delete_.matched).toBe(true);
+    expect(delete_.backendPath).toBe('/v1/memories');
+  });
+
+  it('rule count grows as we add batches', () => {
+    expect(_routeTableSize()).toBeGreaterThan(60);
+  });
 });

@@ -30,10 +30,19 @@ describe('applyResponseAdapter', () => {
     expect((out as { expiresAt: string }).expiresAt).toBe('2026-09-25T13:00:00Z');
   });
 
-  it('passes through unknown paths', () => {
-    const raw = { id: 'ws-1', name: 'Default', tenantId: 't-1' };
-    const out = applyResponseAdapter('GET', '/v1/identity/workspaces', raw);
-    expect(out).toEqual(raw);
+  it('passes through unknown paths but camelizes keys', () => {
+    const out = applyResponseAdapter('GET', '/v1/identity/workspaces', {
+      items: [
+        { tenant_id: 't-1', workspace_id: 'w-1', created_at: '2026-09-25' },
+      ],
+      total_count: 1,
+    });
+    expect(out).toEqual({
+      items: [
+        { tenantId: 't-1', workspaceId: 'w-1', createdAt: '2026-09-25' },
+      ],
+      totalCount: 1,
+    });
   });
 
   it('passes through non-object data unchanged', () => {
@@ -45,7 +54,41 @@ describe('applyResponseAdapter', () => {
   it('returns raw data when login response lacks access_token', () => {
     const raw = { code: 'E_AUTH_FAILED', message: 'bad password' };
     const out = applyResponseAdapter('POST', '/v1/identity/login', raw);
-    // 不强行捏造，交给上游 error 分支
+    // login 适配器 passthrough;后续 camelize 把 code/message 保持原样
     expect(out).toEqual(raw);
+  });
+
+  it('camelizes skill list response correctly', () => {
+    const raw = {
+      items: [
+        {
+          id: 'sk-1',
+          tenant_id: 't-1',
+          workspace_id: 'w-1',
+          name: 'echo',
+          version: '1.0.0',
+          parameters_schema: { type: 'object' },
+          created_at: '2026-09-25',
+          updated_at: '2026-09-25',
+        },
+      ],
+      total: 1,
+    };
+    const out = applyResponseAdapter('GET', '/v1/skills', raw);
+    expect(out).toEqual({
+      items: [
+        {
+          id: 'sk-1',
+          tenantId: 't-1',
+          workspaceId: 'w-1',
+          name: 'echo',
+          version: '1.0.0',
+          parametersSchema: { type: 'object' },
+          createdAt: '2026-09-25',
+          updatedAt: '2026-09-25',
+        },
+      ],
+      total: 1,
+    });
   });
 });

@@ -1,10 +1,13 @@
 /**
  * 后端响应 → 前端约定的形状适配器。
  *
- * 仅覆盖 proof-of-pattern 阶段已知的形状缺口；其余路径默认 passthrough，
- * 由消费方在编译期（@de/web-types）看到字段差异。
+ * 适配分两层:
+ * 1. **Per-path 适配** — 已知形状缺口(如 login)在这里写专门分支
+ * 2. **通用 snake_case → camelCase** — 所有响应过一遍 camelizeKeys,
+ *    避免每条路径单独写 adapter
  */
 import type { HttpMethod } from './pathMap';
+import { camelizeKeys } from './camelizeKeys';
 
 type AnyRecord = Record<string, unknown>;
 
@@ -49,20 +52,23 @@ function adaptLogin(rawData: unknown): LoginAdapterOutput | unknown {
 }
 
 const PASSTHROUGH = (raw: unknown): unknown => raw;
+void PASSTHROUGH;
 
 /**
  * 按 (method, path) 选 adapter。
- * `path` 应当是已 translate 过的后端路径，方便统一匹配。
+ * `path` 应当是已 translate 过的后端路径,方便统一匹配。
  */
 export function applyResponseAdapter(
   method: HttpMethod,
   path: string,
   rawData: unknown,
 ): unknown {
+  let adapted: unknown = rawData;
+  // Per-path 适配(数量少且形状特殊的端点)
   if (method === 'POST' && path === '/v1/identity/login') {
-    return adaptLogin(rawData);
+    adapted = adaptLogin(rawData);
   }
-  // 占位：后续补其他形状适配时在这里加分支
-  void PASSTHROUGH;
-  return rawData;
+  // 通用 snake_case → camelCase,适配后的对象再递归改 key
+  // (login adapter 已经是 camelCase 形状,这里 idempotent)
+  return camelizeKeys(adapted);
 }

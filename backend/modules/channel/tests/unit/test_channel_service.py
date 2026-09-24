@@ -16,28 +16,33 @@ from __future__ import annotations
 import hashlib
 import hmac
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 
+# ── Test doubles (shared fixture) ─────────────────────────────────────────
+from _channel_in_memory import (  # type: ignore[import-not-found]
+    CollectingPublisher,
+    FixedClock,
+    InMemoryChannelRepo,
+    InMemoryDeliveryRepo,
+    InMemorySecretRepo,
+    NoopCipher,
+    SequenceIds,
+)
+
 from deos.modules.channel.application.ports import (
-    ChannelDeliveryRepository,
-    ChannelRepository,
     InboundAdapter,
     OutboundAdapter,
     ParsedMessage,
     WebhookSecretCipher,
-    WebhookSecretRepository,
 )
 from deos.modules.channel.application.services import (
     DEFAULT_TIMESTAMP_TOLERANCE_SECONDS,
     ChannelService,
 )
 from deos.modules.channel.domain.entities import (
-    Channel,
-    ChannelDelivery,
     make_channel,
     make_inbound_delivery,
 )
@@ -59,132 +64,6 @@ from deos.modules.channel.domain.value_objects import (
     DeliveryStatus,
 )
 from eos_schema.ids import ChannelId, TenantId
-
-# ── Test doubles ──────────────────────────────────────────────────────────
-
-
-@dataclass(slots=True)
-class FixedClock:
-    fixed: datetime = field(default_factory=lambda: datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC))
-
-    def now(self) -> datetime:
-        return self.fixed
-
-
-@dataclass(slots=True)
-class SequenceIds:
-    _n: int = 0
-
-    def new_id(self) -> UUID:
-        self._n += 1
-        return UUID(int=self._n)
-
-
-@dataclass(slots=True)
-class CollectingPublisher:
-    events: list[tuple[str, dict[str, Any]]] = field(default_factory=list)
-
-    async def publish(
-        self,
-        event: object,
-        *,
-        tenant_id: TenantId,
-        workspace_id: UUID | None,
-        trace_id: str | None = None,
-    ) -> None:
-        topic = getattr(event, "TOPIC", type(event).__name__)
-        payload = getattr(event, "to_payload", lambda: {})()
-        self.events.append((topic, payload))
-
-
-@dataclass(slots=True)
-class NoopCipher:
-    def encrypt(self, plaintext: bytes) -> bytes:
-        return b"ENC:" + plaintext
-
-    def decrypt(self, blob: bytes) -> bytes:
-        if not blob.startswith(b"ENC:"):
-            raise ValueError("bad envelope")
-        return blob[4:]
-
-
-@dataclass(slots=True)
-class InMemoryChannelRepo(ChannelRepository):
-    rows: dict[UUID, Channel] = field(default_factory=dict)
-
-    async def add(self, channel: Channel) -> None:
-        self.rows[channel.id] = channel
-
-    async def get(self, *, tenant_id, channel_id):
-        row = self.rows.get(channel_id)
-        if row is None or row.tenant_id != tenant_id:
-            return None
-        return row
-
-    async def list(
-        self,
-        *,
-        tenant_id,
-        workspace_id=None,
-        enabled_only=False,
-        limit=100,
-    ):
-        items = [r for r in self.rows.values() if r.tenant_id == tenant_id]
-        if workspace_id is not None:
-            items = [r for r in items if r.workspace_id is None or r.workspace_id == workspace_id]
-        if enabled_only:
-            items = [r for r in items if r.status is ChannelStatus.ACTIVE]
-        return items[:limit]
-
-    async def update(self, channel):
-        self.rows[channel.id] = channel
-
-    async def delete(self, *, tenant_id, channel_id):
-        row = self.rows.get(channel_id)
-        if row is None or row.tenant_id != tenant_id:
-            return False
-        self.rows.pop(channel_id)
-        return True
-
-
-@dataclass(slots=True)
-class InMemoryDeliveryRepo(ChannelDeliveryRepository):
-    rows: dict[UUID, ChannelDelivery] = field(default_factory=dict)
-
-    async def add(self, delivery):
-        self.rows[delivery.id] = delivery
-
-    async def get(self, *, tenant_id, delivery_id):
-        row = self.rows.get(delivery_id)
-        if row is None or row.tenant_id != tenant_id:
-            return None
-        return row
-
-    async def list_for_channel(self, *, tenant_id, channel_id, limit=50):
-        return [
-            r for r in self.rows.values() if r.tenant_id == tenant_id and r.channel_id == channel_id
-        ][:limit]
-
-    async def update(self, delivery):
-        self.rows[delivery.id] = delivery
-
-
-@dataclass(slots=True)
-class InMemorySecretRepo(WebhookSecretRepository):
-    rows: dict[UUID, bytes] = field(default_factory=dict)
-    _counter: int = 0
-
-    async def add(self, *, tenant_id, channel_type, label, encrypted_payload, key_version=1):
-        self._counter += 1
-        sid = UUID(int=self._counter + 1000)
-        self.rows[sid] = encrypted_payload
-        return sid
-
-    async def get(self, *, tenant_id, secret_id):
-        return self.rows.get(secret_id)
-
-    async def delete(self, *, tenant_id, secret_id):
-        return self.rows.pop(secret_id, None) is not None
 
 
 @dataclass(slots=True)

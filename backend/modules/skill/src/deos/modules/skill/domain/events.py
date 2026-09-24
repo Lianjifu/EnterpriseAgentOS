@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+from eos_kernel.events import DomainEvent
 from eos_schema.ids import (
     SkillId,
     SkillInstallId,
@@ -56,12 +57,6 @@ def _workspace_id() -> WorkspaceId:
 
 def _user_id() -> UserId:
     return UserId(uuid4())
-
-
-@dataclass(slots=True, frozen=True)
-class DomainEvent:
-    occurred_at: datetime = field(default_factory=_utcnow)
-    event_id: UUID = field(default_factory=uuid4)
 
 
 @dataclass(slots=True, frozen=True)

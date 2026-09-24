@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from uuid import UUID, uuid4
 
+from eos_kernel.events import DomainEvent
 from eos_schema.ids import (
     EvolveCandidateId,
     TenantId,
@@ -19,7 +20,7 @@ from deos.modules.self_evolution.domain.value_objects import (
 
 
 @dataclass(slots=True, frozen=True)
-class EvolutionCandidateCreated:
+class EvolutionCandidateCreated(DomainEvent):
     candidate_id: EvolveCandidateId
     tenant_id: TenantId
     kind: EvolveKind
@@ -31,7 +32,7 @@ class EvolutionCandidateCreated:
 
 
 @dataclass(slots=True, frozen=True)
-class EvolutionCandidateDecided:
+class EvolutionCandidateDecided(DomainEvent):
     candidate_id: EvolveCandidateId
     tenant_id: TenantId
     approver_id: UserId
@@ -42,7 +43,7 @@ class EvolutionCandidateDecided:
 
 
 @dataclass(slots=True, frozen=True)
-class EvolutionCandidateApplied:
+class EvolutionCandidateApplied(DomainEvent):
     candidate_id: EvolveCandidateId
     tenant_id: TenantId
     kind: EvolveKind

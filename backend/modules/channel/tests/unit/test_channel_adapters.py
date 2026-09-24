@@ -174,3 +174,132 @@ def test_build_cipher_from_env_requires_key() -> None:
 def test_aes_gcm_cipher_rejects_bad_key_len() -> None:
     with pytest.raises(ValueError):
         AesGcmWebhookCipher(key=b"too-short")
+
+
+# ── WeChatWork outbound crypto + send flow ───────────────────────────────
+
+
+import base64
+from unittest.mock import AsyncMock, MagicMock
+
+from deos.modules.channel.adapter.outbound import WeChatWorkOutboundAdapter
+from deos.modules.channel.domain.errors import ChannelDeliveryFailed
+
+
+def test_wechatwork_send_reply_unconfigured_raises() -> None:
+    """No corp triple → structured failure."""
+    import httpx
+
+    adapter = WeChatWorkOutboundAdapter(http=httpx.AsyncClient())
+    with pytest.raises(ChannelDeliveryFailed, match="not configured"):
+        import asyncio
+
+        asyncio.run(
+            adapter.send_reply(
+                external_chat_id="user_1",
+                text="hi",
+                metadata={},
+            )
+        )
+
+
+def test_wechatwork_encrypt_round_trip() -> None:
+    """AES-256-CBC encrypt must round-trip when given the right key."""
+    import asyncio
+
+    from deos.modules.channel.adapter.outbound.wechatwork import (
+        _aes_encrypt,
+    )
+
+    key = b"k" * 32
+    blob = _aes_encrypt(b"hello", key)
+    assert isinstance(blob, str)
+    raw = base64.b64decode(blob)
+    assert len(raw) % 16 == 0
+    # decrypt with raw AES-CBC to confirm plaintext matches
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+    cipher = Cipher(algorithms.AES(key), modes.CBC(key[:16]), backend=default_backend())
+    decryptor = cipher.decryptor()
+    padded = decryptor.update(raw) + decryptor.finalize()
+    pad_len = padded[-1]
+    assert padded[:-pad_len] == b"hello"
+
+
+def test_wechatwork_compute_signature_sha1_sorted() -> None:
+    from deos.modules.channel.adapter.outbound.wechatwork import (
+        _compute_signature,
+    )
+
+    sig = _compute_signature("tok", "123", "nonce", "enc")
+    # SHA1 of "123tokenncetok1234" — pins the wire-level contract
+    import hashlib
+
+    expected = hashlib.sha1(("".join(sorted(["tok", "123", "nonce", "enc"]))).encode()).hexdigest()
+    assert sig == expected
+
+
+def test_wechatwork_send_happy_path() -> None:
+    """End-to-end: gettoken + send succeed, return msg id."""
+    import asyncio
+
+    import httpx
+
+    key_b64 = base64.b64encode(b"k" * 32).decode("ascii").rstrip("=")
+    transport = httpx.MockTransport(
+        AsyncMock(
+            side_effect=[
+                httpx.Response(
+                    200,
+                    json={"access_token": "tok123", "expires_in": 7200},
+                ),
+                httpx.Response(
+                    200,
+                    text='<xml><ErrorCode>0</ErrorCode><ErrorMsg>ok</ErrorMsg><MsgId>mm_42</MsgId></xml>',
+                ),
+            ]
+        )
+    )
+    http = httpx.AsyncClient(transport=transport)
+    adapter = WeChatWorkOutboundAdapter(
+        http=http,
+        corp_id="wxcorp",
+        corp_secret="sec",
+        agent_id="1000002",
+        encoding_aes_key=key_b64,
+        token="check",
+    )
+    msg_id = asyncio.run(
+        adapter.send_reply(
+            external_chat_id="user_1",
+            text="hello",
+            metadata={},
+        )
+    )
+    assert msg_id == "mm_42"
+
+
+def test_wechatwork_send_rejects_missing_token() -> None:
+    """EncodingAESKey present but no token → structured failure."""
+    import asyncio
+
+    import httpx
+
+    key_b64 = base64.b64encode(b"k" * 32).decode("ascii").rstrip("=")
+    adapter = WeChatWorkOutboundAdapter(
+        http=httpx.AsyncClient(),
+        corp_id="wxcorp",
+        corp_secret="sec",
+        agent_id="1000002",
+        encoding_aes_key=key_b64,
+        token="",
+    )
+    with pytest.raises(ChannelDeliveryFailed, match="missing token"):
+        asyncio.run(
+            adapter.send_reply(
+                external_chat_id="user_1",
+                text="hi",
+                metadata={},
+            )
+        )

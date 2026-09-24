@@ -483,18 +483,78 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     def _sub_agent_for_evaluation(ar_factory):  # type: ignore[no-untyped-def]
         """Return the SubAgentPort used to drive evaluation cases.
 
-        In production this would build a RuntimeSubAgentPort that opens
-        a short-lived agent_runtime session per case.  For P8-5 we ship
-        the stub — heuristic scoring will fail most cases until the
-        full runtime adapter lands in P8-6; the gate wiring itself
-        (pass / fail / no_eval) is what P8-5 validates.
+        Wire to the real ``RealSubAgentPort`` when the agent_runtime
+        factory is available; fall back to the deterministic stub when
+        it is not (legacy dev shells, missing ``EOS_MODEL_MASTER_KEY``,
+        boot in a slim test harness). Heuristic scoring against the stub
+        will fail most cases — the gate wiring (pass / fail / no_eval)
+        still validates the lifecycle.
         """
-        from deos.modules.evaluation.adapter.sub_agent_stub import (
-            StubSubAgentPort,
+        if ar_factory is None:
+            from deos.modules.evaluation.adapter.sub_agent_stub import (
+                StubSubAgentPort,
+            )
+
+            return StubSubAgentPort()
+
+        from deos.modules.evaluation.adapter.agent_factory_adapter import (
+            EvaluationServiceAdapter,
         )
 
-        _ = ar_factory  # reserved for P8-6
-        return StubSubAgentPort()
+        sf_for_query = container.session_factory().maker()
+        agent_factory = EvaluationServiceAdapter(
+            run_repository=SqlEvalRunRepository(sf_for_query),
+            score_threshold=container.settings.agent_factory_eval_score_min,
+        )
+        return _PerCaseRealSubAgent(
+            container=container,
+            agent_factory=agent_factory,
+        )
+
+    class _PerCaseRealSubAgent:
+        """Builds a fresh AgentRuntimeService per case so each eval turn
+        gets an isolated session + connection pool. The AgentRuntimeService
+        is composed from the live container bus + session factory."""
+
+        def __init__(self, *, container, agent_factory) -> None:  # type: ignore[no-untyped-def]
+            self._container = container
+            self._agent_factory = agent_factory
+
+        async def run_turn_to_completion(self, **kwargs):  # type: ignore[no-untyped-def]
+            from deos.modules.agent_runtime.adapter.events import (
+                AgentRuntimeEventPublisher,
+            )
+            from deos.modules.agent_runtime.adapter.llm import LLMPortAdapter
+            from deos.modules.agent_runtime.adapter.persistence.repositories import (
+                SqlSessionRepository,
+                SqlTurnRepository,
+            )
+            from deos.modules.agent_runtime.application.services import (
+                AgentRuntimeService,
+            )
+            from deos.modules.evaluation.adapter.sub_agent_real import (
+                RealSubAgentPort,
+            )
+
+            sf = self._container.session_factory().maker()
+            # model_service() raises if EOS_MODEL_MASTER_KEY is unset;
+            # LLMPortAdapter degrades to the default client on None.
+            try:
+                model_service = self._container.model_service()
+            except RuntimeError:
+                model_service = None
+            llm = LLMPortAdapter(self._container.llm_client(), model_service=model_service)
+            runtime = AgentRuntimeService(
+                sessions=SqlSessionRepository(sf),
+                turns=SqlTurnRepository(sf),
+                llm=llm,
+                events=AgentRuntimeEventPublisher(self._container.bus()),
+            )
+            adapter = RealSubAgentPort(
+                runtime=runtime,
+                agent_factory=self._agent_factory,
+            )
+            return await adapter.run_turn_to_completion(**kwargs)
 
     app.state.evaluation_service_factory = _EvaluationFactory()
 

@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
+from eos_kernel.events import DomainEvent
 from eos_schema.ids import CredentialId, ModelId, TenantId, UserId
 
 
@@ -19,7 +20,7 @@ def _utcnow() -> datetime:
 
 
 @dataclass(slots=True, frozen=True)
-class ModelRegistered:
+class ModelRegistered(DomainEvent):
     tenant_id: TenantId
     actor_id: UserId | None
     model_id: ModelId
@@ -41,7 +42,7 @@ class ModelRegistered:
 
 
 @dataclass(slots=True, frozen=True)
-class ModelInvoked:
+class ModelInvoked(DomainEvent):
     tenant_id: TenantId
     actor_id: UserId | None
     model_id: ModelId
@@ -71,7 +72,7 @@ class ModelInvoked:
 
 
 @dataclass(slots=True, frozen=True)
-class ModelQuotaExceeded:
+class ModelQuotaExceeded(DomainEvent):
     tenant_id: TenantId
     actor_id: UserId | None
     model_id: ModelId
@@ -95,7 +96,7 @@ class ModelQuotaExceeded:
 
 
 @dataclass(slots=True, frozen=True)
-class ModelCredentialRotated:
+class ModelCredentialRotated(DomainEvent):
     tenant_id: TenantId
     actor_id: UserId | None
     credential_id: CredentialId

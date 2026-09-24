@@ -205,6 +205,11 @@ class Settings(BaseSettings):
     platform_seed_office_skill_packs: bool = True
     platform_office_skill_packs_root: str = "packs/office/skills"
 
+    # A4 self-evolution — kind-specific ApplyGuard draft surface
+    # (one JSONL per (tenant, kind); atomic append + fsync).
+    evolution_drafts_dir: str = "var/evolution/drafts"
+    evolution_apply_guard_mode: Literal["drafts", "direct"] = "drafts"
+
     # P6 model
     model_master_key: str = ""
     model_master_key_version: int = 1

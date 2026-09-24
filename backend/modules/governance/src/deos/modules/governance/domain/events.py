@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
+from eos_kernel.events import DomainEvent
 from eos_schema.ids import (
     ApprovalId,
     AuditLogId,
@@ -30,7 +31,7 @@ def _utcnow() -> datetime:
 
 
 @dataclass(slots=True, frozen=True)
-class PolicyCreated:
+class PolicyCreated(DomainEvent):
     tenant_id: TenantId
     actor_id: UserId
     rule_id: PolicyId
@@ -46,7 +47,7 @@ class PolicyCreated:
 
 
 @dataclass(slots=True, frozen=True)
-class PolicyUpdated:
+class PolicyUpdated(DomainEvent):
     tenant_id: TenantId
     actor_id: UserId
     rule_id: PolicyId
@@ -61,7 +62,7 @@ class PolicyUpdated:
 
 
 @dataclass(slots=True, frozen=True)
-class PolicyDeleted:
+class PolicyDeleted(DomainEvent):
     tenant_id: TenantId
     actor_id: UserId
     rule_id: PolicyId
@@ -75,7 +76,7 @@ class PolicyDeleted:
 
 
 @dataclass(slots=True, frozen=True)
-class ApprovalRequested:
+class ApprovalRequested(DomainEvent):
     tenant_id: TenantId
     requester_id: UserId
     approval_id: ApprovalId
@@ -91,7 +92,7 @@ class ApprovalRequested:
 
 
 @dataclass(slots=True, frozen=True)
-class ApprovalDecided:
+class ApprovalDecided(DomainEvent):
     tenant_id: TenantId
     approver_id: UserId
     approval_id: ApprovalId
@@ -106,7 +107,7 @@ class ApprovalDecided:
 
 
 @dataclass(slots=True, frozen=True)
-class DecisionRecorded:
+class DecisionRecorded(DomainEvent):
     tenant_id: TenantId
     actor_id: UserId
     action: str
@@ -124,7 +125,7 @@ class DecisionRecorded:
 
 
 @dataclass(slots=True, frozen=True)
-class AuditLogAppended:
+class AuditLogAppended(DomainEvent):
     tenant_id: TenantId
     actor_id: UserId | None
     event_type: str

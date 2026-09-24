@@ -37,8 +37,45 @@ class Container:
         self._kv_resolver: HashicorpVaultSecretsResolver | None = None
         self._knowledge_vetter: object | None = None
         self._plan_vetter: object | None = None
+        # Fail-loud prod gate — same pattern as
+        # ``model_credential_cipher`` raising on missing
+        # ``EOS_MODEL_MASTER_KEY``.  Runs before any service is built so
+        # the boot never gets far with a misconfigured prod secret.
+        if settings.env == "production":
+            self._validate_production_secrets(settings)
 
     # ── infra ───────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _validate_production_secrets(settings: Settings) -> None:
+        """Boot-time fail-loud check for prod secrets that still hold the
+        development defaults.  Mirrors ``model_credential_cipher`` raising
+        on missing ``EOS_MODEL_MASTER_KEY`` — explicit fail beats silent
+        misconfig.  Only fires when ``settings.env == "production"``.
+
+        Anything starting with ``dev-`` (case-insensitive) is treated as
+        a development sentinel.  Operators must set every secret to a
+        non-sentinel value before the prod pod starts.
+        """
+        sentinel_prefixes = ("dev-", "dev_")
+        checks: tuple[tuple[str, str], ...] = (
+            ("EOS_JWT_SECRET", settings.jwt_secret),
+            ("EOS_RUN_TOKEN_SECRET", settings.run_token_secret),
+            ("EOS_DEV_ADMIN_PASSWORD", settings.dev_admin_password),
+        )
+        offenders: list[str] = []
+        for name, value in checks:
+            stripped = value.strip()
+            if not stripped or stripped.lower().startswith(sentinel_prefixes):
+                offenders.append(name)
+        if offenders:
+            joined = ", ".join(offenders)
+            raise RuntimeError(
+                f"production env refuses to boot with development secrets: {joined}. "
+                "Set EOS_JWT_SECRET / EOS_RUN_TOKEN_SECRET / EOS_DEV_ADMIN_PASSWORD to "
+                "real values via the EOS_*_REF indirection or your secrets manager."
+            )
+
     def engine(self):
         return create_engine(
             self.settings.database_url,
@@ -317,6 +354,28 @@ class Container:
 
         return MessagingEventPublisher(self.bus())
 
+    def model_event_publisher(self):
+        """Adapter that wraps the bus for the P6 model module's
+        ``(topic, payload)``-shaped publisher protocol."""
+        from deos.modules.model.adapter.events import (
+            MessagingModelEventPublisher,
+        )
+
+        return MessagingModelEventPublisher(self.bus())
+
+    def channel_event_publisher(self):
+        """Adapter that wraps the bus for the P6 channel module's
+        ``(event, *, tenant_id, workspace_id, trace_id)``-shaped
+        publisher protocol. Channel events flow through
+        ``EventEnvelope.wrap`` so their ``event_name`` is the
+        PascalCase class name — matching the audit recorder's
+        PascalCase subscription keys."""
+        from deos.modules.channel.adapter.events import (
+            MessagingChannelEventPublisher,
+        )
+
+        return MessagingChannelEventPublisher(self.bus())
+
     def audit_recorder(self):
         """Construct the governance AuditRecorder bound to the live bus.
 
@@ -457,25 +516,37 @@ class Container:
     def evolution_service(self):
         """Self-evolution candidate service (A4).
 
-        Default ``DirectApplyGuard`` is a placeholder — production deploys
-        must swap it for a kind-specific guard (memory working layer,
-        skill draft, routing draft) before exposing ``/v1/evolve/*``.
+        Wires the kind-dispatching :class:`ApplyGuard` so each candidate
+        is written to its kind-specific draft surface (memory working
+        layer / skill draft / routing draft / dream artifacts) instead
+        of touching any live production table. Set
+        ``EOS_EVOLUTION_APPLY_GUARD_MODE=direct`` to fall back to the
+        no-op ``DirectApplyGuard`` (e.g. for ephemeral CI).
         """
         from deos.modules.self_evolution.adapter.persistence.repositories import (
             SqlEvolutionCandidateRepository,
         )
         from deos.modules.self_evolution.application.apply_guard import (
             DirectApplyGuard,
+            JsonlDraftStore,
+            KindDispatchingApplyGuard,
         )
         from deos.modules.self_evolution.application.evolution_service import (
             EvolutionCandidateService,
         )
 
+        if self.settings.evolution_apply_guard_mode == "direct":
+            guard: object = DirectApplyGuard()
+        else:
+            guard = KindDispatchingApplyGuard(
+                store=JsonlDraftStore(base_dir=self.settings.evolution_drafts_dir),
+            )
+
         return EvolutionCandidateService(
             repo=SqlEvolutionCandidateRepository(self.session_factory().maker()),
             clock=self.clock(),
             ids=self.id_generator(),
-            apply_guard=DirectApplyGuard(),
+            apply_guard=guard,  # type: ignore[arg-type]
             publisher=self.messaging_event_publisher(),
             default_ttl_seconds=3600,
         )
@@ -601,7 +672,7 @@ class Container:
             cipher=self.model_credential_cipher(),
             clock=self.clock(),
             ids=self.id_generator(),
-            publisher=self.messaging_event_publisher(),
+            publisher=self.model_event_publisher(),
         )
 
     # ── P6 channel ──────────────────────────────────────────────────────────
@@ -663,7 +734,15 @@ class Container:
                 webhook_url="",
                 request_timeout_seconds=timeout,
             ),
-            ChannelType.WECHATWORK: WeChatWorkOutboundAdapter(),
+            ChannelType.WECHATWORK: WeChatWorkOutboundAdapter(
+                http=http,
+                corp_id="",
+                corp_secret="",
+                agent_id="",
+                encoding_aes_key="",
+                token="",
+                request_timeout_seconds=timeout,
+            ),
             ChannelType.WEB: WebOutboundAdapter(
                 http=http,
                 webhook_url=None,
@@ -698,5 +777,5 @@ class Container:
             cipher=cipher,
             clock=self.clock(),
             ids=self.id_generator(),
-            publisher=self.messaging_event_publisher(),
+            publisher=self.channel_event_publisher(),
         )

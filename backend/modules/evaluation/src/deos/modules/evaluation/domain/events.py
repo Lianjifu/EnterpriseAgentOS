@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
+from eos_kernel.events import DomainEvent
 from eos_schema.ids import (
     AgentTemplateId,
     AgentVersionId,
@@ -17,7 +18,7 @@ from eos_schema.ids import (
 
 
 @dataclass(slots=True, frozen=True)
-class EvalRunStarted:
+class EvalRunStarted(DomainEvent):
     """Emitted when an EvalRun transitions QUEUED → RUNNING."""
 
     TOPIC = "evaluation.run.started"
@@ -34,7 +35,7 @@ class EvalRunStarted:
 
 
 @dataclass(slots=True, frozen=True)
-class EvalRunCompleted:
+class EvalRunCompleted(DomainEvent):
     """Emitted when an EvalRun reaches a terminal status."""
 
     TOPIC = "evaluation.run.completed"
@@ -54,7 +55,7 @@ class EvalRunCompleted:
 
 
 @dataclass(slots=True, frozen=True)
-class EvalRunFailed:
+class EvalRunFailed(DomainEvent):
     """Emitted when the runner itself errors before completion."""
 
     TOPIC = "evaluation.run.failed"

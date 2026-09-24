@@ -1,11 +1,24 @@
 """AuditRecorder — subscribes to business events and persists them to audit_log.
 
 Subscribed topics (set by lifespan wiring):
-- ``agent.turn.started`` / ``agent.turn.completed``
+- ``agent.turn.started`` / ``agent.turn.completed`` / ``agent.turn.failed``
 - ``tool.execution.started`` / ``tool.execution.completed`` / ``tool.execution.failed``
-- ``skill.invocation.started`` / ``skill.invocation.completed``
-- ``memory.written`` / ``memory.revoked``
+- ``tool.invoked`` / ``tool.registered`` / ``tool.updated`` / ``tool.deleted`` / ``tool.completed``
+- ``skill.invocation.queued`` / ``skill.invocation.started`` / ``skill.invocation.completed``
+- ``skill.installed`` / ``skill.disabled`` / ``skill.install_failed``
+- ``skill.registered`` / ``skill.updated``
+- ``memory.written`` / ``memory.revoked`` / ``memory.expired_purged``
 - ``governance.policy.*`` / ``governance.approval.*`` / ``governance.decision.*``
+- ``governance.evolution.candidate.*``  (self-evolution)
+- ``model.registered`` / ``model.invoked`` / ``model.quota_exceeded`` / ``model.credential_rotated``
+- ``channel.message.received`` / ``channel.reply.sent`` / ``channel.webhook.rejected``
+- ``orchestration.plan.created`` / ``orchestration.run.started`` / ``orchestration.run.completed`` / ``orchestration.step.completed``
+- ``knowledge.asset.ingested`` / ``knowledge.asset.revoked`` / ``knowledge.asset.uploaded``
+- ``knowledge.package.created`` / ``knowledge.package.revoked``
+- ``agent_factory.template.created`` / ``agent_factory.version.published`` / ``agent_factory.version.released``
+- ``evaluation.run.started`` / ``evaluation.run.completed`` / ``evaluation.run.failed``
+- ``identity.tenant.created`` / ``identity.user.registered`` / ``identity.apikey.issued`` / ``identity.apikey.revoked``
+- ``identity.session.opened`` / ``identity.session.closed``
 
 The recorder is intentionally side-effect-only — never raises back to
 the EventBus handler.  A failing audit write is logged at ``warning``
@@ -144,25 +157,98 @@ def _scrub(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def build_default_topics() -> tuple[str, ...]:
+    # Single source of truth for what gets persisted to audit_log.
+    # Add new topics here AND in the module docstring above.
+    #
+    # Two naming conventions co-exist:
+    #   * PascalCase class names — envelopes produced via
+    #     ``EventEnvelope.wrap(event)`` (skill, model, evaluation,
+    #     self_evolution, agent_runtime, identity, memory, tool,
+    #     agent_factory, knowledge, orchestration). The wrapper sets
+    #     ``event_name = type(event).__name__``.
+    #   * lowercase dotted — envelopes produced by
+    #     ``governance.adapter.events.MessagingEventPublisher`` which
+    #     copies the literal topic string into ``event_name``.
+    # Keep this list in sync with the actual ``event_name`` values
+    # the bus will see; otherwise audit handlers silently miss events.
     return (
-        "agent.turn.started",
-        "agent.turn.completed",
-        "agent.turn.failed",
-        "tool.execution.started",
-        "tool.execution.completed",
-        "tool.execution.failed",
-        "skill.invocation.started",
-        "skill.invocation.completed",
-        "skill.invocation.failed",
-        "memory.written",
-        "memory.revoked",
-        "memory.expired_purged",
+        # agent_runtime
+        "SessionOpened",
+        "SessionClosed",
+        "TurnStarted",
+        "TurnCompleted",
+        "TurnFailed",
+        # tool
+        "ToolRegistered",
+        "ToolUpdated",
+        "ToolDeleted",
+        "ToolInvoked",
+        "ToolCompleted",
+        "ToolFailed",
+        # skill
+        "SkillRegistered",
+        "SkillUpdated",
+        "SkillDisabled",
+        "SkillInstalled",
+        "SkillInstallFailed",
+        "SkillInvocationQueued",
+        "SkillInvocationStarted",
+        "SkillInvocationCompleted",
+        # memory
+        "MemoryWritten",
+        "MemoryRevoked",
+        "MemoryExpiredPurged",
+        # governance — lowercase dotted (MessagingEventPublisher copies
+        # the topic string verbatim into event_name)
         "governance.policy.created",
         "governance.policy.updated",
         "governance.policy.deleted",
         "governance.approval.requested",
         "governance.approval.decided",
         "governance.decision.recorded",
+        "governance.audit.appended",
+        # self_evolution (publisher wraps via EventEnvelope.wrap →
+        # PascalCase; domain convention lives under governance.* by
+        # routing, but the wire-level event_name is the class name)
+        "EvolutionCandidateCreated",
+        "EvolutionCandidateDecided",
+        "EvolutionCandidateApplied",
+        # model — publisher wraps via (topic, payload) and copies
+        # the topic string verbatim into event_name; TOPIC constants
+        # on each Model* event class use lowercase dotted strings.
+        "model.registered",
+        "model.invoked",
+        "model.quota_exceeded",
+        "model.credential_rotated",
+        # channel (EventEnvelope.wrap → PascalCase)
+        "ChannelMessageReceived",
+        "ChannelReplySent",
+        "ChannelWebhookRejected",
+        # orchestration (EventEnvelope.wrap → PascalCase)
+        "PlanCreated",
+        "WorkflowRunStarted",
+        "WorkflowRunCompleted",
+        "WorkflowStepCompleted",
+        # knowledge (EventEnvelope.wrap → PascalCase)
+        "KnowledgePackageCreated",
+        "KnowledgeAssetUploaded",
+        "KnowledgeAssetIngested",
+        "KnowledgeAssetRevoked",
+        "KnowledgePackageRevoked",
+        # agent_factory (EventEnvelope.wrap → PascalCase)
+        "AgentTemplateCreated",
+        "AgentVersionPublished",
+        "AgentReleased",
+        # evaluation (EventEnvelope.wrap → PascalCase)
+        "EvalRunStarted",
+        "EvalRunCompleted",
+        "EvalRunFailed",
+        # identity (EventEnvelope.wrap → PascalCase)
+        "TenantCreated",
+        "WorkspaceCreated",
+        "UserRegistered",
+        "APIKeyIssued",
+        "APIKeyRevoked",
     )
 
 

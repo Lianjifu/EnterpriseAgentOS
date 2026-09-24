@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from deos.modules.platform.application.ports import (
+    CostRecordRepository,
     PlanRepository,
     PlatformEventPublisher,
     SubscriptionRepository,
@@ -31,6 +32,11 @@ class PlatformService:
     subscription_repo: SubscriptionRepository
     setting_repo: TenantSettingRepository
     publisher: PlatformEventPublisher | None = None
+    # Optional — set by the composition root when observability is
+    # wired. ``aggregate_costs`` falls back to an empty list when
+    # missing (keeps the platform HTTP surface alive even in tests
+    # that don't boot observability).
+    cost_repo: CostRecordRepository | None = None
     _use_cases: dict[str, Callable[..., Awaitable[Any]]] = field(
         default_factory=dict, repr=False
     )
@@ -43,12 +49,14 @@ class PlatformService:
         subscription_repo: SubscriptionRepository,
         setting_repo: TenantSettingRepository,
         publisher: PlatformEventPublisher | None = None,
+        cost_repo: CostRecordRepository | None = None,
     ) -> PlatformService:
         return cls(
             plan_repo=plan_repo,
             subscription_repo=subscription_repo,
             setting_repo=setting_repo,
             publisher=publisher,
+            cost_repo=cost_repo,
         )
 
     def __post_init__(self) -> None:

@@ -1,11 +1,14 @@
-"""aggregate_costs — placeholder kept for parity with observability HTTP.
+"""aggregate_costs — tenant spend roll-up backed by observability.
 
-platform v1 has no cost source.  Returns an empty list; reserved so
-that platform can be extended in P10+ to mirror per-plan usage rollup.
+Platform reads aggregated cost data through its
+:class:`CostRecordRepository` port. The bridge forwards to the
+observability module's SQL repository so platform never depends on
+observability's adapter internals — it only knows the protocol.
 """
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -17,11 +20,32 @@ def build(service: PlatformService) -> Any:
         *,
         tenant_id: object,
         group_by: str = "cost_type",
-        since: object | None = None,
-        until: object | None = None,
+        since: datetime | None = None,
+        until: datetime | None = None,
+        workspace_id: object | None = None,
     ) -> list[dict[str, object]]:
-        _ = (service, tenant_id, group_by, since, until)
-        return []
+        repo = service.cost_repo
+        if repo is None:
+            # Cost source not wired (observability disabled in this
+            # deployment). Return an empty result so the HTTP handler
+            # still answers 200; the operator can see the gap in
+            # monitoring instead of receiving a 503.
+            return []
+        if group_by == "workspace":
+            rows = await repo.sum_by_workspace(
+                tenant_id=tenant_id,
+                since=since,
+                until=until,
+            )
+        else:
+            # default — cost_type
+            rows = await repo.sum_by_cost_type(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                since=since,
+                until=until,
+            )
+        return [dict(row) for row in rows]
 
     return aggregate
 

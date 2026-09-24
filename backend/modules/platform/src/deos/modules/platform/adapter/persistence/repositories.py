@@ -5,14 +5,23 @@
   ``tenant_id`` enforces one sub per tenant
 - :class:`SqlTenantSettingRepository` — ``tenant_settings`` table, UQ
   ``(tenant_id, key)`` enforces idempotent upsert
+- :class:`ObservabilityCostRepositoryBridge` — implements the
+  platform ``CostRecordRepository`` port by forwarding to the
+  observability module's :class:`SqlCostRecordRepository`. This
+  keeps the cross-module dependency at the adapter edge (no
+  observability → platform import inversion).
 """
 
 from __future__ import annotations
+
+from datetime import datetime
+from typing import Any
 
 from eos_schema.ids import (
     PlanId,
     SubscriptionId,
     TenantId,
+    WorkspaceId,
 )
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -214,7 +223,64 @@ class SqlTenantSettingRepository(TenantSettingRepository):
         return tenant_setting_to_domain(existing)
 
 
+# ── Cost bridge ─────────────────────────────────────────────────────────
+
+
+class ObservabilityCostRepositoryBridge:
+    """Forwards to ``observability_module.SqlCostRecordRepository``.
+
+    Platform depends only on its own :class:`CostRecordRepository`
+    Protocol — the composition root wires this bridge so platform can
+    roll up tenant spend without importing the observability module
+    at the application layer.
+    """
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+        self._inner: Any = None
+
+    def _get_inner(self) -> Any:
+        if self._inner is None:
+            # Imported lazily so platform boots even when observability
+            # is absent (e.g. lightweight test profiles).
+            from deos.modules.observability_module.adapter.persistence.repositories import (
+                SqlCostRecordRepository,
+            )
+
+            self._inner = SqlCostRecordRepository(self._session)
+        return self._inner
+
+    async def sum_by_cost_type(
+        self,
+        *,
+        tenant_id: TenantId,
+        workspace_id: WorkspaceId | None = None,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> list[dict[str, Any]]:
+        return await self._get_inner().sum_by_cost_type(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            since=since,
+            until=until,
+        )
+
+    async def sum_by_workspace(
+        self,
+        *,
+        tenant_id: TenantId,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> list[dict[str, Any]]:
+        return await self._get_inner().sum_by_workspace(
+            tenant_id=tenant_id,
+            since=since,
+            until=until,
+        )
+
+
 __all__ = [
+    "ObservabilityCostRepositoryBridge",
     "SqlPlanRepository",
     "SqlSubscriptionRepository",
     "SqlTenantSettingRepository",

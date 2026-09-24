@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from datetime import datetime
+from typing import Any, Protocol, runtime_checkable
 
 from eos_schema.ids import (
     PlanId,
     SubscriptionId,
     TenantId,
+    WorkspaceId,
 )
 
 from deos.modules.platform.domain.entities import (
@@ -50,7 +52,36 @@ class PlatformEventPublisher(Protocol):
     async def publish(self, event: object) -> None: ...
 
 
+@runtime_checkable
+class CostRecordRepository(Protocol):
+    """Cross-module port — backed by the observability module's
+    ``CostRecordRepository`` so platform can roll up tenant spend
+    without importing observability's adapter layer.
+
+    Concrete impl lives in ``adapter/persistence/cost_repo_bridge.py``
+    — it forwards to a SQL-backed observability session.
+    """
+
+    async def sum_by_cost_type(
+        self,
+        *,
+        tenant_id: TenantId,
+        workspace_id: WorkspaceId | None = None,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> list[dict[str, Any]]: ...
+
+    async def sum_by_workspace(
+        self,
+        *,
+        tenant_id: TenantId,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> list[dict[str, Any]]: ...
+
+
 __all__ = [
+    "CostRecordRepository",
     "PlanRepository",
     "PlatformEventPublisher",
     "SubscriptionRepository",

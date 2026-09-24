@@ -1,8 +1,15 @@
 """InstallSkillUseCase — issue RunToken + persist SkillInstall row.
 
+Re-verifies the package signature + image digest before issuing the
+run-token. This catches drift between the registration-time vet and
+the live pack (e.g. the trust store rotated a key in between, or the
+image was re-pulled from the registry with a different digest).
+
 The install status is INSTALLED on success. Failure paths:
   - SkillDisabled → 409
   - SkillNotFound → 404
+  - SkillSignatureInvalid / SkillSignerUntrusted → 422
+  - SkillImageDigestMismatch → 422
   - SkillInstallFailed → 422 (sandbox could not start / verify)
 """
 
@@ -17,6 +24,7 @@ from deos.modules.skill.application.ports import (
     SkillEventPublisher,
     UnitOfWork,
 )
+from deos.modules.skill.application.vetter import SkillVetter
 from deos.modules.skill.domain.entities import (
     SkillInstall,
     SkillInstallStatus,
@@ -47,6 +55,7 @@ class InstallSkillUseCase:
     uow_factory: type[UnitOfWork]
     publisher: SkillEventPublisher
     run_token_issuer: RunTokenIssuer
+    vetter: SkillVetter | None = None
     run_token_ttl_seconds: int = 300
 
     async def execute(
@@ -67,6 +76,15 @@ class InstallSkillUseCase:
                 raise SkillDisabled(
                     f"skill {skill_id} is disabled", code="SKILL_DISABLED"
                 )
+
+            # Install-time re-vet. Registration already vetted the
+            # pack, but the trust store may have rotated since then,
+            # or the registry may now serve a different image digest
+            # than the one the publisher signed. Treat any failure
+            # here as a 422 install error — we never issue a run-token
+            # to a pack that no longer passes the gate.
+            if self.vetter is not None:
+                await self.vetter.vet(pkg)
 
             raw_token, jti, expires_ms = self.run_token_issuer.issue(
                 skill_id=pkg.id,

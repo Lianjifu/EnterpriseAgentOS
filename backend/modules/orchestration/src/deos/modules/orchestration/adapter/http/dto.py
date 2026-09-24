@@ -79,6 +79,23 @@ class RunPlanResponse(BaseModel):
     finished_at: str | None
 
 
+class RunPlanAcceptedResponse(BaseModel):
+    """Lightweight 202 envelope returned by ``POST /plans/{id}/runs``.
+
+    The synchronous executor still blocks until the run finishes; we
+    only stop serialising the full run + step payload in the response
+    body. Clients should follow ``poll_url`` to retrieve the final
+    state.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    run_id: str
+    plan_id: str
+    status: WorkflowRunStatusLiteral
+    poll_url: str
+
+
 class StepRunResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -135,6 +152,7 @@ __all__ = [
     "PlanListResponse",
     "PlanResponse",
     "PlanStatusLiteral",
+    "RunPlanAcceptedResponse",
     "RunPlanRequest",
     "RunPlanResponse",
     "StepRunResponse",

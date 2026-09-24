@@ -85,6 +85,13 @@ class InvocationRunner:
     artifacts: SkillArtifactStore
     default_timeout_seconds: int = 30
     tail_cap_bytes: int = 4096
+    # LLM credentials forwarded to the sandbox so skill entry-points
+    # (e.g. the ``skp.office.*`` pack) can call the platform LLM
+    # directly. When any field is empty the entry-point falls back
+    # to its deterministic placeholder and tags ``confidence: low``.
+    llm_http_url: str = ""
+    llm_api_key: str = ""
+    llm_model: str = ""
 
     _tasks: dict[SkillInvocationId, asyncio.Task[None]] = field(default_factory=dict)
     _run_ids: dict[SkillInvocationId, UUID] = field(default_factory=dict)
@@ -111,6 +118,16 @@ class InvocationRunner:
             "EOS_RUN_TOKEN_JTI": install.run_token_jti or "",
             "EOS_ARGUMENTS_JSON": json.dumps(invocation.arguments),
         }
+        # Forward LLM credentials so skill entry-points can call the
+        # platform model directly. Sandboxes with a locked-down
+        # network_policy will reject the outbound call (the entry-
+        # point's failure path keeps the placeholder body).
+        if self.llm_http_url:
+            env["EOS_LLM_HTTP_URL"] = self.llm_http_url
+        if self.llm_api_key:
+            env["EOS_LLM_API_KEY"] = self.llm_api_key
+        if self.llm_model:
+            env["EOS_LLM_MODEL"] = self.llm_model
         spec = SandboxRunSpec(
             run_id=run_id,
             tenant_id=invocation.tenant_id,

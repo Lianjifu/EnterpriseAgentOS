@@ -3,10 +3,12 @@
 Mounts under ``/v1/orchestration`` (FastAPI prefix).  Per-request
 service is resolved via :func:`orchestration_service_dependency`.
 
-v1 simplification: ``POST /plans/{id}/runs`` is synchronous — the
-WorkflowExecutor blocks until the run reaches a terminal status, and
-the response carries the final state plus all step_runs.  Background
-execution / SSE streaming land in P10 (see doc 12 §"不在范围内").
+v1 semantics: ``POST /plans/{id}/runs`` executes synchronously (the
+WorkflowExecutor blocks until the run reaches a terminal status) but
+returns ``202 Accepted`` with ``{run_id, status, poll_url}`` instead of
+the full run + step payload. Clients poll ``GET /v1/orchestration/
+runs/{run_id}`` for the final state.  v2 (P10+) replaces the
+synchronous executor with a queued job + SSE stream.
 """
 
 from __future__ import annotations
@@ -19,19 +21,18 @@ from deos.modules.orchestration.adapter.http.dto import (
     CreatePlanRequest,
     PlanListResponse,
     PlanResponse,
+    RunPlanAcceptedResponse,
     RunPlanRequest,
     RunPlanResponse,
     StepRunResponse,
     WorkflowRunListResponse,
     WorkflowRunResponse,
-    WorkflowRunWithStepsResponse,
 )
 from deos.modules.orchestration.adapter.http.factory import (
     OrchestrationServiceFactory,
 )
 from deos.modules.orchestration.adapter.http.mappers import (
     plan_to_dto,
-    step_run_to_dto,
     workflow_run_to_dto,
 )
 from deos.modules.orchestration.application.services import OrchestrationService
@@ -148,16 +149,18 @@ def build_router() -> APIRouter:
 
     @router.post(
         "/plans/{plan_id}/runs",
-        response_model=WorkflowRunWithStepsResponse,
+        status_code=202,
+        response_model=RunPlanAcceptedResponse,
     )
     async def run_plan(
         plan_id: UUID,
         body: RunPlanRequest,
+        request: Request,
         x_tenant_id: UUID = Header(..., alias="X-Tenant-Id"),  # noqa: B008
         x_workspace_id: UUID = Header(..., alias="X-Workspace-Id"),  # noqa: B008
         x_user_id: UUID = Header(..., alias="X-User-Id"),  # noqa: B008
         svc: OrchestrationService = Depends(orchestration_service_dependency),  # noqa: B008
-    ) -> WorkflowRunWithStepsResponse:
+    ) -> RunPlanAcceptedResponse:
         from eos_schema.ids import PlanId, UserId
 
         try:
@@ -179,13 +182,24 @@ def build_router() -> APIRouter:
         except (WorkflowTooLarge, WorkflowStepTimeout) as exc:
             raise HTTPException(status_code=422, detail=str(exc))
 
-        run_dto = workflow_run_to_dto(result.run)
-        step_dtos = [step_run_to_dto(s) for s in result.step_runs]
-        return WorkflowRunWithStepsResponse(run=run_dto, step_runs=step_dtos)
+        # 202 Accepted: return the canonical run id + status + a
+        # pointer to the polling endpoint. Clients should follow
+        # ``poll_url`` rather than re-POST; v2 (P10+) replaces the
+        # poll with SSE on the same path.
+        poll_url = str(
+            request.url_for("get_run", run_id=str(result.run.id))
+        )
+        return RunPlanAcceptedResponse(
+            run_id=str(result.run.id),
+            plan_id=str(result.run.plan_id),
+            status=result.run.status.value,
+            poll_url=poll_url,
+        )
 
     @router.get(
         "/runs/{run_id}",
         response_model=WorkflowRunResponse,
+        name="get_run",
     )
     async def get_run(
         run_id: UUID,

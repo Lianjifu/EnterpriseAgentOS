@@ -85,6 +85,7 @@ class SkillService:
             uow_factory=self.uow_factory,
             publisher=self.publisher,
             run_token_issuer=self.run_token_issuer,
+            vetter=vetter,
             run_token_ttl_seconds=self.run_token_ttl_seconds,
         )
         self.invoke_skill = InvokeSkillUseCase(

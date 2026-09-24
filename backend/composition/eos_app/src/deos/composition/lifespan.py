@@ -257,6 +257,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             self._tail_cap = container.settings.skill_artifact_tail_max_bytes
             self._sandbox = app.state.sandbox
             self._vetter = container.skill_vetter()
+            # LLM credentials forwarded to the sandbox so the
+            # ``skp.office.*`` entry-points can call the platform
+            # model. Empty fields are passed through as empty strings;
+            # the entry-points treat that as "fall back to placeholder".
+            self._llm_http_url = container.settings.llm_base_url
+            self._llm_api_key = container.settings.llm_api_key
+            self._llm_model = container.settings.llm_default_model
 
         def _build_runner(self, session) -> InvocationRunner:  # type: ignore[no-untyped-def]
             invocations_repo = SqlSkillInvocationRepository(session)
@@ -267,6 +274,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 artifacts=self._artifacts,
                 default_timeout_seconds=self._default_timeout,
                 tail_cap_bytes=self._tail_cap,
+                llm_http_url=self._llm_http_url,
+                llm_api_key=self._llm_api_key,
+                llm_model=self._llm_model,
             )
 
         def for_session(self, session):  # type: ignore[no-untyped-def]
@@ -688,11 +698,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # ── P9 platform (per-request service factory + default-plans seed) ──
     from deos.modules.platform.adapter.persistence import (
-        SqlPlanRepository as PlatformSqlPlanRepository,
-    )
-    from deos.modules.platform.adapter.persistence import (
+        ObservabilityCostRepositoryBridge,
         SqlSubscriptionRepository,
         SqlTenantSettingRepository,
+    )
+    from deos.modules.platform.adapter.persistence import (
+        SqlPlanRepository as PlatformSqlPlanRepository,
     )
     from deos.modules.platform.application.services import PlatformService
 
@@ -704,6 +715,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 subscription_repo=SqlSubscriptionRepository(sf),
                 setting_repo=SqlTenantSettingRepository(sf),
                 publisher=None,
+                # Bridge into observability's SqlCostRecordRepository
+                # so ``aggregate_costs`` actually reads tenant spend.
+                cost_repo=ObservabilityCostRepositoryBridge(sf),
             )
 
     app.state.platform_service_factory = _PlatformFactory()

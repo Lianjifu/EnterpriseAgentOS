@@ -173,11 +173,18 @@ def test_run_plan_synchronous_succeeds() -> None:
         headers=hdr,
         json={"variables": {"x": 1}},
     )
-    assert resp.status_code == 200, resp.text
+    # v1 behaviour: POST /runs returns 202 Accepted with a poll_url
+    # envelope (the executor still blocks synchronously; the body no
+    # longer carries the full run + step payload).
+    assert resp.status_code == 202, resp.text
     data = resp.json()
-    assert data["run"]["status"] == "succeeded"
-    assert data["run"]["plan_id"] == plan_id
-    assert len(data["step_runs"]) == 1
+    assert data["status"] == "succeeded"
+    assert data["plan_id"] == plan_id
+    assert data["poll_url"].endswith(f"/v1/orchestration/runs/{data['run_id']}")
+    # Following the poll_url returns the canonical run state.
+    follow = client.get(data["poll_url"], headers=hdr)
+    assert follow.status_code == 200
+    assert follow.json()["id"] == data["run_id"]
 
 
 def test_run_plan_404_unknown_plan() -> None:
@@ -205,13 +212,13 @@ def test_run_plan_idempotency_returns_existing() -> None:
     first = client.post(
         f"/v1/orchestration/plans/{plan_id}/runs", headers=hdr, json=body
     )
-    assert first.status_code == 200
+    assert first.status_code == 202
     second = client.post(
         f"/v1/orchestration/plans/{plan_id}/runs", headers=hdr, json=body
     )
-    assert second.status_code == 200
+    assert second.status_code == 202
     # Same run id from the partial UQ → idempotent replay.
-    assert second.json()["run"]["id"] == first.json()["run"]["id"]
+    assert second.json()["run_id"] == first.json()["run_id"]
 
 
 def test_get_run_404_unknown() -> None:
@@ -265,7 +272,7 @@ def test_cancel_run_returns_terminal() -> None:
         headers=hdr,
         json={"idempotency_key": "cancel-1"},
     )
-    run_id = run_resp.json()["run"]["id"]
+    run_id = run_resp.json()["run_id"]
     cancel = client.post(
         f"/v1/orchestration/runs/{run_id}/cancel",
         headers=hdr,

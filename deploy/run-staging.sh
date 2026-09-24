@@ -61,7 +61,7 @@ docker run -d --name eos-postgres --network eos-staging \
     --health-interval 5s \
     --health-timeout 3s \
     --health-retries 10 \
-    postgres:16
+    pgvector/pgvector:pg16
 
 # wait for postgres healthy
 for _ in $(seq 1 30); do

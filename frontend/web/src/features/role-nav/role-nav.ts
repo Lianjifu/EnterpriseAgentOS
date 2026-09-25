@@ -13,56 +13,90 @@ export type RoleNavGroup = {
   items: RoleNavItem[];
 };
 
-/** 三角色侧栏：菜单项四字对齐；分组可短。 */
+/** 三角色侧栏 — 企业级智能体操作系统 IA
+ *
+ * 设计思路(围绕「OS 隐喻」):
+ *  - 总览(根,无 label)        = 桌面 + 快捷入口
+ *  - 工作台                   = 应用的运行视图(对话)
+ *  - 智能体(管理员专属)        = 智能体的配置 + 上岗
+ *  - 技能中心                 = 能力中枢(skill / tool / MCP / 工作流程)
+ *  - 我的空间(用户视角)        = 个人拥有的资产(技能订阅 + 知识)
+ *  - 知识资产(管理员视角)      = 平台共有数据(知识 + 记忆)
+ *  - 能力底座(管理员专属)      = 平台基础设施(模型 + 渠道)
+ *  - 治理(管理员专属)          = 控制面板(审计 / 验证 / 访问 / 空间 / 设置)
+ */
 export const ROLE_NAV: Record<AppRole, RoleNavGroup[]> = {
   user: [
-    { labelKey: null, items: [{ to: '/home', i18n: 'nav.home', icon: 'Home' }] },
     {
-      labelKey: 'nav.group.operations',
+      labelKey: null,
       items: [
-        { to: '/copilot', i18n: 'nav.copilot', icon: 'MessageSquare' },
+        { to: '/home', i18n: 'nav.home', icon: 'Home' },
         { to: '/tasks', i18n: 'nav.tasks.user', icon: 'ListChecks' },
       ],
     },
     {
-      labelKey: 'nav.group.orchestration',
+      labelKey: 'nav.group.workbench',
+      items: [{ to: '/copilot', i18n: 'nav.copilot', icon: 'MessageSquare' }],
+    },
+    {
+      labelKey: 'nav.group.skillsCenter',
       items: [
-        { to: '/partners', i18n: 'nav.agents', icon: 'BriefcaseBusiness' },
+        { to: '/skills', i18n: 'nav.skills.market', icon: 'Wrench' },
         { to: '/workflows', i18n: 'nav.workflows', icon: 'Workflow' },
       ],
     },
     {
-      labelKey: 'nav.group.capabilities',
+      labelKey: 'nav.group.mySpace',
       items: [
+        { to: '/skills', i18n: 'nav.skills.mine', icon: 'Wrench' },
         { to: '/knowledge', i18n: 'nav.knowledge.user', icon: 'BookOpen' },
-        { to: '/skills', i18n: 'nav.skills.user', icon: 'Wrench' },
       ],
     },
   ],
   admin: [
-    { labelKey: null, items: [{ to: '/home', i18n: 'nav.home', icon: 'Home' }] },
     {
-      labelKey: 'nav.group.operations',
+      labelKey: null,
       items: [
-        { to: '/copilot', i18n: 'nav.copilot', icon: 'MessageSquare' },
+        { to: '/home', i18n: 'nav.home', icon: 'Home' },
         { to: '/tasks', i18n: 'nav.tasks', icon: 'ListChecks' },
       ],
     },
     {
-      labelKey: 'nav.group.orchestration',
+      labelKey: 'nav.group.agents',
       items: [
         { to: '/partners', i18n: 'nav.agents', icon: 'BriefcaseBusiness' },
+        { to: '/copilot', i18n: 'nav.copilot', icon: 'MessageSquare' },
+      ],
+    },
+    {
+      labelKey: 'nav.group.skillsCenter',
+      items: [
+        { to: '/skills', i18n: 'nav.skills.market', icon: 'Wrench' },
         { to: '/workflows', i18n: 'nav.workflows', icon: 'Workflow' },
       ],
     },
     {
-      labelKey: 'nav.group.capabilities',
+      labelKey: 'nav.group.knowledgeAssets',
+      items: [
+        { to: '/knowledge', i18n: 'nav.knowledge', icon: 'BookOpen' },
+        { to: '/memory', i18n: 'nav.memory', icon: 'BrainCircuit' },
+      ],
+    },
+    {
+      labelKey: 'nav.group.foundation',
       items: [
         { to: '/models', i18n: 'nav.models', icon: 'Brain' },
-        { to: '/knowledge', i18n: 'nav.knowledge', icon: 'BookOpen' },
-        { to: '/skills', i18n: 'nav.skills', icon: 'Wrench' },
-        { to: '/memory', i18n: 'nav.memory', icon: 'BrainCircuit' },
         { to: '/channels', i18n: 'nav.channels', icon: 'Send' },
+      ],
+    },
+    {
+      labelKey: 'nav.group.governance',
+      items: [
+        { to: '/audit-center', i18n: 'nav.auditCenter', icon: 'ScrollText' },
+        { to: '/zero-trust', i18n: 'nav.zeroTrust', icon: 'ShieldAlert' },
+        { to: '/governance', i18n: 'nav.accessControl', icon: 'KeyRound' },
+        { to: '/workspaces', i18n: 'workspace.manage', icon: 'Building2' },
+        { to: '/settings', i18n: 'nav.settingsGeneral', icon: 'Settings2' },
       ],
     },
   ],
@@ -154,7 +188,7 @@ export function rolePageCopy(
     },
     agents: {
       user: { title: '工作伙伴', subtitle: '按岗位边界发现与协作数字工作伙伴，查看职责与能力装配。' },
-      admin: { title: '工作伙伴', subtitle: '专家团队协同的数字工作伙伴：岗位边界清晰，双重审批与人工接管可追溯。' },
+      admin: { title: '智能体工厂', subtitle: '配置智能体岗位契约、能力装配与双重审批，跟踪上岗与试运行状态。' },
       auditor: { title: '伙伴档案', subtitle: '只读核查岗位契约、能力装配与上岗证据，不创建或变更配置。' },
     },
     workflows: {

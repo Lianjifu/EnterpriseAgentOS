@@ -12,7 +12,7 @@ import {
   BookOpen, Wrench, Brain, BrainCircuit, Send,
   Menu, Settings2, Languages, Sun, Moon,
   LogOut, ChevronDown, X, CheckCircle2,
-  ShieldAlert, ScrollText, Sparkles,
+  ShieldAlert, ScrollText, Sparkles, KeyRound,
 } from 'lucide-react';
 import { useT } from '@/i18n';
 import { useUiStore } from '@/stores/uiStore';
@@ -29,6 +29,7 @@ import type { Workspace } from '@de/web-types';
 const NAV_ICONS: Record<string, ComponentType<{ className?: string }>> = {
   Home, MessageSquare, ListChecks, BriefcaseBusiness, Workflow,
   BookOpen, Wrench, Brain, BrainCircuit, Send, ShieldAlert, ScrollText,
+  KeyRound, Settings2,
 };
 
 const ROLE_LABEL: Record<string, string> = {
@@ -189,7 +190,7 @@ export function AppLayout() {
 
         <NavLink to="/home" className="flex items-center gap-3 text-[var(--text)] font-bold text-[17px]">
           <div className="grid h-9 w-9 place-items-center rounded-md bg-gradient-to-br from-[var(--brand)] to-[var(--purple)] text-sm font-bold text-white shadow-[0_2px_8px_rgba(79,70,229,0.3)]">
-            DE
+            {t('app.shortName')}
           </div>
           {!sidebarCollapsed && <span className="hidden sm:inline">{t('app.title')}</span>}
         </NavLink>

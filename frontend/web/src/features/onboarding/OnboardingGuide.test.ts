@@ -6,30 +6,44 @@ describe('OnboardingGuide copy', () => {
     const flat = PREVIEW_NAV_GROUPS.flatMap((group) => [...group.items]);
     expect(flat).toEqual([
       '运营总览',
-      '智能体',
+      '任务中心',
+      '智能体工厂',
       '协作会话',
-      '模型服务',
+      '技能·工具·MCP',
+      '工作流程',
       '知识中心',
-      '技能中心',
       '记忆中心',
+      '模型服务',
+      '消息渠道',
       '审计中心',
       '持续验证',
+      '访问控制',
+      '工作空间',
+      '平台设置',
     ]);
-    expect(PREVIEW_NAV_GROUPS.map((g) => g.label)).toEqual([null, '智能体', '能力', '治理']);
+    expect(PREVIEW_NAV_GROUPS.map((g) => g.label)).toEqual([
+      null, '智能体', '技能中心', '知识资产', '能力底座', '治理',
+    ]);
   });
 
   it('exposes role-specific four-character nav previews', () => {
     expect(PREVIEW_NAV_BY_ROLE.user.flatMap((g) => [...g.items])).toEqual([
-      '运营总览', '协作会话', '我的待办', '知识检索', '技能清单',
+      '运营总览', '我的待办', '协作会话', '技能·工具·MCP', '工作流程', '我的技能', '知识检索',
     ]);
     expect(PREVIEW_NAV_BY_ROLE.auditor.flatMap((g) => [...g.items])).toContain('审计中心');
     expect(PREVIEW_NAV_BY_ROLE.auditor.flatMap((g) => [...g.items])).toContain('任务核查');
-    expect(PREVIEW_NAV_BY_ROLE.auditor.flatMap((g) => [...g.items])).toContain('智能体档案');
+    expect(PREVIEW_NAV_BY_ROLE.auditor.flatMap((g) => [...g.items])).toContain('伙伴档案');
     for (const role of ['user', 'admin', 'auditor'] as const) {
       for (const item of PREVIEW_NAV_BY_ROLE[role].flatMap((g) => g.items)) {
         // 紧凑侧栏标签:2-5 个汉字(中文)以保持视觉密度
-        expect([...item].length).toBeGreaterThanOrEqual(2);
-        expect([...item].length).toBeLessThanOrEqual(5);
+        // 例外:'技能·工具·MCP' 因含分隔符与缩写,允许 ≤ 12 字
+        const len = [...item].length;
+        if (item === '技能·工具·MCP') {
+          expect(len).toBeLessThanOrEqual(12);
+          continue;
+        }
+        expect(len).toBeGreaterThanOrEqual(2);
+        expect(len).toBeLessThanOrEqual(5);
       }
     }
   });

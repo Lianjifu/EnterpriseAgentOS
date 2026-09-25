@@ -103,8 +103,8 @@ describe('Login', () => {
     fireEvent.click(admin);
     const emailInput = screen.getByPlaceholderText('name@company.com') as HTMLInputElement;
     const pwInput = screen.getByPlaceholderText('••••••••') as HTMLInputElement;
-    expect(emailInput.value).toBe('admin@acme.com');
-    expect(pwInput.value).toBe('demo123456');
+    expect(emailInput.value).toBe('admin@example.com');
+    expect(pwInput.value).toBe('dev-admin-password-change-me');
   });
 
   it('form submit calls mutate with email + password', () => {

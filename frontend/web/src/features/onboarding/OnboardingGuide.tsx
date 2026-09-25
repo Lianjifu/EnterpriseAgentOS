@@ -15,25 +15,28 @@ type OnboardingGuideProps = {
   role?: Role;
 };
 
-/** 管理员侧栏预览 — 企业级智能体平台默认向导 */
+/** 管理员侧栏预览 — 企业级智能体操作系统默认向导 */
 export const PREVIEW_NAV_GROUPS = [
-  { label: null, items: ['运营总览'] },
-  { label: '智能体', items: ['智能体', '协作会话'] },
-  { label: '能力', items: ['模型服务', '知识中心', '技能中心', '记忆中心'] },
-  { label: '治理', items: ['审计中心', '持续验证'] },
+  { label: null, items: ['运营总览', '任务中心'] },
+  { label: '智能体', items: ['智能体工厂', '协作会话'] },
+  { label: '技能中心', items: ['技能·工具·MCP', '工作流程'] },
+  { label: '知识资产', items: ['知识中心', '记忆中心'] },
+  { label: '能力底座', items: ['模型服务', '消息渠道'] },
+  { label: '治理', items: ['审计中心', '持续验证', '访问控制', '工作空间', '平台设置'] },
 ] as const;
 
 export const PREVIEW_NAV_BY_ROLE: Record<AppRole, ReadonlyArray<{ label: string | null; items: readonly string[] }>> = {
   admin: PREVIEW_NAV_GROUPS,
   user: [
-    { label: null, items: ['运营总览'] },
-    { label: '智能体', items: ['协作会话', '我的待办'] },
-    { label: '能力', items: ['知识检索', '技能清单'] },
+    { label: null, items: ['运营总览', '我的待办'] },
+    { label: '工作台', items: ['协作会话'] },
+    { label: '技能中心', items: ['技能·工具·MCP', '工作流程'] },
+    { label: '我的空间', items: ['我的技能', '知识检索'] },
   ],
   auditor: [
     { label: null, items: ['运营总览'] },
     { label: '审计', items: ['审计中心', '持续验证'] },
-    { label: '核查', items: ['任务核查', '协作记录', '智能体档案', '流程版本', '知识引用', '技能权限', '记忆策略', '模型审计'] },
+    { label: '核查', items: ['任务核查', '协作记录', '伙伴档案', '流程版本', '知识引用', '技能权限', '记忆策略', '模型审计'] },
   ],
 };
 

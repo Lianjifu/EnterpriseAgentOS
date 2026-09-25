@@ -29,33 +29,48 @@ describe('enterprise navigation translations', () => {
     expect(DICTS['en-US']['module.workspace.tabs.environment']).toBe('Environments');
   });
 
-  it('uses four-character Chinese primary nav labels', () => {
+  it('uses compact Chinese primary nav labels (2–5 chars) aligned with sidebar density', () => {
     const navKeys = [
       'nav.home', 'nav.copilot', 'nav.copilot.auditor',
       'nav.tasks', 'nav.tasks.user', 'nav.tasks.auditor',
       'nav.agents', 'nav.agents.auditor',
       'nav.workflows', 'nav.workflows.auditor',
       'nav.models', 'nav.models.auditor', 'nav.knowledge', 'nav.knowledge.user', 'nav.knowledge.auditor',
-      'nav.skills', 'nav.skills.user', 'nav.skills.auditor',
+      'nav.skills', 'nav.skills.market', 'nav.skills.mine', 'nav.skills.user', 'nav.skills.auditor',
       'nav.memory', 'nav.memory.auditor', 'nav.channels',
       'nav.accessControl', 'nav.zeroTrust', 'nav.auditCenter',
     ] as const;
     for (const key of navKeys) {
-      expect([...DICTS['zh-CN'][key]].length, key).toBe(4);
+      // 例外:nav.skills.market 因含 "·" 分隔与 MCP 缩写,允许 ≤ 12 字
+      if (key === 'nav.skills.market') {
+        expect([...DICTS['zh-CN'][key]].length, key).toBeLessThanOrEqual(12);
+        continue;
+      }
+      expect([...DICTS['zh-CN'][key]].length, key).toBeGreaterThanOrEqual(2);
+      expect([...DICTS['zh-CN'][key]].length, key).toBeLessThanOrEqual(5);
     }
-    expect(DICTS['zh-CN']['nav.group.operations']).toBe('协作');
+    expect(DICTS['zh-CN']['nav.group.agents']).toBe('智能体');
+    expect(DICTS['zh-CN']['nav.group.workbench']).toBe('工作台');
+    expect(DICTS['zh-CN']['nav.group.skillsCenter']).toBe('技能中心');
+    expect(DICTS['zh-CN']['nav.group.mySpace']).toBe('我的空间');
+    expect(DICTS['zh-CN']['nav.group.knowledgeAssets']).toBe('知识资产');
+    expect(DICTS['zh-CN']['nav.group.foundation']).toBe('能力底座');
+    expect(DICTS['zh-CN']['nav.group.governance']).toBe('治理');
     expect(DICTS['zh-CN']['nav.group.audit']).toBe('审计');
     expect(DICTS['zh-CN']['nav.group.review']).toBe('核查');
     expect(DICTS['zh-CN']['account.platformSettings']).toBe('平台设置');
     expect(DICTS['zh-CN']['module.settings.tabs.usage']).toBe('套餐用量');
     expect(DICTS['zh-CN']['nav.workflows']).toBe('工作流程');
     expect(DICTS['zh-CN']['nav.zeroTrust']).toBe('持续验证');
-    expect(DICTS['zh-CN']['nav.agents']).toBe('工作伙伴');
+    expect(DICTS['zh-CN']['nav.agents']).toBe('智能体工厂');
     expect(DICTS['zh-CN']['nav.agents.auditor']).toBe('伙伴档案');
-    expect([...DICTS['zh-CN']['nav.agents']].length).toBe(4);
+    expect([...DICTS['zh-CN']['nav.agents']].length).toBe(5);
     expect([...DICTS['zh-CN']['nav.agents.auditor']].length).toBe(4);
-    expect(DICTS['zh-CN']['app.title']).toBe('数字工作伙伴平台');
-    expect(DICTS['en-US']['nav.agents']).toBe('Partners');
+    expect(DICTS['zh-CN']['app.title']).toBe('企业级智能体操作系统');
+    expect(DICTS['zh-CN']['app.shortName']).toBe('EA');
+    expect(DICTS['en-US']['app.title']).toBe('Enterprise Agent OS');
+    expect(DICTS['en-US']['app.shortName']).toBe('EA');
+    expect(DICTS['en-US']['nav.agents']).toBe('Agent Factory');
     expect(DICTS['zh-CN']['module.agents.tabs.market']).not.toContain('工厂');
   });
 

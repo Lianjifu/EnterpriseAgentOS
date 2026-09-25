@@ -18,11 +18,11 @@ interface LoginDemoChipsProps {
 
 export function LoginDemoChips({ title, roles, onChoose }: LoginDemoChipsProps) {
   return (
-    <div className="rounded-md border border-dashed border-[var(--border)] bg-[var(--bg-elevated)]/60 p-3">
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
+    <div className="rounded-md border border-dashed border-[var(--border)] bg-[var(--bg-elevated)]/60 px-3 py-3.5">
+      <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
         {title}
       </p>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2.5">
         {roles.map((r) => (
           <button
             key={r.email}
@@ -38,9 +38,13 @@ export function LoginDemoChips({ title, roles, onChoose }: LoginDemoChipsProps) 
             <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-[var(--brand-light)] text-[var(--brand)] transition-colors group-hover:bg-white">
               <r.Icon className="h-3.5 w-3.5" />
             </span>
-            <span className="min-w-0">
-              <div className="truncate text-[11px] font-medium text-[var(--text)]">{r.label}</div>
-              <div className="truncate text-[10px] text-[var(--text-muted)]">{r.sub}</div>
+            <span className="min-w-0 flex-1 leading-tight">
+              <div className="text-[12px] font-medium text-[var(--text)] whitespace-nowrap overflow-hidden text-ellipsis">
+                {r.label}
+              </div>
+              <div className="mt-0.5 text-[11px] text-[var(--text-muted)] whitespace-nowrap overflow-hidden text-ellipsis">
+                {r.sub}
+              </div>
             </span>
           </button>
         ))}

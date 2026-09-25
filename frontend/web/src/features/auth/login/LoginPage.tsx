@@ -130,7 +130,7 @@ export default function LoginPage() {
         {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
       </button>
 
-      <div className="grid min-h-screen grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(440px,540px)]">
+      <div className="grid min-h-screen grid-cols-1 md:grid-cols-[2fr_1fr]">
         {/* ── Left: brand panel ── */}
         <LoginBrandPanel
           product={t('login.brand.product')}
@@ -145,39 +145,25 @@ export default function LoginPage() {
           footnote={t('login.hero.footnote')}
         />
 
-        {/* ── Right: white form panel ── */}
+        {/* ── Right: form panel ── */}
         <main
-          className="login-form relative flex flex-col bg-[var(--surface-1)]
-                     px-6 py-10
-                     sm:px-10
-                     md:px-14 md:py-14
-                     lg:px-20
+          className="login-form relative flex flex-col
+                     md:items-center md:justify-center md:bg-transparent
+                     px-6 py-6
+                     sm:px-10 sm:py-8
+                     md:px-8 md:py-8
+                     lg:px-10
                      md:border-l md:border-[var(--border)]"
         >
           {/* Subtle radial highlight on right panel */}
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0
+            className="pointer-events-none absolute inset-0 hidden md:block
                        bg-[radial-gradient(ellipse_at_top_right,rgba(79,70,229,0.06),transparent_60%)]
                        dark:bg-[radial-gradient(ellipse_at_top_right,rgba(99,102,241,0.08),transparent_60%)]"
           />
 
-          {/* Mobile-only brand header */}
-          <div className="relative mb-8 flex items-center gap-2.5 md:hidden">
-            <div
-              className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br
-                          from-[var(--brand)] to-[var(--purple)] text-white shadow-sm"
-              aria-hidden
-            >
-              <Bot className="h-4 w-4" />
-            </div>
-            <div className="leading-tight">
-              <div className="text-[14px] font-semibold text-[var(--text)]">{t('login.brand.product')}</div>
-              <div className="text-[11px] text-[var(--text-muted)]">{t('login.brand.tagline')}</div>
-            </div>
-          </div>
-
-          <div className="relative m-auto w-full max-w-[440px]">
+          <div className="relative w-full max-w-[440px] m-auto md:m-0">
             {step === 'credentials' ? (
               <LoginCredentialsForm
                 email={email}
@@ -229,18 +215,18 @@ export default function LoginPage() {
                 soonLabel={t('login.mfa.soon')}
               />
             )}
-          </div>
 
-          {/* Footer trust strip */}
-          <div className="relative mt-auto pt-8">
-            <TrustStrip items={trustItems} />
+            {/* TrustStrip — sits directly under the form, no card chrome around either */}
+            <div className="mt-8 sm:mt-10">
+              <TrustStrip items={trustItems} tone="light" />
+            </div>
           </div>
         </main>
       </div>
 
-      {/* Build version chip (bottom-left, subtle) */}
-      <div className="absolute bottom-4 left-5 z-30 select-none font-mono text-[10px]
-                      tracking-widest text-[var(--text-muted)] md:left-10">
+      {/* Build version chip (bottom-right, subtle) */}
+      <div className="absolute bottom-4 right-5 z-10 select-none font-mono text-[10px]
+                      tracking-widest text-[var(--text-muted)]">
         {t('login.buildLabel')} {buildVersion}
       </div>
     </div>

@@ -46,13 +46,13 @@ type InputProps = ComponentProps<typeof Input>;
 export function LoginCredentialsForm(props: LoginCredentialsFormProps) {
   return (
     <div className="animate-[loginSlideUp_350ms_ease-out]">
-      <form noValidate onSubmit={props.submit} className="space-y-4">
+      <form noValidate onSubmit={props.submit} className="space-y-5">
         <div>
-          <label className="mb-1.5 block text-[12px] font-medium text-[var(--text-secondary)]">
+          <label className="mb-2 block text-[13px] font-medium text-[var(--text-secondary)]">
             {props.emailLabel}
           </label>
           <div className="relative">
-            <Building2 className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--text-muted)]" />
+            <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
             <Input
               value={props.email}
               onChange={(e) => props.setEmail(e.target.value)}
@@ -66,11 +66,11 @@ export function LoginCredentialsForm(props: LoginCredentialsFormProps) {
         </div>
 
         <div>
-          <label className="mb-1.5 block text-[12px] font-medium text-[var(--text-secondary)]">
+          <label className="mb-2 block text-[13px] font-medium text-[var(--text-secondary)]">
             {props.passwordLabel}
           </label>
           <div className="relative">
-            <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--text-muted)]" />
+            <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
             <Input
               type="password"
               value={props.password}
@@ -84,9 +84,9 @@ export function LoginCredentialsForm(props: LoginCredentialsFormProps) {
         </div>
 
         <div>
-          <label className="mb-1.5 flex items-center justify-between text-[12px] font-medium text-[var(--text-secondary)]">
+          <label className="mb-2 flex items-center justify-between text-[13px] font-medium text-[var(--text-secondary)]">
             <span>{props.mfaLabel}</span>
-            <span className="text-[10px] font-normal text-[var(--text-muted)]">{props.mfaHint}</span>
+            <span className="text-[11px] font-normal text-[var(--text-muted)]">{props.mfaHint}</span>
           </label>
           <Input
             value={props.mfa}
@@ -100,12 +100,12 @@ export function LoginCredentialsForm(props: LoginCredentialsFormProps) {
           />
         </div>
 
-        <div className="flex items-center justify-between pt-1 text-[12px]">
+        <div className="flex items-center justify-between pt-2 text-[13px]">
           <label className="flex cursor-pointer items-center gap-1.5 text-[var(--text-muted)]">
             <input
               type="checkbox"
               defaultChecked
-              className="h-3.5 w-3.5 rounded border-[var(--border)] accent-[var(--brand)]"
+              className="h-4 w-4 rounded border-[var(--border)] accent-[var(--brand)]"
             />
             {props.rememberLabel}
           </label>
@@ -118,12 +118,12 @@ export function LoginCredentialsForm(props: LoginCredentialsFormProps) {
           type="submit"
           loading={props.isPending}
           size="lg"
-          className="login-cta mt-2 w-full text-[14px] font-semibold"
+          className="login-cta mt-2 w-full text-[15px] font-semibold"
         >
           {props.isPending ? props.submittingLabel : props.submitLabel}
         </Button>
 
-        <div className="relative my-5 flex items-center text-[10px] uppercase tracking-widest text-[var(--text-muted)]">
+        <div className="relative my-6 flex items-center text-[11px] uppercase tracking-widest text-[var(--text-muted)]">
           <div className="h-px flex-1 bg-[var(--border)]" />
           <span className="px-3">OR</span>
           <div className="h-px flex-1 bg-[var(--border)]" />
@@ -135,14 +135,14 @@ export function LoginCredentialsForm(props: LoginCredentialsFormProps) {
           aria-disabled="true"
           title={props.ssoTooltip}
           className="login-sso flex w-full items-center justify-center gap-2 rounded-md
-                     border border-[var(--border)] bg-[var(--surface-1)] px-4 py-2.5
-                     text-[13px] font-medium text-[var(--text-secondary)]
+                     border border-[var(--border)] bg-[var(--surface-1)] px-4 py-3
+                     text-[14px] font-medium text-[var(--text-secondary)]
                      hover:bg-[var(--bg-hover)]
                      disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Sparkles className="h-4 w-4 text-[var(--brand)]" />
           {props.ssoLabel}
-          <span className="ml-1 rounded bg-[var(--bg-hover)] px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
+          <span className="ml-1 rounded bg-[var(--bg-hover)] px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
             {props.soonLabel}
           </span>
         </button>
@@ -150,7 +150,7 @@ export function LoginCredentialsForm(props: LoginCredentialsFormProps) {
         <LoginDemoChips title={props.demoTitle} roles={props.demoRoles} onChoose={props.onChooseRole} />
       </form>
 
-      <div className="mt-6 text-center text-[10px] leading-relaxed text-[var(--text-muted)]">
+      <div className="mt-7 text-center text-[11px] leading-relaxed text-[var(--text-muted)]">
         {props.termsPrefix}{' '}
         <a className="text-[var(--brand)] hover:underline" href="#">
           {props.termsTos}

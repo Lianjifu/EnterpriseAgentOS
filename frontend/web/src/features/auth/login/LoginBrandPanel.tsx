@@ -1,10 +1,11 @@
 /**
  * LoginBrandPanel — 左侧品牌展示区
  *
- * 三段式布局:brand mark(顶) + hero + bullets(中) + footnote(底)
- * 由父 LoginPage 用 `justify-between` 自动垂直分布
+ * 单内容块垂直居中:brand mark(顶) + hero 段(badge → title → subtitle
+ *   → bullets → stats → footnote)
+ * aside 用 `justify-center` 让内容块在视口高度中居中,避免上半部空白
  */
-import { Bot, ShieldCheck, Gauge, Sparkles } from 'lucide-react';
+import { Bot, ShieldCheck, Gauge, Sparkles, Shield, Activity } from 'lucide-react';
 
 export interface LoginHeroStat {
   value: string;
@@ -37,10 +38,20 @@ const toneClass: Record<LoginHeroBullet['tone'], string> = {
   muted: 'bg-[var(--bg-hover)] text-[var(--text-secondary)]',
 };
 
+// 三个 stats 用不同色系形成视觉节奏:
+//   1 智能体能力 → brand 紫
+//   2 审计覆盖   → emerald(治理/审计)
+//   3 鉴权响应   → amber(性能/响应)
+const statIconClass = [
+  'text-[var(--brand)]',
+  'text-emerald-600 dark:text-emerald-400',
+  'text-amber-600 dark:text-amber-400',
+];
+
 export function LoginBrandPanel(props: LoginBrandPanelProps) {
   return (
     <aside
-      className="login-brand relative hidden flex-col justify-between items-center overflow-hidden
+      className="login-brand relative hidden flex-col items-stretch justify-center overflow-hidden
                  px-10 py-16
                  md:flex md:px-14 md:py-20
                  lg:px-20 lg:py-24
@@ -79,47 +90,50 @@ export function LoginBrandPanel(props: LoginBrandPanelProps) {
                    animate-[loginFloat_26s_ease-in-out_infinite]"
       />
 
-      {/* Top: brand mark */}
-      <div className="relative flex w-full max-w-[520px] items-center gap-2.5">
-        <div
-          className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br
-                      from-[var(--brand)] to-[var(--purple)] text-white shadow-sm"
-          aria-hidden
-        >
-          <Bot className="h-4.5 w-4.5" />
+      {/* Single centred content block — brand mark + hero段 stack together,
+          wrapper vertically centres both so the panel has no giant top void */}
+      <div className="relative mx-auto flex w-full max-w-[520px] flex-col text-left">
+        {/* Top: brand mark */}
+        <div className="relative flex items-center gap-2.5 self-start text-left">
+          <div
+            className="grid h-10 w-10 place-items-center rounded-lg bg-gradient-to-br
+                        from-[var(--brand)] to-[var(--purple)] text-white shadow-sm"
+            aria-hidden
+          >
+            <Bot className="h-5 w-5" />
+          </div>
+          <div className="leading-tight">
+            <div className="text-[15px] font-semibold text-[var(--text)]">{props.product}</div>
+            <div className="text-[12px] text-[var(--text-muted)]">{props.tagline}</div>
+          </div>
         </div>
-        <div className="leading-tight">
-          <div className="text-[14px] font-semibold text-[var(--text)]">{props.product}</div>
-          <div className="text-[11px] text-[var(--text-muted)]">{props.tagline}</div>
-        </div>
-      </div>
 
-      {/* Middle: hero + bullets */}
-      <div className="relative w-full max-w-[520px]">
-        <div className="mb-3 inline-flex items-center gap-1.5 rounded-full
-                        border border-[var(--border)] bg-[var(--surface-1)]/70 px-2.5 py-1
-                        text-[10px] font-medium text-[var(--text-secondary)] backdrop-blur-sm">
+        {/* Middle: hero + bullets — text left-aligned */}
+        <div className="relative mt-12 w-full">
+        <div className="mb-4 inline-flex items-center gap-1.5 rounded-full
+                        border border-[var(--border)] bg-[var(--surface-1)]/70 px-3 py-1
+                        text-[11px] font-medium text-[var(--text-secondary)] backdrop-blur-sm">
           <Sparkles className="h-3 w-3 text-[var(--brand)]" />
-          {props.badge} · v{props.buildVersion}
+          {props.badge}
         </div>
-        <h2 className="text-[28px] font-semibold leading-[1.2] tracking-tight text-[var(--text)] md:text-[32px] lg:text-[34px]">
+        <h2 className="text-[28px] font-semibold leading-[1.2] tracking-tight text-[var(--text)] md:text-[30px] lg:text-[32px]">
           {props.title1}
           <br />
           <span className="bg-gradient-to-r from-[var(--brand)] to-[var(--purple)] bg-clip-text text-transparent">
             {props.title2}
           </span>
         </h2>
-        <p className="mt-5 text-[13px] leading-[1.75] text-[var(--text-secondary)]">
+        <p className="mt-6 text-[15px] leading-[1.75] text-[var(--text-secondary)]">
           {props.subtitle}
         </p>
 
-        <ul className="mt-9 space-y-4 text-[13px] text-[var(--text-secondary)]">
+        <ul className="mt-8 space-y-4 text-[14px] text-[var(--text-secondary)]">
           {props.bullets.map((b) => (
-            <li key={b.title} className="flex items-start gap-2.5">
+            <li key={b.title} className="flex items-start gap-3">
               <span
-                className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md ${toneClass[b.tone]}`}
+                className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md ${toneClass[b.tone]}`}
               >
-                <b.Icon className="h-3 w-3" />
+                <b.Icon className="h-3.5 w-3.5" />
               </span>
               <span className="leading-relaxed">
                 <b className="text-[var(--text)]">{b.title}</b>
@@ -129,26 +143,31 @@ export function LoginBrandPanel(props: LoginBrandPanelProps) {
             </li>
           ))}
         </ul>
-      </div>
 
-      {/* Bottom: stats + footer */}
-      <div className="relative w-full max-w-[520px]">
-        <div className="grid grid-cols-3 gap-3">
-          {props.stats.map((s) => (
-            <div
-              key={s.label}
-              className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)]/60 px-3 py-2.5 backdrop-blur-sm"
-            >
-              <Gauge className="mb-1 h-3.5 w-3.5 text-[var(--brand)]" />
-              <div className="text-[15px] font-semibold leading-tight tracking-tight text-[var(--text)]">
-                {s.value}
+        {/* Stats — grouped with hero block so the panel doesn't get a giant mid-section void */}
+        <div className="mt-8 grid grid-cols-3 gap-3">
+          {props.stats.map((s, idx) => {
+            const Icon = idx === 1 ? Shield : idx === 2 ? Activity : Gauge;
+            const iconClass = statIconClass[idx] ?? statIconClass[0];
+            return (
+              <div
+                key={s.label}
+                className="rounded-lg bg-white/80 ring-1 ring-[var(--border)]
+                           px-3.5 py-3 backdrop-blur-sm
+                           dark:bg-[var(--surface-1)]/60 dark:ring-[var(--border)]"
+              >
+                <Icon className={`mb-1.5 h-4 w-4 ${iconClass}`} />
+                <div className="text-[16px] font-semibold leading-tight tracking-tight text-[var(--text)]">
+                  {s.value}
+                </div>
+                <div className="text-[11.5px] leading-tight text-[var(--text-muted)]">{s.label}</div>
               </div>
-              <div className="text-[10px] leading-tight text-[var(--text-muted)]">{s.label}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        <div className="mt-8 text-[11px] text-[var(--text-muted)]">{props.footnote}</div>
+        <div className="mt-6 text-[12px] leading-relaxed text-[var(--text-muted)]">{props.footnote}</div>
+        </div>
       </div>
     </aside>
   );

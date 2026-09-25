@@ -38,7 +38,17 @@ function installApiClient() {
           } : {}),
         };
       },
-      () => {
+      // 仅当 401 来自身份相关端点时,才视为会话失效并退出登录;
+      // 其他端点(de-app 旧路由等)的 401 不应当场抹掉 token — 由各页面处理
+      (request: { path: string; status: number }) => {
+        const lower = request.path.toLowerCase();
+        const isAuthEndpoint =
+          lower.includes('/auth/login') ||
+          lower.includes('/auth/me') ||
+          lower.includes('/identity/login') ||
+          lower.includes('/identity/users/me') ||
+          lower.includes('/identity/refresh');
+        if (!isAuthEndpoint) return;
         useAuthStore.getState().logout();
         if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
           window.location.assign('/login');

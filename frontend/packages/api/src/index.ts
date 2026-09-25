@@ -64,7 +64,7 @@ export class ApiClient {
     private getAuthToken: () => string | null = () => null,
     private mockHandler?: (path: string, opts: RequestOptions) => Promise<unknown>,
     private getContextHeaders: () => Record<string, string> = () => ({}),
-    private onUnauthorized?: () => void,
+    private onUnauthorized?: (info: { path: string; status: number }) => void,
     /** uid-注入型路径(/api/api-keys 等)需要替换 <<USER_ID>> 占位符时调用;
      *  返回 null 表示未登录,会在 request() 抛 E_AUTH_REQUIRED */
     private getUserId?: () => string | null,
@@ -127,15 +127,22 @@ export class ApiClient {
       } catch {
         throw new ApiError('E_BAD_RESPONSE', `控制面返回非 JSON（HTTP ${res.status}）`, res.status);
       }
-      if (!res.ok || !json.ok) {
+      if (!res.ok) {
         const code = adaptErrorCode(json.error?.code ?? '');
         if (res.status === 401 || code === 'E_IDENTITY_MOCK_FORBIDDEN') {
-          this.onUnauthorized?.();
+          this.onUnauthorized?.({ path: backendPath, status: res.status });
         }
         throw new ApiError(code, json.error?.message ?? '请求失败', res.status);
       }
-      // 后端偶发返回 data: null（Go nil slice）；对数组消费方统一兜底为 []，避免 .filter 崩溃
-      const rawData = (json.data ?? null) as T;
+      // Envelope-tolerant rawData pick:
+      //  - 大多数 endpoint 返回 `{ok, data}` → 取 data 喂 adapter
+      //  - 部分端点(login 等)直接返回 raw shape(`{access_token, user}`,
+      //    无 `ok` 字段)→ 整个 json 喂 adapter,由 per-path adapter 折字段
+      //  后端偶发返回 data: null（Go nil slice）；对数组消费方统一兜底为 []，避免 .filter 崩溃
+      const isEnvelope = json && typeof json === 'object' && 'ok' in (json as object);
+      const rawData = (
+        isEnvelope ? (json as { data?: unknown }).data ?? null : (json as unknown)
+      ) as T;
       return applyResponseAdapter(method, backendPath, rawData) as T;
     } finally {
       clearTimeout(t);
@@ -211,7 +218,7 @@ export class ApiClient {
       if (!res.ok || !json.ok) {
         const code = adaptErrorCode(json.error?.code ?? '');
         if (res.status === 401 || code === 'E_IDENTITY_MOCK_FORBIDDEN') {
-          this.onUnauthorized?.();
+          this.onUnauthorized?.({ path: backendPath, status: res.status });
         }
         throw new ApiError(code, json.error?.message ?? '上传失败', res.status);
       }

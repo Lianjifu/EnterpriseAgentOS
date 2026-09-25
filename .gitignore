@@ -98,3 +98,8 @@ frontend/.DS_Store
 
 # EAOS dev-stack runtime (logs + pid files; scripts checked in)
 bin/eaos-stack/logs/
+
+# Monorepo workspaces install into nested node_modules
+node_modules/
+frontend/**/node_modules/
+backend/.venv/

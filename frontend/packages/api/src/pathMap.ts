@@ -120,6 +120,7 @@ const ROUTE_TABLE: Array<{ key: string; rule: RouteRule }> = [
   //   uninstall /lifecycle /runtime /test /versions /packs —— 全部走 passthrough
   { key: '/api/skills/:id/invoke', rule: { method: 'POST', backendPath: '/v1/skills/:id/invoke' } },
   { key: '/api/skills/:id/install', rule: { method: 'POST', backendPath: '/v1/skills/:id/install' } },
+  { key: '/api/skills/:id/uninstall', rule: { method: 'POST', backendPath: '/v1/skills/:id/uninstall' } },
   { key: '/api/skills/:id', rule: { method: 'PATCH', backendPath: '/v1/skills/:id' } },
   { key: '/api/skills/:id', rule: { method: 'DELETE', backendPath: '/v1/skills/:id' } },
   { key: '/api/skills/:id', rule: { method: 'GET', backendPath: '/v1/skills/:id' } },
@@ -174,7 +175,9 @@ const ROUTE_TABLE: Array<{ key: string; rule: RouteRule }> = [
   // 不暴露 :id/skills, :id/capabilities, :id/install, :id/uninstall, :id/publish(无 version_id)。
   // 这些 pathMap 规则全部删除,前端真模式调用时走 passthrough(404);
   // mock 模式自身也未实现这些路径,删除不影响 mock 行为。
+  { key: '/api/agents/:id/versions', rule: { method: 'POST', backendPath: '/v1/agents/:id/versions' } },
   { key: '/api/agents/:id/versions', rule: { method: 'GET', backendPath: '/v1/agents/:id/versions' } },
+  { key: '/api/agents/:id', rule: { method: 'PATCH', backendPath: '/v1/agents/:id' } },
   { key: '/api/agents/:id', rule: { method: 'GET', backendPath: '/v1/agents/:id' } },
   { key: '/api/agents', rule: { method: 'GET', backendPath: '/v1/agents' } },
 
@@ -209,7 +212,10 @@ const ROUTE_TABLE: Array<{ key: string; rule: RouteRule }> = [
   { key: '/api/evaluations', rule: { method: 'GET', backendPath: '/v1/eval/runs', note: 'list runs(backend 不暴露 datasets 列表)' } },
 
   // ── platform(prefix=/v1/platform)──────────────────────────────────
-  { key: '/api/tenant/profile', rule: { method: 'PATCH', backendPath: '/v1/platform/tenants/me' } },
+  // /api/tenant/profile PATCH maps to /v1/platform/tenants/me which doesn't
+  // exist in the backend (no PATCH endpoint exposed); mark unmatched so the
+  // frontend gets a clean 404 instead of a misleading matched=true.
+  { key: '/api/tenant/profile', rule: { method: 'PATCH', backendPath: '/v1/platform/tenants/me', unmatched: true, note: 'backend /v1/platform/tenants/me 缺,显式 unmatched' } },
   { key: '/api/billing', rule: { method: 'GET', backendPath: '/v1/platform/subscriptions/me' } },
 
   // ── governance(prefix-less, paths 都是 /v1/policies 与 /v1/approvals)──

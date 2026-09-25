@@ -56,6 +56,30 @@ describe('translateApiPath', () => {
     expect(out.matched).toBe(true);
   });
 
+  it('rewrites /api/skills/:id/uninstall → /v1/skills/:id/uninstall', () => {
+    const out = translateApiPath('/api/skills/sk-1/uninstall', 'POST');
+    expect(out.backendPath).toBe('/v1/skills/sk-1/uninstall');
+    expect(out.matched).toBe(true);
+  });
+
+  it('rewrites PATCH /api/agents/:id → PATCH /v1/agents/:id', () => {
+    const out = translateApiPath('/api/agents/ag-1', 'PATCH');
+    expect(out.backendPath).toBe('/v1/agents/ag-1');
+    expect(out.matched).toBe(true);
+  });
+
+  it('rewrites POST /api/agents/:id/versions → POST /v1/agents/:id/versions', () => {
+    const out = translateApiPath('/api/agents/ag-1/versions', 'POST');
+    expect(out.backendPath).toBe('/v1/agents/ag-1/versions');
+    expect(out.matched).toBe(true);
+  });
+
+  it('marks /api/tenant/profile PATCH as unmatched (backend /v1/platform/tenants/me 缺)', () => {
+    const out = translateApiPath('/api/tenant/profile', 'PATCH');
+    expect(out.matched).toBe(false);
+    expect(out.backendPath).toBe('/api/tenant/profile');
+  });
+
   it('rewrites /api/workflows/:id/run → /v1/orchestration/plans/:id/runs', () => {
     const out = translateApiPath('/api/workflows/wf-1/run', 'POST');
     expect(out.backendPath).toBe('/v1/orchestration/plans/wf-1/runs');
@@ -244,8 +268,8 @@ describe('translateApiPath', () => {
       expect(out.matched).toBe(false);
     });
 
-    it('falls through /api/skills/:id/{preflight,impact,uninstall,lifecycle,runtime,permissions,test,versions,governance} (no backend endpoints)', () => {
-      const actions = ['preflight', 'impact', 'uninstall', 'lifecycle', 'runtime', 'permissions', 'test', 'versions', 'governance'];
+    it('falls through /api/skills/:id/{preflight,impact,lifecycle,runtime,permissions,test,versions,governance} (no backend endpoints; uninstall wired in batch 2)', () => {
+      const actions = ['preflight', 'impact', 'lifecycle', 'runtime', 'permissions', 'test', 'versions', 'governance'];
       for (const action of actions) {
         const out = translateApiPath(`/api/skills/s-1/${action}`, 'POST');
         expect(out.matched).toBe(false);

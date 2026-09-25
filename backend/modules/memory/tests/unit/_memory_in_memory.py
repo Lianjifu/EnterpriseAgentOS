@@ -17,11 +17,16 @@ from eos_schema.ids import MemoryEntryId, TenantId, WorkspaceId
 from deos.modules.memory.application.ports import (
     EmbeddingPort,
     MemoryEventPublisher,
+    MemoryPolicyRepository,
     MemoryRepository,
     VectorSearchHit,
     VectorSearchPort,
 )
-from deos.modules.memory.domain.entities import EMBEDDING_DIM, MemoryEntry
+from deos.modules.memory.domain.entities import (
+    EMBEDDING_DIM,
+    MemoryEntry,
+    MemoryPolicy,
+)
 from deos.modules.memory.domain.value_objects import MemoryScope
 
 # ----- EmbeddingPort --------------------------------------------------------
@@ -185,6 +190,23 @@ class RecordingPublisher(MemoryEventPublisher):
 
     async def publish(self, event: object) -> None:
         self.events.append(event)
+
+
+# ----- MemoryPolicyRepository -----------------------------------------------
+
+
+class InMemoryPolicyRepository(MemoryPolicyRepository):
+    """One policy per workspace; ``get`` returns None for unknown workspaces."""
+
+    def __init__(self) -> None:
+        self._rows: dict[WorkspaceId, MemoryPolicy] = {}
+
+    async def get(self, *, workspace_id: WorkspaceId) -> MemoryPolicy | None:
+        return self._rows.get(workspace_id)
+
+    async def update(self, policy: MemoryPolicy) -> MemoryPolicy:
+        self._rows[policy.workspace_id] = policy
+        return policy
 
 
 # helper for tests ---------------------------------------------------------

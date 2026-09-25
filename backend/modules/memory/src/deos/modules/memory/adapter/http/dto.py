@@ -71,10 +71,52 @@ class MemoryListResponse(BaseModel):
     total: int
 
 
+class MemoryPolicyResponse(BaseModel):
+    """GET /v1/memories/policy response — mirrors frontend MemoryPolicy.
+
+    All fields optional in PATCH; GET returns the full document.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    workspace_id: str
+    short_term_ttl_hours: int = 24
+    working_memory_ttl_days: int = 7
+    daily_refinement_time: str = "02:00"
+    short_to_working_enabled: bool = True
+    working_to_long_enabled: bool = True
+    long_to_knowledge_enabled: bool = True
+    minimum_confidence: float = 0.6
+    long_term_write_approval: bool = True
+    sensitive_data_masking: bool = True
+    long_term_capacity: int = 50000
+    used_capacity: int = 0
+
+
+class MemoryPolicyUpdateRequest(BaseModel):
+    """PATCH /v1/memories/policy body — partial update; unknown fields rejected."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    short_term_ttl_hours: int | None = None
+    working_memory_ttl_days: int | None = None
+    daily_refinement_time: str | None = None
+    short_to_working_enabled: bool | None = None
+    working_to_long_enabled: bool | None = None
+    long_to_knowledge_enabled: bool | None = None
+    minimum_confidence: float | None = None
+    long_term_write_approval: bool | None = None
+    sensitive_data_masking: bool | None = None
+    long_term_capacity: int | None = None
+    used_capacity: int | None = None
+
+
 __all__ = [
     "MemoryEntryResponse",
     "MemoryHitResponse",
     "MemoryListResponse",
+    "MemoryPolicyResponse",
+    "MemoryPolicyUpdateRequest",
     "RecallRequest",
     "RecallResponse",
     "ScopeLiteral",

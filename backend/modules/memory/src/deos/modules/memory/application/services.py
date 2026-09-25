@@ -20,18 +20,21 @@ from deos.modules.memory.application.memory_service_port import (
 from deos.modules.memory.application.ports import (
     EmbeddingPort,
     MemoryEventPublisher,
+    MemoryPolicyRepository,
     MemoryRepository,
     VectorSearchPort,
 )
 from deos.modules.memory.application.use_cases import (
+    GetMemoryPolicyUseCase,
     GetMemoryUseCase,
     ListMemoriesUseCase,
     PurgeExpiredMemoriesUseCase,
     RecallMemoryUseCase,
     RevokeMemoryUseCase,
+    UpdateMemoryPolicyUseCase,
     WriteMemoryUseCase,
 )
-from deos.modules.memory.domain.entities import MemoryEntry
+from deos.modules.memory.domain.entities import MemoryEntry, MemoryPolicy
 from deos.modules.memory.domain.value_objects import MemoryScope
 
 
@@ -42,6 +45,7 @@ class MemoryService(MemoryServicePort):
     embedding: EmbeddingPort
     publisher: MemoryEventPublisher | None = None
     policy_guard: object | None = None
+    policy_repository: MemoryPolicyRepository | None = None
 
     write_memory: WriteMemoryUseCase | None = None
     recall_memory: RecallMemoryUseCase | None = None
@@ -49,6 +53,8 @@ class MemoryService(MemoryServicePort):
     list_memories: ListMemoriesUseCase | None = None
     revoke_memory: RevokeMemoryUseCase | None = None
     purge_expired: PurgeExpiredMemoriesUseCase | None = None
+    get_policy: GetMemoryPolicyUseCase | None = None
+    update_policy: UpdateMemoryPolicyUseCase | None = None
 
     def __post_init__(self) -> None:
         self.write_memory = WriteMemoryUseCase(
@@ -77,6 +83,11 @@ class MemoryService(MemoryServicePort):
             vector_search=self.vector_search,
             publisher=self.publisher,
         )
+        if self.policy_repository is not None:
+            self.get_policy = GetMemoryPolicyUseCase(repository=self.policy_repository)
+            self.update_policy = UpdateMemoryPolicyUseCase(
+                repository=self.policy_repository
+            )
 
     # ---- MemoryServicePort surface ---------------------------------------
 
@@ -136,6 +147,18 @@ class MemoryService(MemoryServicePort):
             actor_id=actor_id,
         )
 
+    async def get_memory_policy(
+        self, *, workspace_id: WorkspaceId
+    ) -> MemoryPolicy:
+        assert self.get_policy is not None, "policy_repository not wired"
+        return await self.get_policy.execute(workspace_id=workspace_id)
+
+    async def update_memory_policy(
+        self, *, workspace_id: WorkspaceId, **fields: object
+    ) -> MemoryPolicy:
+        assert self.update_policy is not None, "policy_repository not wired"
+        return await self.update_policy.execute(workspace_id=workspace_id, **fields)
+
     # ---- factory --------------------------------------------------------
 
     @classmethod
@@ -147,6 +170,7 @@ class MemoryService(MemoryServicePort):
         embedding: EmbeddingPort,
         publisher: MemoryEventPublisher | None = None,
         policy_guard: object | None = None,
+        policy_repository: MemoryPolicyRepository | None = None,
     ) -> MemoryService:
         return cls(
             repository=repository,
@@ -154,6 +178,7 @@ class MemoryService(MemoryServicePort):
             embedding=embedding,
             publisher=publisher,
             policy_guard=policy_guard,
+            policy_repository=policy_repository,
         )
 
 

@@ -13,12 +13,13 @@ from typing import Protocol, runtime_checkable
 
 from eos_schema.ids import MemoryEntryId, TenantId, WorkspaceId
 
-from deos.modules.memory.domain.entities import MemoryEntry
+from deos.modules.memory.domain.entities import MemoryEntry, MemoryPolicy
 from deos.modules.memory.domain.value_objects import MemoryScope
 
 __all__ = [
     "EmbeddingPort",
     "MemoryEventPublisher",
+    "MemoryPolicyRepository",
     "MemoryRepository",
     "VectorSearchHit",
     "VectorSearchPort",
@@ -116,3 +117,18 @@ class MemoryEventPublisher(Protocol):
     """Publishes domain events onto the in-process bus."""
 
     async def publish(self, event: object) -> None: ...
+
+
+@runtime_checkable
+class MemoryPolicyRepository(Protocol):
+    """Per-workspace memory governance policy.
+
+    ``get`` returns the stored policy or ``None`` when no row exists yet
+    (the use case fills in defaults). ``update`` performs an upsert.
+    Implementations are tenant-scoped via the workspace_id primary key
+    (one policy per workspace).
+    """
+
+    async def get(self, *, workspace_id: WorkspaceId) -> MemoryPolicy | None: ...
+
+    async def update(self, policy: MemoryPolicy) -> MemoryPolicy: ...

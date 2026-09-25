@@ -13,6 +13,7 @@ this in; the SQL repo lets the column default fire.
 
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
@@ -122,4 +123,38 @@ class MemoryEntry:
         return self.expires_at > (now or _utcnow())
 
 
-__all__ = ["EMBEDDING_DIM", "MemoryEntry"]
+@dataclass(slots=True, frozen=True)
+class MemoryPolicy:
+    """Per-workspace memory governance settings.
+
+    Mirrors the frontend's `MemoryPolicy` (12 fields). Stored one-per-
+    workspace; ``default()`` provides the sensible starting point that
+    GET returns when no row exists yet. PATCH builds a new instance via
+    ``update(**fields)`` so the entity stays frozen.
+    """
+
+    workspace_id: WorkspaceId
+    short_term_ttl_hours: int = 24
+    working_memory_ttl_days: int = 7
+    daily_refinement_time: str = "02:00"
+    short_to_working_enabled: bool = True
+    working_to_long_enabled: bool = True
+    long_to_knowledge_enabled: bool = True
+    minimum_confidence: float = 0.6
+    long_term_write_approval: bool = True
+    sensitive_data_masking: bool = True
+    long_term_capacity: int = 50000
+    used_capacity: int = 0
+
+    @classmethod
+    def default(cls, *, workspace_id: WorkspaceId) -> MemoryPolicy:
+        return cls(workspace_id=workspace_id)
+
+    def update(self, **fields: object) -> MemoryPolicy:
+        unknown = set(fields) - set(self.__dataclass_fields__)
+        if unknown:
+            raise ValueError(f"unknown policy fields: {sorted(unknown)}")
+        return dataclasses.replace(self, **fields)  # type: ignore[arg-type]
+
+
+__all__ = ["EMBEDDING_DIM", "MemoryEntry", "MemoryPolicy"]

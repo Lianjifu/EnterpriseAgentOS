@@ -1,7 +1,13 @@
-"""HTTP router for the memory module: write / recall / get / list / revoke.
+"""HTTP router for the memory module: write / recall / get / list / revoke
++ per-workspace memory governance policy.
 
 Mounts under ``/v1/memories`` (FastAPI prefix).  Per-request service is
 resolved via :func:`memory_service_dependency`.
+
+Route ordering: literal paths (``/policy``, ``/recall``) MUST be
+registered before the ``/{memory_id}`` wildcard so FastAPI doesn't
+422-validate the literal ``policy`` against the UUID path param. Same
+trick as identity's ``/users/me`` vs ``/users/{uid}``.
 """
 
 from __future__ import annotations
@@ -13,6 +19,8 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from deos.modules.memory.adapter.http.dto import (
     MemoryEntryResponse,
     MemoryListResponse,
+    MemoryPolicyResponse,
+    MemoryPolicyUpdateRequest,
     RecallRequest,
     RecallResponse,
     WriteMemoryRequest,
@@ -23,6 +31,7 @@ from deos.modules.memory.adapter.http.mappers import (
     memory_hit_to_dto,
 )
 from deos.modules.memory.application.services import MemoryService
+from deos.modules.memory.domain.entities import MemoryPolicy
 from deos.modules.memory.domain.value_objects import MemoryScope
 
 
@@ -85,6 +94,31 @@ def build_router() -> APIRouter:
             top_k=body.top_k,
         )
 
+    # ── policy: literal path; registered BEFORE /{memory_id} wildcard ──
+    @router.get("/policy", response_model=MemoryPolicyResponse)
+    async def get_memory_policy(
+        x_workspace_id: UUID = Header(..., alias="X-Workspace-Id"),  # noqa: B008
+        svc: MemoryService = Depends(memory_service_dependency),  # noqa: B008
+    ) -> MemoryPolicyResponse:
+        from eos_schema.ids import WorkspaceId
+
+        policy = await svc.get_memory_policy(workspace_id=WorkspaceId(x_workspace_id))
+        return _policy_to_response(policy)
+
+    @router.patch("/policy", response_model=MemoryPolicyResponse)
+    async def update_memory_policy(
+        body: MemoryPolicyUpdateRequest,
+        x_workspace_id: UUID = Header(..., alias="X-Workspace-Id"),  # noqa: B008
+        svc: MemoryService = Depends(memory_service_dependency),  # noqa: B008
+    ) -> MemoryPolicyResponse:
+        from eos_schema.ids import WorkspaceId
+
+        patch = body.model_dump(exclude_unset=True)
+        policy = await svc.update_memory_policy(
+            workspace_id=WorkspaceId(x_workspace_id), **patch
+        )
+        return _policy_to_response(policy)
+
     @router.get("/{memory_id}", response_model=MemoryEntryResponse)
     async def get_memory(
         memory_id: UUID,
@@ -138,6 +172,23 @@ def build_router() -> APIRouter:
         return memory_entry_to_dto(entry)
 
     return router
+
+
+def _policy_to_response(p: MemoryPolicy) -> MemoryPolicyResponse:
+    return MemoryPolicyResponse(
+        workspace_id=str(p.workspace_id),
+        short_term_ttl_hours=p.short_term_ttl_hours,
+        working_memory_ttl_days=p.working_memory_ttl_days,
+        daily_refinement_time=p.daily_refinement_time,
+        short_to_working_enabled=p.short_to_working_enabled,
+        working_to_long_enabled=p.working_to_long_enabled,
+        long_to_knowledge_enabled=p.long_to_knowledge_enabled,
+        minimum_confidence=p.minimum_confidence,
+        long_term_write_approval=p.long_term_write_approval,
+        sensitive_data_masking=p.sensitive_data_masking,
+        long_term_capacity=p.long_term_capacity,
+        used_capacity=p.used_capacity,
+    )
 
 
 __all__ = ["build_router", "memory_service_dependency"]

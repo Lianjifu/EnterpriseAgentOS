@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from deos.modules.memory.domain.entities import EMBEDDING_DIM, MemoryEntry
+from deos.modules.memory.domain.entities import EMBEDDING_DIM, MemoryEntry, MemoryPolicy
 from deos.modules.memory.domain.errors import (
     InvalidMemorySpec,
     MemoryAlreadyRevoked,
@@ -20,6 +20,7 @@ __all__ = [
     "MemoryError",
     "MemoryExpired",
     "MemoryNotFound",
+    "MemoryPolicy",
     "MemoryQuery",
     "MemoryScope",
 ]

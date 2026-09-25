@@ -12,6 +12,7 @@ from uuid import uuid4
 from _memory_unit_in_memory import (
     DeterministicEmbedding,
     InMemoryMemoryRepository,
+    InMemoryPolicyRepository,
     InMemoryVectorSearch,
     RecordingPublisher,
 )
@@ -29,8 +30,13 @@ def _build_app() -> tuple[FastAPI, MemoryService]:
     vs = InMemoryVectorSearch()
     emb = DeterministicEmbedding()
     pub = RecordingPublisher()
+    policy_repo = InMemoryPolicyRepository()
     svc = MemoryService.from_parts(
-        repository=repo, vector_search=vs, embedding=emb, publisher=pub
+        repository=repo,
+        vector_search=vs,
+        embedding=emb,
+        publisher=pub,
+        policy_repository=policy_repo,
     )
 
     app = FastAPI()
@@ -273,3 +279,87 @@ def test_recall_rejects_oversize_top_k() -> None:
         "/v1/memories/recall", headers=hdr, json={"query": "x", "top_k": 100}
     )
     assert resp.status_code == 422
+
+
+# ── policy endpoint ────────────────────────────────────────────────────
+
+
+def test_get_policy_returns_defaults_for_new_workspace() -> None:
+    app, _ = _build_app()
+    client = TestClient(app)
+    workspace_id = uuid4()
+    hdr = {"X-Workspace-Id": str(workspace_id)}
+    resp = client.get("/v1/memories/policy", headers=hdr)
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["workspace_id"] == str(workspace_id)
+    assert body["short_term_ttl_hours"] == 24
+    assert body["working_memory_ttl_days"] == 7
+    assert body["long_term_write_approval"] is True
+    assert body["used_capacity"] == 0
+
+
+def test_get_policy_missing_header_returns_422() -> None:
+    app, _ = _build_app()
+    client = TestClient(app)
+    resp = client.get("/v1/memories/policy")
+    assert resp.status_code == 422
+
+
+def test_patch_policy_merges_partial_update() -> None:
+    app, _ = _build_app()
+    client = TestClient(app)
+    hdr = {"X-Workspace-Id": str(uuid4())}
+    # Seed via GET (lazy default)
+    client.get("/v1/memories/policy", headers=hdr)
+    resp = client.patch(
+        "/v1/memories/policy",
+        headers=hdr,
+        json={
+            "short_term_ttl_hours": 48,
+            "long_term_write_approval": False,
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    # patched fields
+    assert body["short_term_ttl_hours"] == 48
+    assert body["long_term_write_approval"] is False
+    # untouched defaults preserved
+    assert body["working_memory_ttl_days"] == 7
+    assert body["sensitive_data_masking"] is True
+
+
+def test_patch_policy_persists_across_gets() -> None:
+    app, _ = _build_app()
+    client = TestClient(app)
+    hdr = {"X-Workspace-Id": str(uuid4())}
+    client.patch(
+        "/v1/memories/policy",
+        headers=hdr,
+        json={"long_term_capacity": 12345},
+    )
+    resp = client.get("/v1/memories/policy", headers=hdr)
+    assert resp.json()["long_term_capacity"] == 12345
+
+
+def test_patch_policy_rejects_unknown_field() -> None:
+    app, _ = _build_app()
+    client = TestClient(app)
+    hdr = {"X-Workspace-Id": str(uuid4())}
+    resp = client.patch(
+        "/v1/memories/policy",
+        headers=hdr,
+        json={"not_a_field": True},
+    )
+    assert resp.status_code == 422
+
+
+def test_policy_literal_wins_over_memory_id_wildcard() -> None:
+    """`/policy` must hit its own handler, NOT `/{}` with 'policy' as id."""
+    app, _ = _build_app()
+    client = TestClient(app)
+    hdr = {"X-Workspace-Id": str(uuid4())}
+    resp = client.get("/v1/memories/policy", headers=hdr)
+    assert resp.status_code == 200
+    assert "short_term_ttl_hours" in resp.json()

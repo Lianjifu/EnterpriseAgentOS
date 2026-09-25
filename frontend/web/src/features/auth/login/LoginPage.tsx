@@ -69,13 +69,13 @@ export default function LoginPage() {
 
   const demoRoles: LoginDemoRole[] = [
     {
-      email: 'user@acme.com',
+      email: 'admin@example.com',
       label: t('login.demoRoleUser'),
       sub: t('login.demoRoleUserSub'),
       Icon: UserRound,
     },
     {
-      email: 'admin@acme.com',
+      email: 'admin@example.com',
       label: t('login.demoRoleAdmin'),
       sub: t('login.demoRoleAdminSub'),
       Icon: Shield,

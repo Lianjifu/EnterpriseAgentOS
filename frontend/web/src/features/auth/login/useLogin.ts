@@ -155,7 +155,7 @@ export function useLogin(opts: UseLoginOpts = {}) {
 
   const chooseRole = useCallback((nextEmail: string) => {
     setEmail(nextEmail);
-    setPassword('demo123456');
+    setPassword('dev-admin-password-change-me');
     setMfa('');
   }, []);
 

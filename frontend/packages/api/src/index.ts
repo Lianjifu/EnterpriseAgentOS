@@ -4,7 +4,7 @@
  */
 import type { ApiResponse } from '@de/web-types';
 import { translateApiPath, type HttpMethod } from './pathMap';
-import { applyResponseAdapter } from './responseAdapters';
+import { applyResponseAdapter, adaptErrorCode } from './responseAdapters';
 
 export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -116,7 +116,7 @@ export class ApiClient {
         throw new ApiError('E_BAD_RESPONSE', `控制面返回非 JSON（HTTP ${res.status}）`, res.status);
       }
       if (!res.ok || !json.ok) {
-        const code = json.error?.code ?? 'E_UNKNOWN';
+        const code = adaptErrorCode(json.error?.code ?? '');
         if (res.status === 401 || code === 'E_IDENTITY_MOCK_FORBIDDEN') {
           this.onUnauthorized?.();
         }
@@ -197,7 +197,7 @@ export class ApiClient {
         throw new ApiError('E_BAD_RESPONSE', `控制面返回非 JSON（HTTP ${res.status}）`, res.status);
       }
       if (!res.ok || !json.ok) {
-        const code = json.error?.code ?? 'E_UNKNOWN';
+        const code = adaptErrorCode(json.error?.code ?? '');
         if (res.status === 401 || code === 'E_IDENTITY_MOCK_FORBIDDEN') {
           this.onUnauthorized?.();
         }
@@ -228,4 +228,4 @@ export const mock = mockModule;
 
 export { mockHandlerWithAdapters } from './mockAdapter';
 export { translateApiPath } from './pathMap';
-export { applyResponseAdapter } from './responseAdapters';
+export { applyResponseAdapter, adaptErrorCode } from './responseAdapters';

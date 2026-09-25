@@ -55,6 +55,35 @@ const PASSTHROUGH = (raw: unknown): unknown => raw;
 void PASSTHROUGH;
 
 /**
+ * 把后端 `eos_kernel` 错误码映射到前端 `E_*` 编码空间。
+ *
+ * 后端 errors.py 的稳定码是 plain UPPER_SNAKE (`AUTHENTICATION_FAILED`,
+ * `FORBIDDEN`, `NOT_FOUND`, ...); 前端约定使用 `E_AUTH_FAILED`,
+ * `E_FORBIDDEN`, ... 等 `E_*` 编码(便于日志聚合 + 与 mock 模式一致)。
+ *
+ * 未知 code 原样返回 —— 保留运维诊断信息,不静默改写。
+ */
+const BACKEND_ERROR_TO_FRONTEND: Record<string, string> = {
+  VALIDATION_ERROR: 'E_BAD_REQUEST',
+  AUTHENTICATION_FAILED: 'E_AUTH_FAILED',
+  FORBIDDEN: 'E_FORBIDDEN',
+  ACTION_DENIED: 'E_FORBIDDEN',
+  APPROVAL_REQUIRED: 'E_APPROVAL_REQUIRED',
+  NOT_FOUND: 'E_NOT_FOUND',
+  CONFLICT: 'E_CONFLICT',
+  BUSINESS_RULE_VIOLATED: 'E_BUSINESS_RULE',
+  RATE_LIMITED: 'E_RATE_LIMITED',
+  EXTERNAL_SERVICE_ERROR: 'E_UPSTREAM',
+  INTERNAL_ERROR: 'E_INTERNAL',
+};
+
+export function adaptErrorCode(backendCode: string): string {
+  if (!backendCode) return 'E_UNKNOWN';
+  if (backendCode.startsWith('E_')) return backendCode;
+  return BACKEND_ERROR_TO_FRONTEND[backendCode] ?? backendCode;
+}
+
+/**
  * 按 (method, path) 选 adapter。
  * `path` 应当是已 translate 过的后端路径,方便统一匹配。
  */

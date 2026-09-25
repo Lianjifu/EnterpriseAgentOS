@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyResponseAdapter } from './responseAdapters';
+import { applyResponseAdapter, adaptErrorCode } from './responseAdapters';
 
 describe('applyResponseAdapter', () => {
   it('adapts POST /v1/identity/login from snake_case to frontend shape', () => {
@@ -90,5 +90,40 @@ describe('applyResponseAdapter', () => {
       ],
       total: 1,
     });
+  });
+});
+
+describe('adaptErrorCode', () => {
+  it('maps backend AUTHENTICATION_FAILED → frontend E_AUTH_FAILED', () => {
+    expect(adaptErrorCode('AUTHENTICATION_FAILED')).toBe('E_AUTH_FAILED');
+  });
+
+  it('maps every backend error.py stable code', () => {
+    expect(adaptErrorCode('VALIDATION_ERROR')).toBe('E_BAD_REQUEST');
+    expect(adaptErrorCode('FORBIDDEN')).toBe('E_FORBIDDEN');
+    expect(adaptErrorCode('ACTION_DENIED')).toBe('E_FORBIDDEN');
+    expect(adaptErrorCode('APPROVAL_REQUIRED')).toBe('E_APPROVAL_REQUIRED');
+    expect(adaptErrorCode('NOT_FOUND')).toBe('E_NOT_FOUND');
+    expect(adaptErrorCode('CONFLICT')).toBe('E_CONFLICT');
+    expect(adaptErrorCode('BUSINESS_RULE_VIOLATED')).toBe('E_BUSINESS_RULE');
+    expect(adaptErrorCode('RATE_LIMITED')).toBe('E_RATE_LIMITED');
+    expect(adaptErrorCode('EXTERNAL_SERVICE_ERROR')).toBe('E_UPSTREAM');
+    expect(adaptErrorCode('INTERNAL_ERROR')).toBe('E_INTERNAL');
+  });
+
+  it('passes through frontend E_* codes unchanged (idempotent for already-normalized inputs)', () => {
+    expect(adaptErrorCode('E_AUTH_FAILED')).toBe('E_AUTH_FAILED');
+    expect(adaptErrorCode('E_FORBIDDEN')).toBe('E_FORBIDDEN');
+    expect(adaptErrorCode('E_IDENTITY_MOCK_FORBIDDEN')).toBe('E_IDENTITY_MOCK_FORBIDDEN');
+  });
+
+  it('returns the original code when backend raises a domain-specific error we have not catalogued', () => {
+    // 保留运维可读性:不认识的 backend code 原样返回,便于日志定位
+    expect(adaptErrorCode('TENANT_DENIED')).toBe('TENANT_DENIED');
+    expect(adaptErrorCode('WORKSPACE_NOT_FOUND')).toBe('WORKSPACE_NOT_FOUND');
+  });
+
+  it('returns E_UNKNOWN for empty / missing input', () => {
+    expect(adaptErrorCode('')).toBe('E_UNKNOWN');
   });
 });

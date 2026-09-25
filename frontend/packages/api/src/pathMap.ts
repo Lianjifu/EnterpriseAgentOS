@@ -68,9 +68,8 @@ const ROUTE_TABLE: Array<{ key: string; rule: RouteRule }> = [
   { key: '/api/skills/upgrade-plan', rule: { method: 'GET', backendPath: '', unmatched: true } },
 
   // ── memory phantom 子段(必须排在 :id wildcard 之前)────────────────
+  // /api/memory/policy wired in batch 3, removed from phantom list
   { key: '/api/memory/audit', rule: { method: 'GET', backendPath: '', unmatched: true } },
-  { key: '/api/memory/policy', rule: { method: 'GET', backendPath: '', unmatched: true } },
-  { key: '/api/memory/policy', rule: { method: 'PATCH', backendPath: '', unmatched: true } },
   { key: '/api/memory/candidates', rule: { method: 'GET', backendPath: '', unmatched: true } },
   { key: '/api/memory/refinement/run', rule: { method: 'POST', backendPath: '', unmatched: true } },
   { key: '/api/memory/overview', rule: { method: 'GET', backendPath: '', unmatched: true } },
@@ -135,6 +134,8 @@ const ROUTE_TABLE: Array<{ key: string; rule: RouteRule }> = [
   // 无 /audit /policy —— 走 passthrough
   { key: '/api/memory/records/:id', rule: { method: 'DELETE', backendPath: '/v1/memories/:id' } },
   { key: '/api/memory/records/:id', rule: { method: 'GET', backendPath: '/v1/memories/:id' } },
+  { key: '/api/memory/policy', rule: { method: 'PATCH', backendPath: '/v1/memories/policy' } },
+  { key: '/api/memory/policy', rule: { method: 'GET', backendPath: '/v1/memories/policy' } },
   { key: '/api/memory/recall', rule: { method: 'POST', backendPath: '/v1/memories/recall' } },
   { key: '/api/memory/records', rule: { method: 'POST', backendPath: '/v1/memories' } },
   { key: '/api/memory/records', rule: { method: 'GET', backendPath: '/v1/memories' } },

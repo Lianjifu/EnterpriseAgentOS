@@ -80,6 +80,18 @@ describe('translateApiPath', () => {
     expect(out.backendPath).toBe('/api/tenant/profile');
   });
 
+  it('rewrites /api/memory/policy GET → /v1/memories/policy', () => {
+    const out = translateApiPath('/api/memory/policy', 'GET');
+    expect(out.matched).toBe(true);
+    expect(out.backendPath).toBe('/v1/memories/policy');
+  });
+
+  it('rewrites /api/memory/policy PATCH → /v1/memories/policy', () => {
+    const out = translateApiPath('/api/memory/policy', 'PATCH');
+    expect(out.backendPath).toBe('/v1/memories/policy');
+    expect(out.method).toBe('PATCH');
+  });
+
   it('rewrites /api/workflows/:id/run → /v1/orchestration/plans/:id/runs', () => {
     const out = translateApiPath('/api/workflows/wf-1/run', 'POST');
     expect(out.backendPath).toBe('/v1/orchestration/plans/wf-1/runs');
@@ -283,16 +295,13 @@ describe('translateApiPath', () => {
       expect(out.matched).toBe(false);
     });
 
-    it('falls through /api/memory/policy (backend has no /policy endpoint)', () => {
-      const out = translateApiPath('/api/memory/policy', 'GET');
-      expect(out.matched).toBe(false);
+    it('wires /api/memory/policy (wired in batch 3)', () => {
+      const getOut = translateApiPath('/api/memory/policy', 'GET');
+      expect(getOut.matched).toBe(true);
+      expect(getOut.backendPath).toBe('/v1/memories/policy');
       const patchOut = translateApiPath('/api/memory/policy', 'PATCH');
-      expect(patchOut.matched).toBe(false);
-    });
-
-    it('falls through /api/memory/records/:id/expire (backend has no /expire endpoint)', () => {
-      const out = translateApiPath('/api/memory/records/mem-1/expire', 'POST');
-      expect(out.matched).toBe(false);
+      expect(patchOut.matched).toBe(true);
+      expect(patchOut.backendPath).toBe('/v1/memories/policy');
     });
   });
 

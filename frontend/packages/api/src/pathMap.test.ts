@@ -174,4 +174,13 @@ describe('translateApiPath', () => {
     const deleteOut = translateApiPath('/api/agents/a-1/capabilities/c-1', 'DELETE');
     expect(deleteOut.matched).toBe(false);
   });
+
+  // ── batch 5:knowledge packages verb mismatch ─────────────────────────
+  it('rewrites DELETE /api/knowledge/packages/:id/delete → DELETE /v1/knowledge/packages/:id', () => {
+    // mock 走 /packages/:id/delete 子路径,backend 走 /packages/:id DELETE 动词
+    const out = translateApiPath('/api/knowledge/packages/p-1/delete', 'DELETE');
+    expect(out.matched).toBe(true);
+    expect(out.method).toBe('DELETE');
+    expect(out.backendPath).toBe('/v1/knowledge/packages/p-1');
+  });
 });

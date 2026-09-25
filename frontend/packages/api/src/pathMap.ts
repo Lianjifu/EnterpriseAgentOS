@@ -93,6 +93,8 @@ const ROUTE_TABLE: Array<{ key: string; rule: RouteRule }> = [
   { key: '/api/knowledge/governance', rule: { method: 'PATCH', backendPath: '/v1/knowledge/governance' } },
   { key: '/api/knowledge/packages', rule: { method: 'GET', backendPath: '/v1/knowledge/packages' } },
   { key: '/api/knowledge/packages', rule: { method: 'POST', backendPath: '/v1/knowledge/packages' } },
+  // 前后端命名差异:mock 走 /packages/:id/delete,backend 走 /packages/:id DELETE
+  { key: '/api/knowledge/packages/:id/delete', rule: { method: 'DELETE', backendPath: '/v1/knowledge/packages/:id' } },
   { key: '/api/knowledge/packages/:id/publish', rule: { method: 'POST', backendPath: '/v1/knowledge/packages/:id/publish' } },
   { key: '/api/knowledge/packages/:id/process', rule: { method: 'POST', backendPath: '/v1/knowledge/packages/:id/process' } },
   { key: '/api/knowledge/audit', rule: { method: 'GET', backendPath: '/v1/knowledge/audit' } },

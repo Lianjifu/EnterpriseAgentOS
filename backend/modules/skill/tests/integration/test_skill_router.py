@@ -281,3 +281,59 @@ def test_router_disable_skill_204() -> None:
     reg = client.post("/v1/skills", headers=_headers(), json=payload).json()
     resp = client.delete(f"/v1/skills/{reg['id']}", headers=_headers())
     assert resp.status_code == 204
+
+
+def test_router_uninstall_skill_204() -> None:
+    """POST /{id}/uninstall must mirror DELETE: soft-disable + 204."""
+    app, _uow, _runner = _build_app()
+    client = TestClient(app)
+    payload = {
+        "name": "echo",
+        "version": "1.0.0",
+        "description": "",
+        "entrypoint": sys.executable,
+        "image": "python:3.12-slim",
+        "parameters_schema": {},
+        "artifact_uri": "skill-artifact://seed",
+        "network_policy": "default",
+        "timeout_seconds": 30,
+    }
+    reg = client.post("/v1/skills", headers=_headers(), json=payload).json()
+    resp = client.post(f"/v1/skills/{reg['id']}/uninstall", headers=_headers())
+    assert resp.status_code == 204, resp.text
+
+
+def test_router_uninstall_unknown_skill_404() -> None:
+    app, _uow, _runner = _build_app()
+    client = TestClient(app)
+    resp = client.post(
+        "/v1/skills/00000000-0000-0000-0000-000000000099/uninstall",
+        headers=_headers(),
+    )
+    assert resp.status_code == 404
+
+
+def test_router_uninstall_missing_header_422() -> None:
+    app, _uow, _runner = _build_app()
+    client = TestClient(app)
+    payload = {
+        "name": "echo",
+        "version": "1.0.0",
+        "description": "",
+        "entrypoint": sys.executable,
+        "image": "python:3.12-slim",
+        "parameters_schema": {},
+        "artifact_uri": "skill-artifact://seed",
+        "network_policy": "default",
+        "timeout_seconds": 30,
+    }
+    reg = client.post("/v1/skills", headers=_headers(), json=payload).json()
+    # Missing X-User-Id
+    resp = client.post(
+        f"/v1/skills/{reg['id']}/uninstall",
+        headers={
+            "X-Tenant-Id": str(make_tenant()),
+            "X-Workspace-Id": str(make_workspace()),
+        },
+    )
+    assert resp.status_code == 422

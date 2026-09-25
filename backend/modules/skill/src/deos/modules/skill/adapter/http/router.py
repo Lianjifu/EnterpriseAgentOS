@@ -203,6 +203,29 @@ def build_router() -> APIRouter:
         )
 
     @router.post(
+        "/{skill_id}/uninstall", status_code=204
+    )
+    async def uninstall_skill(
+        skill_id: UUID,
+        x_tenant_id: UUID = Header(..., alias="X-Tenant-Id"),  # noqa: B008
+        x_workspace_id: UUID = Header(..., alias="X-Workspace-Id"),  # noqa: B008
+        x_user_id: UUID = Header(..., alias="X-User-Id"),  # noqa: B008
+        svc: SkillService = Depends(skill_dependency),  # noqa: B008
+    ) -> Response:
+        # Symmetric with install: removes the active install + soft-disables the
+        # package so future invokes 404. Distinct verb path (POST /uninstall)
+        # from DELETE /{id} so the frontend can keep the two actions separate
+        # (mock semantics: uninstall ≠ disable). Domain-level semantic stays
+        # soft-delete; a future UNINSTALLED status would be a follow-up.
+        await svc.disable_skill.execute(
+            tenant_id=x_tenant_id,
+            workspace_id=x_workspace_id,
+            skill_id=skill_id,
+            disabled_by=x_user_id,
+        )
+        return Response(status_code=204)
+
+    @router.post(
         "/{skill_id}/invoke", status_code=202, response_model=SkillInvocationResponse
     )
     async def invoke_skill(

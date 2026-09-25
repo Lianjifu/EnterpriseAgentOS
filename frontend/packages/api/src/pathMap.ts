@@ -99,9 +99,11 @@ const ROUTE_TABLE: Array<{ key: string; rule: RouteRule }> = [
   { key: '/api/knowledge/eval', rule: { method: 'GET', backendPath: '/v1/knowledge/eval' } },
 
   // ── Phase B+ batch 4:workflows(orchestration module: /v1/orchestration) ──
+  // 注意:backend 列 runs 是 /v1/orchestration/runs(全局列表,用 query ?plan_id 过滤),
+  // 不是 /v1/orchestration/plans/:id/runs —— 后者无对应端点
   { key: '/api/workflows/:id/runs/:runId/retry', rule: { method: 'POST', backendPath: '/v1/orchestration/runs/:runId/retry' } },
   { key: '/api/workflows/:id/runs/:runId/resume', rule: { method: 'POST', backendPath: '/v1/orchestration/runs/:runId/resume' } },
-  { key: '/api/workflows/:id/runs', rule: { method: 'GET', backendPath: '/v1/orchestration/plans/:id/runs' } },
+  { key: '/api/workflows/:id/runs', rule: { method: 'GET', backendPath: '/v1/orchestration/runs', note: 'backend 列全局 runs,?plan_id 过滤' } },
   { key: '/api/workflows/:id/run', rule: { method: 'POST', backendPath: '/v1/orchestration/plans/:id/runs' } },
   { key: '/api/workflows/:id/audit', rule: { method: 'GET', backendPath: '/v1/orchestration/plans/:id/audit' } },
   { key: '/api/workflows/:id/versions', rule: { method: 'GET', backendPath: '/v1/orchestration/plans/:id/versions' } },
@@ -110,15 +112,12 @@ const ROUTE_TABLE: Array<{ key: string; rule: RouteRule }> = [
   { key: '/api/workflows/:id', rule: { method: 'GET', backendPath: '/v1/orchestration/plans/:id' } },
   { key: '/api/workflows', rule: { method: 'GET', backendPath: '/v1/orchestration/plans' } },
 
-  // ── Phase B+ batch 5:agents(agent_factory + agent_runtime) ───────────
-  { key: '/api/agents/:id/skills/:bindingId', rule: { method: 'DELETE', backendPath: '/v1/agents/:id/skills/:bindingId' } },
-  { key: '/api/agents/:id/skills', rule: { method: 'POST', backendPath: '/v1/agents/:id/skills' } },
+  // ── Phase B+ batch 5:agents(agent_factory: /v1/agents) ────────────────
+  // 注:agent_factory router 只有 {aid}, {aid}/versions, {aid}/versions/{vid}/{publish,release,retire,notes} 等
+  // 不暴露 :id/skills, :id/capabilities, :id/install, :id/uninstall, :id/publish(无 version_id)。
+  // 这些 pathMap 规则全部删除,前端真模式调用时走 passthrough(404);
+  // mock 模式自身也未实现这些路径,删除不影响 mock 行为。
   { key: '/api/agents/:id/versions', rule: { method: 'GET', backendPath: '/v1/agents/:id/versions' } },
-  { key: '/api/agents/:id/capabilities/:bindingId', rule: { method: 'DELETE', backendPath: '/v1/agents/:id/capabilities/:bindingId' } },
-  { key: '/api/agents/:id/capabilities', rule: { method: 'POST', backendPath: '/v1/agents/:id/capabilities' } },
-  { key: '/api/agents/:id/install', rule: { method: 'POST', backendPath: '/v1/agents/:id/install' } },
-  { key: '/api/agents/:id/uninstall', rule: { method: 'POST', backendPath: '/v1/agents/:id/uninstall' } },
-  { key: '/api/agents/:id/publish', rule: { method: 'POST', backendPath: '/v1/agents/:id/versions/default/publish' } },
   { key: '/api/agents/:id', rule: { method: 'GET', backendPath: '/v1/agents/:id' } },
   { key: '/api/agents', rule: { method: 'GET', backendPath: '/v1/agents' } },
 
@@ -136,12 +135,13 @@ const ROUTE_TABLE: Array<{ key: string; rule: RouteRule }> = [
   { key: '/api/channels', rule: { method: 'GET', backendPath: '/v1/channels' } },
 
   // ── Phase B+ batch 8:evaluations(evaluation module: /v1/eval) ────────
-  { key: '/api/evaluations/:id/report', rule: { method: 'GET', backendPath: '/v1/eval/:id/report' } },
-  { key: '/api/evaluations/:id/run', rule: { method: 'POST', backendPath: '/v1/eval/:id/run' } },
-  { key: '/api/evaluations/:id/stop', rule: { method: 'POST', backendPath: '/v1/eval/:id/stop' } },
-  { key: '/api/evaluations/:id/retry', rule: { method: 'POST', backendPath: '/v1/eval/:id/retry' } },
-  { key: '/api/evaluations/:id', rule: { method: 'GET', backendPath: '/v1/eval/:id' } },
-  { key: '/api/evaluations', rule: { method: 'GET', backendPath: '/v1/eval' } },
+  // 注:backend 的资源是 /v1/eval/datasets 和 /v1/eval/runs,顶层 /v1/eval 不存在
+  // GET /api/evaluations → list runs(backend 无 datasets 列表的 mock 入口,统一映射到 runs)
+  // GET /api/evaluations/:id → single run
+  // /api/evaluations/:id/{run,stop,retry,report} 全部 fallback passthrough —— backend 无对应端点
+  { key: '/api/evaluations', rule: { method: 'GET', backendPath: '/v1/eval/runs', note: 'list runs(backend 不暴露 datasets 列表)' } },
+  { key: '/api/evaluations', rule: { method: 'POST', backendPath: '/v1/eval/runs', note: 'create run' } },
+  { key: '/api/evaluations/:id', rule: { method: 'GET', backendPath: '/v1/eval/runs/:id' } },
 
   // ── Phase B+ batch 9:platform(platform module: /v1/platform) ────────
   { key: '/api/tenant/profile', rule: { method: 'PATCH', backendPath: '/v1/platform/tenants/me' } },
@@ -203,10 +203,12 @@ const ROUTE_TABLE: Array<{ key: string; rule: RouteRule }> = [
   // - /api/home/{kpis,events,team,...}→ 后端无 aggregate endpoint
   // - /api/copilot/*                  → agent_runtime 路径不一致
   // - /api/agents/{metrics,calls,alerts,trend} → agent_runtime 不暴露聚合
+  // - /api/agents/:id/{publish,install,uninstall,skills,capabilities} → agent_factory 无对应端点(已从 pathMap 移除)
   // - /api/channel-control/*          → channel 路径不同
   // - /api/skill-integrations/*       → 需进一步核对
   // - /api/tasks                      → orchestration 无 /tasks 端点(只有 plans + runs)
   // - /api/zero-trust/{evaluate,events,authorizations} → governance 无专用端点
+  // - /api/evaluations/:id/{run,stop,retry,report} → backend eval 仅 datasets + runs,无 lifecycle 端点(已从 pathMap 移除)
 ];
 
 export interface TranslatedRoute {

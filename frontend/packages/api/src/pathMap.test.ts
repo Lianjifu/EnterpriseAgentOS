@@ -113,4 +113,65 @@ describe('translateApiPath', () => {
     expect(out.matched).toBe(false);
     expect(out.backendPath).toBe('/api/tasks');
   });
+
+  // ── batch 4:evaluation 修正 ────────────────────────────────────────
+  it('rewrites GET /api/evaluations → GET /v1/eval/runs (list runs)', () => {
+    const out = translateApiPath('/api/evaluations', 'GET');
+    expect(out.matched).toBe(true);
+    expect(out.backendPath).toBe('/v1/eval/runs');
+  });
+
+  it('rewrites POST /api/evaluations → POST /v1/eval/runs (create run)', () => {
+    const out = translateApiPath('/api/evaluations', 'POST');
+    expect(out.backendPath).toBe('/v1/eval/runs');
+  });
+
+  it('rewrites GET /api/evaluations/:id → GET /v1/eval/runs/:id (single run)', () => {
+    const out = translateApiPath('/api/evaluations/eval-7', 'GET');
+    expect(out.backendPath).toBe('/v1/eval/runs/eval-7');
+  });
+
+  it('falls through /api/evaluations/:id/{run,stop,retry,report} (backend has no such lifecycle endpoints)', () => {
+    // backend /v1/eval 只有 /datasets 和 /runs,没有 /run /stop /retry /report
+    const actions = ['run', 'stop', 'retry', 'report'];
+    for (const action of actions) {
+      const out = translateApiPath(`/api/evaluations/eval-1/${action}`, 'POST');
+      expect(out.matched).toBe(false);
+      expect(out.backendPath).toBe(`/api/evaluations/eval-1/${action}`);
+    }
+  });
+
+  // ── batch 4:orchestration runs 修正 ─────────────────────────────────
+  it('rewrites GET /api/workflows/:id/runs → GET /v1/orchestration/runs (global list, ?plan_id filter)', () => {
+    // backend 列 runs 是全局 /v1/orchestration/runs,用 query param ?plan_id 过滤
+    // 不是 /v1/orchestration/plans/:id/runs(无此端点)
+    const out = translateApiPath('/api/workflows/wf-1/runs', 'GET');
+    expect(out.matched).toBe(true);
+    expect(out.backendPath).toBe('/v1/orchestration/runs');
+  });
+
+  // ── batch 4:agents phantom rules 移除 ──────────────────────────────
+  it('falls through /api/agents/:id/{publish,install,uninstall} (no backend endpoint)', () => {
+    // agent_factory 无 /publish /install /uninstall 端点(publish 需要 vid,install 在 skill 模块)
+    const actions = ['publish', 'install', 'uninstall'];
+    for (const action of actions) {
+      const out = translateApiPath(`/api/agents/a-1/${action}`, 'POST');
+      expect(out.matched).toBe(false);
+    }
+  });
+
+  it('falls through /api/agents/:id/skills[/:bindingId] (no backend endpoint)', () => {
+    // agent_factory 不暴露 agent→skill 绑定
+    const createOut = translateApiPath('/api/agents/a-1/skills', 'POST');
+    expect(createOut.matched).toBe(false);
+    const deleteOut = translateApiPath('/api/agents/a-1/skills/b-1', 'DELETE');
+    expect(deleteOut.matched).toBe(false);
+  });
+
+  it('falls through /api/agents/:id/capabilities[/:bindingId] (no backend endpoint)', () => {
+    const createOut = translateApiPath('/api/agents/a-1/capabilities', 'POST');
+    expect(createOut.matched).toBe(false);
+    const deleteOut = translateApiPath('/api/agents/a-1/capabilities/c-1', 'DELETE');
+    expect(deleteOut.matched).toBe(false);
+  });
 });

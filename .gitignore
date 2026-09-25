@@ -95,3 +95,6 @@ frontend/web/.env.local
 frontend/web/.env.*.local
 frontend/**/*.log
 frontend/.DS_Store
+
+# EAOS dev-stack runtime (logs + pid files; scripts checked in)
+bin/eaos-stack/logs/

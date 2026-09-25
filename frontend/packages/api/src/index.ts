@@ -218,7 +218,7 @@ export class ApiClient {
       if (!res.ok || !json.ok) {
         const code = adaptErrorCode(json.error?.code ?? '');
         if (res.status === 401 || code === 'E_IDENTITY_MOCK_FORBIDDEN') {
-          this.onUnauthorized?.({ path: backendPath, status: res.status });
+          this.onUnauthorized?.({ path: uploadTranslated.backendPath, status: res.status });
         }
         throw new ApiError(code, json.error?.message ?? '上传失败', res.status);
       }

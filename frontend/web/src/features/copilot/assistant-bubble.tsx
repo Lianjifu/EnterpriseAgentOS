@@ -95,7 +95,7 @@ function AssistantBubble({
   onRequestReject: (mid: string, idx: number) => void;
   copiedId: string | null;
   agentName?: string;
-  expertRole?: string;
+  expertRole?: string | null;
   expert?: Pick<DigitalEmployee, 'id' | 'name' | 'department' | 'avatarUrl' | 'capabilities'> | { id: string; name: string; department?: string; avatarUrl?: string; capabilities?: DigitalEmployee['capabilities'] };
   onOpenContext: (tab: WorkbenchContextTab, messageId?: string, artifact?: SkillArtifactLink, options?: { startSlide?: number }) => void;
   selectedContextMessageId?: string;

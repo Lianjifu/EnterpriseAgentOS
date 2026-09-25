@@ -109,6 +109,7 @@ import { SkillArtifactDownloadCard, formatFileSize, fetchContentLength } from '@
 import { FeedbackForm } from '@/features/copilot/feedback-form';
 import { UserBubble } from '@/features/copilot/user-bubble';
 import { AssistantBubble } from '@/features/copilot/assistant-bubble';
+import { MessageList } from '@/features/copilot/message-list';
 import { DocumentPreviewPanel } from '@/features/copilot/document-preview';
 import { sortSessionsByRecency } from '@/features/copilot/session-sort';
 import { resolveHydratedMessages } from '@/features/copilot/conversation-merge';
@@ -686,7 +687,6 @@ export default function Copilot() {
     });
   }, [employeesData, activeSession, activeEmployee, chat.syncSession]);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const sessionToggleRef = useRef<HTMLButtonElement>(null);
   const detailsToggleRef = useRef<HTMLButtonElement>(null);
@@ -1163,15 +1163,6 @@ export default function Copilot() {
     }
     setShowSlash(false);
   };
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({
-        top: scrollRef.current.scrollHeight,
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-      });
-    }
-  }, [chat.activeSession?.messages.length, chat.state.typing]);
-
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
@@ -1785,82 +1776,6 @@ export default function Copilot() {
             ? '模型与工具链处理中，首段内容即将出现…'
             : '已收到请求，正在连接模型与准备上下文…';
   const showTypingFallback = chat.state.typing && !hasStreamingAssistant;
-  const renderMessageBubble = (m: ChatMessageEx) => {
-    const sharedBaseProps = {
-      key: m.id,
-      m,
-      copiedId,
-      selectedContextMessageId: contextSelection.scope === 'message' ? contextSelection.messageId : undefined,
-      hoverMsgId,
-      setHoverMsgId,
-      messageRef: (element: HTMLDivElement | null) => {
-        messageRefs.current[m.id] = element;
-      },
-    };
-    if (m.role === 'user') {
-      return (
-        <UserBubble
-          {...sharedBaseProps}
-          onCopy={copyMessage}
-          onEdit={(message) => {
-            setEditingMessageId(message.id);
-            chat.setDraft(message.content);
-            inputRef.current?.focus();
-          }}
-        />
-      );
-    }
-    return (
-      <AssistantBubble
-        {...sharedBaseProps}
-        expandedArgs={expandedArgs}
-        setExpandedArgs={setExpandedArgs}
-        expandedApproval={expandedApproval}
-        setExpandedApproval={setExpandedApproval}
-        onApprove={(mid) => setShowApproval({ messageId: mid, signerIndex: 0 })}
-        onContinueRun={async (mid) => {
-          try {
-            const ok = await chat.continueSkillTurn(mid);
-            if (ok) toast.success('已继续执行 run');
-            else toast.error('续跑未成功，请查看执行结果');
-          } catch (err) {
-            toast.error(err instanceof Error ? err.message : '续跑失败');
-          }
-        }}
-        onExecuteAuthorized={async (mid) => {
-          try {
-            const ok = await chat.executeAuthorized(mid);
-            if (ok) toast.success('已开始执行');
-            else toast.error('执行未完成，可点击「继续执行 run」重试');
-          } catch (err) {
-            toast.error(err instanceof Error ? err.message : '执行失败');
-          }
-        }}
-        onCitation={(citation) => openCitation(citation, m.id)}
-        onRetry={(name) => chat.regenerate(m.id, { modelId: sendModelId, enabledTools: enabledTools.length ? enabledTools : defaultEnabledToolKeys(availableTools) })}
-        onCopy={copyMessage}
-        onRegenerate={(mid) => chat.regenerate(mid, { modelId: sendModelId, enabledTools: enabledTools.length ? enabledTools : defaultEnabledToolKeys(availableTools) })}
-        onDelete={(mid) => chat.delMessage(mid)}
-        onRetryMessage={(mid) => chat.retryMessage(mid)}
-        onFeedback={(mid, kind) => {
-          if (kind === null) {
-            chat.setFeedback(mid, { kind: null });
-          } else {
-            setFeedbackOpen(mid);
-          }
-        }}
-        onApproveSigner={(mid, signerIndex) => setShowApproval({ messageId: mid, signerIndex })}
-        onRequestReject={(mid, idx) => setRejectionReason({ mid, idx, open: true })}
-        currentUser={currentUser}
-        agentName={expertName}
-        expertRole={expertMeta ?? undefined}
-        expert={activeEmployee ?? { id: 'assistant', name: expertName }}
-        onOpenContext={openContext}
-        generationStatus={streamingAssistant?.id === m.id ? generationHint : undefined}
-        generationElapsedSec={streamingAssistant?.id === m.id ? generationElapsedSec : undefined}
-      />
-    );
-  };
   const canOpenExpertContext = Boolean(currentSession && (activeEmployee || currentSession.digitalEmployeeId || hasSessionContext));
   const selectedDocumentArtifact = useMemo(() => {
     if (contextSelection.artifact) return contextSelection.artifact;
@@ -2286,71 +2201,92 @@ export default function Copilot() {
         </header>
 
         {/* 消息流 */}
-        <div ref={scrollRef} className="copilot-message-scroll flex-1 min-h-0 overflow-y-auto overflow-x-hidden" aria-label="消息列表">
-          <div className="copilot-message-stream">
-            {currentSession && currentSession.messages.length > 0 ? (
-              <>
-                <div className="copilot-conversation-intro flex flex-col items-center gap-2 pt-6 pb-2" aria-label="会话安全与审计状态">
-                  <div className="flex w-full items-center gap-3">
-                    <div className="flex-1 h-px bg-gradient-to-r from-transparent to-[var(--border)]" />
-                    <span className="text-[10px] text-[var(--text-muted)] font-mono tabular-nums">{formatShanghaiDate(currentSession.createdAt)}</span>
-                    <div className="flex-1 h-px bg-gradient-to-l from-transparent to-[var(--border)]" />
-                  </div>
-                  <div className="copilot-conversation-intro__security inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-1)] px-2.5 py-0.5 text-[10px] text-[var(--text-muted)]">
-                    <ShieldCheck className="h-3 w-3 text-[var(--success)]" />
-                    会话受保护 · 审计已启用
-                  </div>
+        <div className="copilot-message-stream flex-1 min-h-0 flex flex-col">
+          {currentSession && currentSession.messages.length > 0 ? (
+            <>
+              <div className="copilot-conversation-intro flex flex-col items-center gap-2 pt-6 pb-2" aria-label="会话安全与审计状态">
+                <div className="flex w-full items-center gap-3">
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent to-[var(--border)]" />
+                  <span className="text-[10px] text-[var(--text-muted)] font-mono tabular-nums">{formatShanghaiDate(currentSession.createdAt)}</span>
+                  <div className="flex-1 h-px bg-gradient-to-l from-transparent to-[var(--border)]" />
                 </div>
-
-                {shouldShowContextWindowHint(currentSession.messages.length) && (
-                  <div
-                    className="mx-4 sm:mx-8 md:mx-12 mb-2 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-[11px] leading-relaxed text-[var(--text-muted)]"
-                    role="status"
-                  >
-                    模型上下文仅保留最近约 {COPILOT_LLM_HISTORY_TURNS} 轮对话；更早消息仍可在列表中浏览，跨会话要点会写入工作记忆供后续检索。
-                  </div>
-                )}
-
-                <div className="copilot-message-list px-4 sm:px-8 md:px-12 py-4">
-                  {displayMessages.map((m) => renderMessageBubble(m))}
+                <div className="copilot-conversation-intro__security inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-1)] px-2.5 py-0.5 text-[10px] text-[var(--text-muted)]">
+                  <ShieldCheck className="h-3 w-3 text-[var(--success)]" />
+                  会话受保护 · 审计已启用
                 </div>
+              </div>
 
-                {showTypingFallback && (
-                  <div className="copilot-message-list px-4 sm:px-8 md:px-12 pb-4 pt-0" aria-live="polite" aria-label={`${expertName}正在思考`}>
-                    <div className="copilot-message copilot-message--assistant flex gap-3">
-                      <div className="shrink-0 pt-0.5">
-                        <DigitalEmployeeAvatar
-                          employee={activeEmployee ?? { id: 'assistant', name: expertName }}
-                          size={28}
-                          className="copilot-message__avatar copilot-message__avatar--assistant"
-                        />
-                      </div>
-                      <div className="copilot-message__content min-w-0 space-y-2.5 w-full max-w-[960px]">
-                        <div className="copilot-message__meta flex items-center gap-1.5 text-[11px]">
-                          <span className="font-semibold text-[var(--text)]">{expertName}</span>
-                          {expertMeta && <span className="truncate text-[10px] text-[var(--text-muted)]">{expertMeta}</span>}
-                          <span className="inline-flex items-center gap-1 text-[10px] text-[var(--brand)]">
-                            <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand)] animate-pulse" aria-hidden="true" />
-                            生成中
-                          </span>
-                        </div>
-                        <div className="copilot-message__body copilot-message__body--pending inline-flex items-center gap-2.5 text-[var(--text-muted)] text-sm py-1" role="status">
-                          <span className="copilot-thinking-dots" aria-hidden="true">
-                            {[0, 1, 2].map((i) => (
-                              <span key={i} style={{ animationDelay: `${i * 0.15}s` }} />
-                            ))}
-                          </span>
-                          <span className="min-w-0 truncate">{generationHint || '正在思考'}</span>
-                          {generationElapsedSec > 0 && (
-                            <span className="font-mono text-[10px] text-[var(--text-muted)]">{generationElapsedSec}s</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
+              {shouldShowContextWindowHint(currentSession.messages.length) && (
+                <div
+                  className="mx-4 sm:mx-8 md:mx-12 mb-2 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-[11px] leading-relaxed text-[var(--text-muted)]"
+                  role="status"
+                >
+                  模型上下文仅保留最近约 {COPILOT_LLM_HISTORY_TURNS} 轮对话；更早消息仍可在列表中浏览，跨会话要点会写入工作记忆供后续检索。
+                </div>
+              )}
+
+              <MessageList
+                messages={displayMessages}
+                showTypingFallback={showTypingFallback}
+                expertName={expertName}
+                expertMeta={expertMeta}
+                activeEmployee={activeEmployee}
+                streamingAssistant={streamingAssistant}
+                generationHint={generationHint}
+                generationElapsedSec={generationElapsedSec}
+                expandedArgs={expandedArgs}
+                setExpandedArgs={setExpandedArgs}
+                expandedApproval={expandedApproval}
+                setExpandedApproval={setExpandedApproval}
+                hoverMsgId={hoverMsgId}
+                setHoverMsgId={setHoverMsgId}
+                copiedId={copiedId}
+                messageRefs={messageRefs}
+                contextSelection={contextSelection}
+                onCopy={copyMessage}
+                onEdit={(message) => {
+                  setEditingMessageId(message.id);
+                  chat.setDraft(message.content);
+                  inputRef.current?.focus();
+                }}
+                onApprove={(mid) => setShowApproval({ messageId: mid, signerIndex: 0 })}
+                onContinueRun={async (mid) => {
+                  try {
+                    const ok = await chat.continueSkillTurn(mid);
+                    if (ok) toast.success('已继续执行 run');
+                    else toast.error('续跑未成功，请查看执行结果');
+                  } catch (err) {
+                    toast.error(err instanceof Error ? err.message : '续跑失败');
+                  }
+                }}
+                onExecuteAuthorized={async (mid) => {
+                  try {
+                    const ok = await chat.executeAuthorized(mid);
+                    if (ok) toast.success('已开始执行');
+                    else toast.error('执行未完成，可点击「继续执行 run」重试');
+                  } catch (err) {
+                    toast.error(err instanceof Error ? err.message : '执行失败');
+                  }
+                }}
+                onCitation={openCitation}
+                onRetry={(name, mid) => chat.regenerate(mid, { modelId: sendModelId, enabledTools: enabledTools.length ? enabledTools : defaultEnabledToolKeys(availableTools) })}
+                onRegenerate={(mid) => chat.regenerate(mid, { modelId: sendModelId, enabledTools: enabledTools.length ? enabledTools : defaultEnabledToolKeys(availableTools) })}
+                onDelete={(mid) => chat.delMessage(mid)}
+                onRetryMessage={(mid) => chat.retryMessage(mid)}
+                onFeedback={(mid, kind) => {
+                  if (kind === null) {
+                    chat.setFeedback(mid, { kind: null });
+                  } else {
+                    setFeedbackOpen(mid);
+                  }
+                }}
+                onApproveSigner={(mid, signerIndex) => setShowApproval({ messageId: mid, signerIndex })}
+                onRequestReject={(mid, idx) => setRejectionReason({ mid, idx, open: true })}
+                onOpenContext={openContext}
+                currentUser={currentUser}
+              />
+            </>
+          ) : (
               <div className="copilot-empty-state h-full grid place-items-center px-6">
                 <div className="w-full max-w-2xl">
                   <div className="text-center mb-8">
@@ -2416,7 +2352,6 @@ export default function Copilot() {
                 </div>
               </div>
             )}
-          </div>
         </div>
 
         {/* ============ 输入区（企业级 Composer） ============ */}

@@ -183,4 +183,18 @@ describe('translateApiPath', () => {
     expect(out.method).toBe('DELETE');
     expect(out.backendPath).toBe('/v1/knowledge/packages/p-1');
   });
+
+  // ── batch 6:uid-注入型路径 ────────────────────────────────────────
+  it('marks GET /api/api-keys as needsUserId with <<USER_ID>> placeholder', () => {
+    const out = translateApiPath('/api/api-keys', 'GET');
+    expect(out.matched).toBe(true);
+    expect(out.needsUserId).toBe(true);
+    expect(out.backendPath).toBe('/v1/identity/users/<<USER_ID>>/api-keys');
+  });
+
+  it('does not mark non-user-id paths as needsUserId', () => {
+    const out = translateApiPath('/api/workspaces', 'GET');
+    expect(out.needsUserId).toBe(false);
+    expect(out.backendPath).toBe('/v1/identity/workspaces');
+  });
 });

@@ -39,6 +39,9 @@ const ROUTE_TABLE: Array<{ key: string; rule: RouteRule }> = [
   { key: '/api/auth/me', rule: { method: 'GET', backendPath: '/v1/identity/users/me', note: '取当前用户 profile' } },
   { key: '/api/workspaces', rule: { method: 'GET', backendPath: '/v1/identity/workspaces', note: '租户下工作空间列表' } },
   { key: '/api/tenant/profile', rule: { method: 'GET', backendPath: '/v1/identity/tenants/current', note: '当前租户 profile + plan' } },
+  // uid-注入型:backend 用 /users/{uid}/api-keys,前端不知道 uid —— ApiClient
+  // 通过 getUserId 回调在 fetch 前替换 <<USER_ID>>
+  { key: '/api/api-keys', rule: { method: 'GET', backendPath: '/v1/identity/users/<<USER_ID>>/api-keys', note: '需要当前用户 uid' } },
 
   // ── Phase B+ batch 1:skills(skill module: /v1/skills) ────────────────
   // 长前缀在前,避免 /api/skills 抢 /api/skills/:id/...
@@ -218,6 +221,8 @@ export interface TranslatedRoute {
   backendPath: string;
   /** true = 在 ROUTE_TABLE 命中；false = 透传原路径 */
   matched: boolean;
+  /** true = backendPath 含 <<USER_ID>> 占位,调用方需在 fetch 前替换为当前用户 uid */
+  needsUserId?: boolean;
 }
 
 function matchExactOrWildcard(key: string, path: string): string[] | null {
@@ -239,6 +244,9 @@ function rebuildBackendPath(template: string, params: string[]): string {
   return template.replace(/:[a-zA-Z]+/g, () => params[i++] ?? '');
 }
 
+/** 标记 backend path 需要调用方从 auth context 注入当前用户的 uid */
+export const USER_ID_PLACEHOLDER = '<<USER_ID>>';
+
 /**
  * 把 mock 风格的 `/api/...` 路径翻译到后端真实 `/v1/...` 路径。
  * 未命中 → { backendPath: 原路径, matched: false }。
@@ -257,13 +265,15 @@ export function translateApiPath(
     const params = matchExactOrWildcard(key, path);
     if (params === null) continue;
     const backendPath = rebuildBackendPath(rule.backendPath, params);
+    const needsUserId = backendPath.includes(USER_ID_PLACEHOLDER);
     if (rule.method === method) {
-      return { method: rule.method, backendPath, matched: true };
+      return { method: rule.method, backendPath, matched: true, needsUserId };
     }
     if (fallback === null) fallback = { method: rule.method, backendPath };
   }
   if (fallback !== null) {
-    return { method: fallback.method, backendPath: fallback.backendPath, matched: true };
+    const fallbackNeedsUserId = fallback.backendPath.includes(USER_ID_PLACEHOLDER);
+    return { method: fallback.method, backendPath: fallback.backendPath, matched: true, needsUserId: fallbackNeedsUserId };
   }
   // 未命中:保持调用方原 method（GET/POST/PATCH…），仅给个标记便于打日志
   return { method, backendPath: path, matched: false };

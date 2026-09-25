@@ -3,7 +3,7 @@
  * Mock 适配器仅在应用入口显式注入时启用（VITE_USE_MOCK=true）。
  */
 import type { ApiResponse } from '@de/web-types';
-import { translateApiPath, type HttpMethod } from './pathMap';
+import { translateApiPath, USER_ID_PLACEHOLDER, type HttpMethod } from './pathMap';
 import { applyResponseAdapter, adaptErrorCode } from './responseAdapters';
 
 export interface RequestOptions {
@@ -65,6 +65,9 @@ export class ApiClient {
     private mockHandler?: (path: string, opts: RequestOptions) => Promise<unknown>,
     private getContextHeaders: () => Record<string, string> = () => ({}),
     private onUnauthorized?: () => void,
+    /** uid-注入型路径(/api/api-keys 等)需要替换 <<USER_ID>> 占位符时调用;
+     *  返回 null 表示未登录,会在 request() 抛 E_AUTH_REQUIRED */
+    private getUserId?: () => string | null,
   ) {}
 
   async request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
@@ -85,7 +88,16 @@ export class ApiClient {
     const controller = new AbortController();
     const t = setTimeout(() => controller.abort(), opts.timeoutMs ?? DEFAULT_TIMEOUT);
     try {
-      const url = resolveRequestURL(this.baseURL, translated.backendPath, opts.query);
+      // uid-注入:仅真模式触发;getUserId 缺失或返回 null 时直接抛 E_AUTH_REQUIRED
+      let backendPath = translated.backendPath;
+      if (translated.needsUserId && backendPath.includes(USER_ID_PLACEHOLDER)) {
+        const uid = this.getUserId?.();
+        if (!uid) {
+          throw new ApiError('E_AUTH_REQUIRED', '该端点需要当前用户身份,请先登录', 401);
+        }
+        backendPath = backendPath.split(USER_ID_PLACEHOLDER).join(encodeURIComponent(uid));
+      }
+      const url = resolveRequestURL(this.baseURL, backendPath, opts.query);
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         ...sanitizeHeaders(requestHeaders),
@@ -124,7 +136,7 @@ export class ApiClient {
       }
       // 后端偶发返回 data: null（Go nil slice）；对数组消费方统一兜底为 []，避免 .filter 崩溃
       const rawData = (json.data ?? null) as T;
-      return applyResponseAdapter(method, translated.backendPath, rawData) as T;
+      return applyResponseAdapter(method, backendPath, rawData) as T;
     } finally {
       clearTimeout(t);
     }

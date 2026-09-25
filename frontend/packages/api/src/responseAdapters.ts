@@ -12,10 +12,14 @@ import { camelizeKeys } from './camelizeKeys';
 type AnyRecord = Record<string, unknown>;
 
 /**
- * 把后端 `{access_token, expires_at}` 折成前端 `Login.tsx` 期望的 `{token, user}`。
- * `user` 字段在登录响应中并不存在 —— 调用方应在收到此结果后立即
- * `GET /v1/identity/users/me` 二次拉取。本 adapter 仅保证字段名 + 形状对得上，
- * user.id/email/role/permissions 等具体值由前端 useAuthStore 合并。
+ * 把后端 `{access_token, expires_at, user}` 折成前端 `Login.tsx` 期望的
+ * `{token, user, expiresAt}`。
+ *
+ * 后端 `LoginResponse.user` 自 2026-09 起包含真实 id/email/tenant_id/
+ * display_name，前端不再需要二次 `GET /v1/identity/users/me` 拉取。
+ *
+ * 旧契约(只返回 token)的兜底分支保留：user.id/email/tenantId/name 留空，
+ * 调用方按需决定是否二次拉取(目前 useAuthStore 会合并 users/me 兜底)。
  */
 export interface LoginAdapterOutput {
   token: string;
@@ -37,14 +41,20 @@ function adaptLogin(rawData: unknown): LoginAdapterOutput | unknown {
   const tokenRaw = r.access_token ?? r.accessToken;
   const expiresRaw = r.expires_at ?? r.expiresAt;
   if (typeof tokenRaw !== 'string') return rawData;
+  // 新契约: 后端在 login 响应里直接返回 user 对象
+  const u = (r.user ?? {}) as AnyRecord;
+  const userId = typeof u.id === 'string' ? u.id : '';
+  const userEmail = typeof u.email === 'string' ? u.email : '';
+  const tenantId = typeof u.tenant_id === 'string' ? u.tenant_id : '';
+  const displayName = typeof u.display_name === 'string' ? u.display_name : '';
   return {
     token: tokenRaw,
     user: {
-      id: '',
-      email: '',
+      id: userId,
+      email: userEmail,
       role: 'user',
-      tenantId: '',
-      name: '',
+      tenantId,
+      name: displayName,
       permissions: [],
     },
     expiresAt: typeof expiresRaw === 'string' ? expiresRaw : '',
@@ -66,6 +76,7 @@ void PASSTHROUGH;
 const BACKEND_ERROR_TO_FRONTEND: Record<string, string> = {
   VALIDATION_ERROR: 'E_BAD_REQUEST',
   AUTHENTICATION_FAILED: 'E_AUTH_FAILED',
+  INVALID_CREDENTIALS: 'E_AUTH_FAILED',
   FORBIDDEN: 'E_FORBIDDEN',
   ACTION_DENIED: 'E_FORBIDDEN',
   APPROVAL_REQUIRED: 'E_APPROVAL_REQUIRED',

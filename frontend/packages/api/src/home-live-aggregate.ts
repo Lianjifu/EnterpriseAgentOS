@@ -286,7 +286,7 @@ export function buildHomeExtraLive(input: {
     suggestion.push({
       id: 'sg-collab',
       tone: 'info',
-      text: '在岗数字工作伙伴可发起专家协作。',
+      text: '在岗智能体可发起专家协作。',
       action: '开始协作',
       to: '/copilot',
     });
@@ -294,8 +294,8 @@ export function buildHomeExtraLive(input: {
     suggestion.push({
       id: 'sg-onboard',
       tone: 'info',
-      text: '当前工作区尚未装配数字工作伙伴。',
-      action: '打开工作伙伴',
+      text: '当前工作区尚未装配智能体。',
+      action: '打开智能体',
       to: '/partners',
     });
   }
@@ -339,7 +339,7 @@ export function buildHomeExtraLive(input: {
     roleDistribution: [...roleCounts.entries()].map(([role, count]) => ({ role, count })),
     suggestion,
     quickLinks: [
-      { label: '工作伙伴', to: '/partners', icon: 'Bot', desc: '岗位装配与上岗' },
+      { label: '智能体', to: '/partners', icon: 'Bot', desc: '岗位装配与上岗' },
       { label: '专家协作', to: '/copilot', icon: 'MessageSquare', desc: '研判与受控执行' },
       { label: '任务中心', to: '/tasks', icon: 'ListChecks', desc: '派工与处置闭环' },
     ],

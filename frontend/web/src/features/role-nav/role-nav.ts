@@ -163,42 +163,42 @@ export function rolePageCopy(
   const table = {
     tasks: {
       user: { title: '我的待办', subtitle: '优先处理待你判断与双重审批的协同事项。' },
-      admin: { title: '任务中心', subtitle: '优先处理需要判断、双重审批与风险处置的数字工作伙伴协同任务。' },
+      admin: { title: '任务中心', subtitle: '优先处理需要判断、双重审批与风险处置的智能体协同任务。' },
       auditor: { title: '任务核查', subtitle: '只读核查待审批、风险与异常任务证据，不参与处置执行。' },
     },
     knowledge: {
-      user: { title: '知识检索', subtitle: '查找并引用工作区知识资产，供专家协作使用。' },
+      user: { title: '知识检索', subtitle: '查找并引用工作区知识资产，供对话与协作调用。' },
       admin: { title: '知识中心', subtitle: '统一管理企业知识资产、接入加工、检索评测、图谱关联与引用治理。' },
       auditor: { title: '知识引用', subtitle: '只读核查知识版本与引用证据，不修改资产或加工链路。' },
     },
     skills: {
-      user: { title: '技能清单', subtitle: '查看已启用、可供数字工作伙伴调用的技能与工具。' },
-      admin: { title: '技能中心', subtitle: '统一接入、治理原子技能与流程技能，供数字工作伙伴能力装配与调用。' },
+      user: { title: '技能清单', subtitle: '查看已启用、可供智能体调用的技能与工具。' },
+      admin: { title: '技能中心', subtitle: '统一接入、治理原子技能与流程技能，供智能体能力装配与调用。' },
       auditor: { title: '技能权限', subtitle: '只读核查技能权限范围与运行证据，不安装或变更配置。' },
     },
     memory: {
-      user: { title: '记忆中心', subtitle: '运行记忆请在专家协作上下文中查看。' },
-      admin: { title: '记忆中心', subtitle: '受控管理数字工作伙伴的会话上下文、任务经验和可审核的长期记忆。' },
+      user: { title: '记忆中心', subtitle: '运行记忆请在对话上下文中查看。' },
+      admin: { title: '记忆中心', subtitle: '受控管理智能体的会话上下文、任务经验和可审核的长期记忆。' },
       auditor: { title: '记忆策略', subtitle: '只读核查记忆策略与审计记录，不改写运行记忆。' },
     },
     home: {
       user: { title: '运营总览', subtitle: '待办、协作动态与需你关注的事项。' },
-      admin: { title: '运营总览', subtitle: '专家团队在岗状态、待处理事项与成本产出。' },
+      admin: { title: '运营总览', subtitle: '智能体在岗状态、待处理事项与成本产出。' },
       auditor: { title: '运营总览', subtitle: '合规风险摘要、策略命中与待审事项（只读）。' },
     },
     agents: {
-      user: { title: '工作伙伴', subtitle: '按岗位边界发现与协作数字工作伙伴，查看职责与能力装配。' },
+      user: { title: '智能体', subtitle: '按岗位边界发现与协作智能体，查看职责与能力装配。' },
       admin: { title: '智能体工厂', subtitle: '配置智能体岗位契约、能力装配与双重审批，跟踪上岗与试运行状态。' },
       auditor: { title: '伙伴档案', subtitle: '只读核查岗位契约、能力装配与上岗证据，不创建或变更配置。' },
     },
     workflows: {
-      user: { title: '工作流程', subtitle: '编排与试运行受控流程，发布后供数字工作伙伴装配。' },
-      admin: { title: '工作流程', subtitle: '编排、校验、版本发布与流程技能治理，供数字工作伙伴能力装配。' },
+      user: { title: '工作流程', subtitle: '编排与试运行受控流程，发布后供智能体装配。' },
+      admin: { title: '工作流程', subtitle: '编排、校验、版本发布与流程技能治理，供智能体能力装配。' },
       auditor: { title: '流程版本', subtitle: '只读核查流程版本、运行记录与发布证据，不编辑画布或发布。' },
     },
     copilot: {
-      user: { title: '专家协作', subtitle: '与在岗数字工作伙伴研判与受控执行，写操作经双重审批。' },
-      admin: { title: '专家协作', subtitle: '与在岗数字工作伙伴研判与受控执行，写操作经双重审批。' },
+      user: { title: '对话', subtitle: '与在岗智能体研判与受控执行，写操作经双重审批。' },
+      admin: { title: '对话', subtitle: '与在岗智能体研判与受控执行，写操作经双重审批。' },
       auditor: { title: '协作记录', subtitle: '只读核查会话证据与审批轨迹；签署位仍可按策略参与双重审批。' },
     },
     models: {

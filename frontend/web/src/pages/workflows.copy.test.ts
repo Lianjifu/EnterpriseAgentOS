@@ -60,7 +60,7 @@ describe('workflows orchestration copy', () => {
     );
     expect(workflowSlice).toContain('员工入职开通');
     expect(workflowSlice).toContain('cache-oom 受控恢复');  // IT 高级库仍保留
-    expect(workflowSlice).toContain('工作伙伴研判');
+    expect(workflowSlice).toContain('智能体研判');
     expect(workflowSlice).toContain('双重审批');
     expect(workflowSlice).toContain('审计留痕');
     expect(workflowSlice).not.toMatch(/双签|故障自愈|Agent\s*决策|SignedLog/);
@@ -116,8 +116,8 @@ describe('workflow AI assisted drafting', () => {
     expect(mockSource).toContain('knowledge.retrieve_runbook');
     expect(mockSource).toContain('mockOrchestrationTemplateCandidates');
     expect(orchestrationSource).toContain('画布预览仅用于示例编排');
-    expect(orchestrationSource).toContain('供数字工作伙伴装配');
-    expect(orchestrationSource).toContain('由工作伙伴研判处置路径，经双重审批后执行受控恢复');
+    expect(orchestrationSource).toContain('供智能体装配');
+    expect(orchestrationSource).toContain('由智能体研判处置路径，经双重审批后执行受控恢复');
     expect(orchestrationSource).not.toContain('当 Redis 触发 OOM 告警时自动处理');
   });
 
@@ -126,9 +126,9 @@ describe('workflow AI assisted drafting', () => {
       mockSource.indexOf('export const mockWorkflowGenerations'),
       mockSource.indexOf('// ============ P7 知识扩展数据'),
     );
-    expect(generationSlice).toContain('工作伙伴研判处置路径');
+    expect(generationSlice).toContain('智能体研判处置路径');
     expect(generationSlice).toContain('执行受控恢复');
-    expect(generationSlice).toContain('受控恢复工作伙伴');
+    expect(generationSlice).toContain('受控恢复智能体');
     expect(generationSlice).toContain('mockOrchestrationSessions');
     expect(generationSlice).toContain('invokeOrchestrationModel');
     expect(mockSource).toContain('编排会话沉淀');
@@ -138,7 +138,7 @@ describe('workflow AI assisted drafting', () => {
 
 describe('workflow canvas orchestration', () => {
   it('states digital-employee skill publish path on canvas', () => {
-    expect(workflowsSource).toContain('供数字工作伙伴能力装配');
+    expect(workflowsSource).toContain('供智能体能力装配');
     expect(workflowsSource).toContain('本页不直接发起专家协作上岗');
     expect(workflowsSource).toContain('执行受控恢复');
     expect(workflowsSource).toContain('执行受控动作');

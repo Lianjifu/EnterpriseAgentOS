@@ -7,8 +7,10 @@ Public routes (mounted on `/v1/identity`):
   GET    /workspaces?tenant_id=...                 list_workspaces
   POST   /users                                    register_user
   GET    /users/{uid}                              get_user
+  GET    /users/me                                 get_current_user
   POST   /users/{uid}/api-keys                     issue_api_key
   POST   /users/{uid}/api-keys/{kid}/revoke        revoke_api_key
+  GET    /tenants/current                          get_current_tenant
   POST   /login                                    login
 """
 
@@ -86,6 +88,18 @@ def build_router() -> APIRouter:
         )
         return tenant_domain_to_response(t)
 
+    @router.get("/tenants/current", response_model=TenantResponse)
+    async def get_current_tenant(
+        x_tenant_id: UUID = Header(..., alias="X-Tenant-Id"),  # noqa: B008
+        svc: IdentityService = Depends(get_identity_service),  # noqa: B008
+    ) -> TenantResponse:
+        t = await svc.tenants.get(x_tenant_id)
+        if t is None:
+            from deos.modules.identity.domain.errors import TenantNotFound
+
+            raise TenantNotFound(f"tenant {x_tenant_id} not found")
+        return tenant_domain_to_response(t)
+
     # ── workspaces ─────────────────────────────────────────────────────────
     @router.post("/workspaces", response_model=WorkspaceResponse, status_code=201)
     async def create_workspace(
@@ -121,6 +135,26 @@ def build_router() -> APIRouter:
             display_name=body.display_name,
             password=body.password,
         )
+        return user_domain_to_response(u)
+
+    # NOTE: `/users/me` MUST be registered before `/users/{uid}` so the literal
+    # match wins; otherwise FastAPI matches `{uid}` first and 422s on the
+    # non-UUID `me` literal before reaching this handler.
+    @router.get("/users/me", response_model=UserResponse)
+    async def get_current_user(
+        x_user_id: UUID = Header(..., alias="X-User-Id"),  # noqa: B008
+        x_tenant_id: UUID = Header(..., alias="X-Tenant-Id"),  # noqa: B008
+        svc: IdentityService = Depends(get_identity_service),  # noqa: B008
+    ) -> UserResponse:
+        from eos_kernel.errors import ForbiddenError
+
+        u = await svc.users.get(x_user_id)
+        if u is None:
+            from deos.modules.identity.domain.errors import UserNotFound
+
+            raise UserNotFound(f"user {x_user_id} not found")
+        if u.tenant_id != x_tenant_id:
+            raise ForbiddenError("cross-tenant access", code="TENANT_DENIED")
         return user_domain_to_response(u)
 
     @router.get("/users/{uid}", response_model=UserResponse)

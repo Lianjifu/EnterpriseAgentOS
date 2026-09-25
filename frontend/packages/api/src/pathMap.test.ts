@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { translateApiPath, _routeTableSize } from './pathMap';
+import { translateApiPath, _routeTableSize, USER_ID_PLACEHOLDER } from './pathMap';
 
 describe('translateApiPath', () => {
   it('has at least one rule registered', () => {
@@ -44,9 +44,10 @@ describe('translateApiPath', () => {
   });
 
   it('matches the longest prefix first', () => {
-    // /api/skills/governance/overview 应优先于 /api/skills/:id 命中
-    const out = translateApiPath('/api/skills/governance/overview', 'GET');
-    expect(out.backendPath).toBe('/v1/skills/governance/overview');
+    // /api/skills/:id 应优先于 /api/skills 命中(skills/:id/...)路径
+    const out = translateApiPath('/api/skills/sk-1/install', 'POST');
+    expect(out.backendPath).toBe('/v1/skills/sk-1/install');
+    expect(out.matched).toBe(true);
   });
 
   it('rewrites /api/skills/:id/install → /v1/skills/:id/install', () => {
@@ -70,15 +71,14 @@ describe('translateApiPath', () => {
     expect(get.backendPath).toBe('/v1/memories');
     const post = translateApiPath('/api/memory/records', 'POST');
     expect(post.backendPath).toBe('/v1/memories');
-    // GET /api/memory/records/:id/expire 没有单独条目,应 fallback 到 path 匹配
-    // (即走到 POST 规则,这是已知的 fallback 行为 —— 不静默改写)
-    const delete_ = translateApiPath('/api/memory/records', 'DELETE');
+    // DELETE /api/memory/records → 已接通,backend /v1/memories/:id
+    const delete_ = translateApiPath('/api/memory/records/mem-1', 'DELETE');
     expect(delete_.matched).toBe(true);
-    expect(delete_.backendPath).toBe('/v1/memories');
+    expect(delete_.backendPath).toBe('/v1/memories/mem-1');
   });
 
   it('rule count grows as we add batches', () => {
-    expect(_routeTableSize()).toBeGreaterThan(60);
+    expect(_routeTableSize()).toBeGreaterThan(40);
   });
 
   it('rewrites /api/release-approvals/:id/reject → /v1/approvals/:id/deny', () => {
@@ -114,7 +114,7 @@ describe('translateApiPath', () => {
     expect(out.backendPath).toBe('/api/tasks');
   });
 
-  // ── batch 4:evaluation 修正 ────────────────────────────────────────
+  // ── batch 3:evaluation 修正 ────────────────────────────────────────
   it('rewrites GET /api/evaluations → GET /v1/eval/runs (list runs)', () => {
     const out = translateApiPath('/api/evaluations', 'GET');
     expect(out.matched).toBe(true);
@@ -141,7 +141,7 @@ describe('translateApiPath', () => {
     }
   });
 
-  // ── batch 4:orchestration runs 修正 ─────────────────────────────────
+  // ── batch 3:orchestration runs 修正 ─────────────────────────────────
   it('rewrites GET /api/workflows/:id/runs → GET /v1/orchestration/runs (global list, ?plan_id filter)', () => {
     // backend 列 runs 是全局 /v1/orchestration/runs,用 query param ?plan_id 过滤
     // 不是 /v1/orchestration/plans/:id/runs(无此端点)
@@ -150,7 +150,7 @@ describe('translateApiPath', () => {
     expect(out.backendPath).toBe('/v1/orchestration/runs');
   });
 
-  // ── batch 4:agents phantom rules 移除 ──────────────────────────────
+  // ── batch 3:agents phantom rules 移除 ──────────────────────────────
   it('falls through /api/agents/:id/{publish,install,uninstall} (no backend endpoint)', () => {
     // agent_factory 无 /publish /install /uninstall 端点(publish 需要 vid,install 在 skill 模块)
     const actions = ['publish', 'install', 'uninstall'];
@@ -190,11 +190,198 @@ describe('translateApiPath', () => {
     expect(out.matched).toBe(true);
     expect(out.needsUserId).toBe(true);
     expect(out.backendPath).toBe('/v1/identity/users/<<USER_ID>>/api-keys');
+    expect(out.backendPath).toContain(USER_ID_PLACEHOLDER);
   });
 
   it('does not mark non-user-id paths as needsUserId', () => {
     const out = translateApiPath('/api/workspaces', 'GET');
     expect(out.needsUserId).toBe(false);
     expect(out.backendPath).toBe('/v1/identity/workspaces');
+  });
+
+  // ── batch 7:phantom rules 清理 ──────────────────────────────────────
+  // 删除 mock 自创、backend 实际未实现的 mapping,让它们走 passthrough,
+  // 显式 unmatched 比"matched=true 但得到 404"更清晰。
+
+  describe('batch 7: skills phantom rules removed', () => {
+    it('falls through /api/skills/governance/* (backend has no /governance endpoints)', () => {
+      const paths = [
+        '/api/skills/governance/overview',
+        '/api/skills/governance/health',
+        '/api/skills/governance/incidents',
+        '/api/skills/governance/events',
+        '/api/skills/governance/trends',
+      ];
+      for (const p of paths) {
+        const out = translateApiPath(p, 'GET');
+        expect(out.matched).toBe(false);
+      }
+    });
+
+    it('falls through /api/skills/catalog* (backend has no /catalog endpoint)', () => {
+      const out = translateApiPath('/api/skills/catalog', 'GET');
+      expect(out.matched).toBe(false);
+      expect(out.backendPath).toBe('/api/skills/catalog');
+    });
+
+    it('falls through /api/skills/audit (backend has no audit endpoint)', () => {
+      const out = translateApiPath('/api/skills/audit', 'GET');
+      expect(out.matched).toBe(false);
+    });
+
+    it('falls through /api/skills/perms (mock perms → permissions, backend has neither)', () => {
+      const out = translateApiPath('/api/skills/perms', 'GET');
+      expect(out.matched).toBe(false);
+    });
+
+    it('falls through /api/skills/import (no backend endpoint)', () => {
+      const out = translateApiPath('/api/skills/import', 'POST');
+      expect(out.matched).toBe(false);
+    });
+
+    it('falls through /api/skills/packs (no backend endpoint)', () => {
+      const out = translateApiPath('/api/skills/packs', 'GET');
+      expect(out.matched).toBe(false);
+    });
+
+    it('falls through /api/skills/:id/{preflight,impact,uninstall,lifecycle,runtime,permissions,test,versions,governance} (no backend endpoints)', () => {
+      const actions = ['preflight', 'impact', 'uninstall', 'lifecycle', 'runtime', 'permissions', 'test', 'versions', 'governance'];
+      for (const action of actions) {
+        const out = translateApiPath(`/api/skills/s-1/${action}`, 'POST');
+        expect(out.matched).toBe(false);
+      }
+    });
+  });
+
+  describe('batch 7: memory phantom rules removed', () => {
+    it('falls through /api/memory/audit (backend has no /audit endpoint)', () => {
+      const out = translateApiPath('/api/memory/audit', 'GET');
+      expect(out.matched).toBe(false);
+    });
+
+    it('falls through /api/memory/policy (backend has no /policy endpoint)', () => {
+      const out = translateApiPath('/api/memory/policy', 'GET');
+      expect(out.matched).toBe(false);
+      const patchOut = translateApiPath('/api/memory/policy', 'PATCH');
+      expect(patchOut.matched).toBe(false);
+    });
+
+    it('falls through /api/memory/records/:id/expire (backend has no /expire endpoint)', () => {
+      const out = translateApiPath('/api/memory/records/mem-1/expire', 'POST');
+      expect(out.matched).toBe(false);
+    });
+  });
+
+  describe('batch 7: knowledge phantom rules removed', () => {
+    it('falls through /api/knowledge/{reindex,sources*,governance,audit,eval} (no backend endpoints)', () => {
+      const paths = [
+        ['/api/knowledge/reindex', 'POST'],
+        ['/api/knowledge/sources', 'GET'],
+        ['/api/knowledge/sources', 'POST'],
+        ['/api/knowledge/sources/src-1/sync', 'POST'],
+        ['/api/knowledge/governance', 'GET'],
+        ['/api/knowledge/governance', 'PATCH'],
+        ['/api/knowledge/audit', 'GET'],
+        ['/api/knowledge/eval', 'GET'],
+      ] as const;
+      for (const [p, m] of paths) {
+        const out = translateApiPath(p, m as 'GET' | 'POST' | 'PATCH');
+        expect(out.matched).toBe(false);
+        expect(out.backendPath).toBe(p);
+      }
+    });
+
+    it('falls through /api/knowledge/packages/:id/{publish,process} (no backend endpoints)', () => {
+      const out = translateApiPath('/api/knowledge/packages/p-1/publish', 'POST');
+      expect(out.matched).toBe(false);
+      const out2 = translateApiPath('/api/knowledge/packages/p-1/process', 'POST');
+      expect(out2.matched).toBe(false);
+    });
+  });
+
+  describe('batch 7: workflows phantom rules removed', () => {
+    it('falls through /api/workflows/:id/{audit,versions,validate,draft} (no backend endpoints)', () => {
+      const calls: Array<[string, 'GET' | 'POST' | 'PUT']> = [
+        ['/api/workflows/wf-1/audit', 'GET'],
+        ['/api/workflows/wf-1/versions', 'GET'],
+        ['/api/workflows/wf-1/validate', 'POST'],
+        ['/api/workflows/wf-1/draft', 'PUT'],
+      ];
+      for (const [p, m] of calls) {
+        const out = translateApiPath(p, m);
+        expect(out.matched).toBe(false);
+      }
+    });
+
+    it('falls through /api/workflows/:id/runs/:runId/{retry,resume} (no backend endpoints)', () => {
+      const out = translateApiPath('/api/workflows/wf-1/runs/run-1/retry', 'POST');
+      expect(out.matched).toBe(false);
+      const out2 = translateApiPath('/api/workflows/wf-1/runs/run-1/resume', 'POST');
+      expect(out2.matched).toBe(false);
+    });
+  });
+
+  describe('batch 7: models phantom rules removed', () => {
+    it('falls through /api/model-providers/:id/{discover-models,test-connection,impact} (no backend endpoints)', () => {
+      const out = translateApiPath('/api/model-providers/p-1/discover-models', 'GET');
+      expect(out.matched).toBe(false);
+      const out2 = translateApiPath('/api/model-providers/p-1/test-connection', 'POST');
+      expect(out2.matched).toBe(false);
+      const out3 = translateApiPath('/api/model-providers/p-1/impact', 'GET');
+      expect(out3.matched).toBe(false);
+    });
+
+    it('falls through /api/model-routing/policies/:id/{draft,validate,publish} (no backend endpoints)', () => {
+      const draft = translateApiPath('/api/model-routing/policies/p-1/draft', 'PATCH');
+      expect(draft.matched).toBe(false);
+      const validate = translateApiPath('/api/model-routing/policies/p-1/validate', 'POST');
+      expect(validate.matched).toBe(false);
+      const publish = translateApiPath('/api/model-routing/policies/p-1/publish', 'POST');
+      expect(publish.matched).toBe(false);
+    });
+  });
+
+  // ── batch 7:channels/:id/test 真正映射是 /send(verb mismatch)──────
+  it('rewrites /api/channels/:id/test → /v1/channels/:id/send (verb mismatch fix)', () => {
+    const out = translateApiPath('/api/channels/c-1/test', 'POST');
+    expect(out.matched).toBe(true);
+    expect(out.backendPath).toBe('/v1/channels/c-1/send');
+  });
+
+  // ── batch 7:知识/记忆/编排 单项端点的反向补强 ────────────────────────
+  it('rewrites GET /api/memory/records/:id → GET /v1/memories/:id', () => {
+    const out = translateApiPath('/api/memory/records/mem-1', 'GET');
+    expect(out.matched).toBe(true);
+    expect(out.backendPath).toBe('/v1/memories/mem-1');
+  });
+
+  it('rewrites GET /api/skills/invocations → GET /v1/skills/invocations', () => {
+    const out = translateApiPath('/api/skills/invocations', 'GET');
+    expect(out.matched).toBe(true);
+    expect(out.backendPath).toBe('/v1/skills/invocations');
+  });
+
+  it('rewrites POST /api/skills/invocations/:invId/cancel → POST /v1/skills/invocations/:invId/cancel', () => {
+    const out = translateApiPath('/api/skills/invocations/inv-1/cancel', 'POST');
+    expect(out.matched).toBe(true);
+    expect(out.backendPath).toBe('/v1/skills/invocations/inv-1/cancel');
+  });
+
+  it('rewrites POST /api/workflows/:id/runs/:runId/cancel → POST /v1/orchestration/runs/:runId/cancel', () => {
+    const out = translateApiPath('/api/workflows/wf-1/runs/run-1/cancel', 'POST');
+    expect(out.matched).toBe(true);
+    expect(out.backendPath).toBe('/v1/orchestration/runs/run-1/cancel');
+  });
+
+  it('rewrites GET /api/workflows/:id/runs/:runId → GET /v1/orchestration/runs/:runId', () => {
+    const out = translateApiPath('/api/workflows/wf-1/runs/run-1', 'GET');
+    expect(out.matched).toBe(true);
+    expect(out.backendPath).toBe('/v1/orchestration/runs/run-1');
+  });
+
+  it('rewrites POST /api/workflows → POST /v1/orchestration/plans', () => {
+    const out = translateApiPath('/api/workflows', 'POST');
+    expect(out.matched).toBe(true);
+    expect(out.backendPath).toBe('/v1/orchestration/plans');
   });
 });

@@ -1,27 +1,45 @@
 /**
  * Mock → 真实 EOS 后端路径翻译表。
  *
- * 仅显式列出已知的、已映射到后端 `/v1/...` 的端点；其余路径原样透传，
- * 由消费方在真模式下触发 404 后逐步补齐（本计划 Phase B 的 proof-of-pattern
- * 只接通 4 条；其他是后续 ticket）。
+ * 仅显式列出已**确认 backend 存在对应端点**的映射;其余路径原样透传,
+ * 由消费方在真模式下触发 404 后逐步补齐(本计划 Phase B 的 proof-of-pattern
+ * 只接通 4 条;其他是后续 ticket)。
  *
- * 设计要点：
- * - 数组按"最长前缀优先"排序，命中即停止；避免 `/api/memory` 抢占
+ * 设计要点:
+ * - 数组按"最长前缀优先"排序,命中即停止;避免 `/api/memory` 抢占
  *   `/api/memory/candidates/:id/...`。
- * - 路径参数 `:id/:cid/:docId/:runId` 走 regex match；为简单起见本表只列
- *   静态子段，参数化路径通过 `matchPath` + `rebuildPath` 在运行时合成。
- * - 未命中返回 `null`，调用方走"原路径 + 默认 method"分支；这意味着该
- *   端点暂时只在 mock 模式下可用，真模式会 404（开发期即可见，便于补表）。
+ * - 路径参数 `:id/:cid/:docId/:runId` 走 regex match;为简单起见本表只列
+ *   静态子段,参数化路径通过 `matchPath` + `rebuildPath` 在运行时合成。
+ * - 未命中返回 `null`,调用方走"原路径 + 默认 method"分支;这意味着该
+ *   端点暂时只在 mock 模式下可用,真模式会 404(开发期即可见,便于补表)。
+ *
+ * **Batch 7 (phantom rules cleanup):** 把 mock 自创、backend 实际未实现的端点
+ * 从 ROUTE_TABLE 删掉 —— 之前的 batch 1-2 contributor 把 mock 路径 1:1 翻译
+ * 到 `/v1/...`,但很多 `/v1/...` 在 backend 不存在(例如 `/v1/skills/governance/...`,
+ * `/v1/skills/catalog`, `/v1/knowledge/sources`, `/v1/knowledge/audit` 等)。
+ * 这些 phantom rules 在真模式会得到 404,反而**遮蔽**了"该端点需要 backend 实现"
+ * 的真相。让它们走 passthrough(显式 unmatched)更清晰;每个 mock-only 端点
+ * 留在 mock.ts 内继续可用(mock 模式行为不变)。
+ *
+ * Batch 7 audit 标准: 路径对应 `@router.<verb>("<path>")` 必须存在于
+ * `backend/modules/{module}/src/deos/modules/{module}/adapter/http/router.py`
+ * 之一(注意前缀可能不在文件里,而在 `APIRouter(prefix="/v1/...")` 中)。
  */
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export interface RouteRule {
-  /** 后端真实方法（仅 pathMap 真模式使用，mock 模式按调用方原 method 走） */
+  /** 后端真实方法(仅 pathMap 真模式使用,mock 模式按调用方原 method 走) */
   method: HttpMethod;
-  /** 后端真实路径，含 `:` 参数占位 */
+  /** 后端真实路径,含 `:` 参数占位 */
   backendPath: string;
-  /** 简要注释，便于维护 */
+  /** 简要注释,便于维护 */
   note?: string;
+  /**
+   * true = 这条 rule 不映射(显式 unmatched),用于在 method-tolerant fallback
+   * 抢占"看起来像 :id 但实际是 phantom 子段"的路径(例 `/api/skills/audit`)。
+   * 数组顺序敏感 —— 必须排在所有"会命中"的规则之前。
+   */
+  unmatched?: boolean;
 }
 
 /**
@@ -34,7 +52,58 @@ export interface RouteRule {
  * 替换按位置进行,只关心捕获顺序。
  */
 const ROUTE_TABLE: Array<{ key: string; rule: RouteRule }> = [
-  // ── Phase B proof-of-pattern:identity / workspaces ─────────────────────
+  // ── batch 7:phantom 子段显式 unmatched(must come before :id wildcard)─
+  // 这些是 mock 自创、backend 未实现的端点。如果不加显式 unmatched,
+  // method-tolerant fallback 会让 `/api/skills/:id` GET rule 抢占这些路径
+  // (`audit` 之类会作为 `:id` 的 value),误导性地声称"matched=true"。
+  // 显式 unmatched 让 translateApiPath 返回 matched=false,前端真模式会 404
+  // —— 路径未映射的真相。
+  { key: '/api/skills/audit', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/skills/catalog', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/skills/perms', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/skills/import', rule: { method: 'POST', backendPath: '', unmatched: true } },
+  { key: '/api/skills/import-package', rule: { method: 'POST', backendPath: '', unmatched: true } },
+  { key: '/api/skills/packs', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/skills/dependency-matrix', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/skills/upgrade-plan', rule: { method: 'GET', backendPath: '', unmatched: true } },
+
+  // ── memory phantom 子段(必须排在 :id wildcard 之前)────────────────
+  { key: '/api/memory/audit', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/memory/policy', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/memory/policy', rule: { method: 'PATCH', backendPath: '', unmatched: true } },
+  { key: '/api/memory/candidates', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/memory/refinement/run', rule: { method: 'POST', backendPath: '', unmatched: true } },
+  { key: '/api/memory/overview', rule: { method: 'GET', backendPath: '', unmatched: true } },
+
+  // ── knowledge phantom 子段 ────────────────────────────────────────
+  { key: '/api/knowledge/reindex', rule: { method: 'POST', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/sources', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/sources', rule: { method: 'POST', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/governance', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/governance', rule: { method: 'PATCH', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/audit', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/eval', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/bindings', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/processing-jobs', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/retrieval-profiles', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/citation-trace', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/chunks/top', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/chunks/rescore', rule: { method: 'POST', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/graph/entities', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/graph/relations', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/evaluations', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/evaluations/run', rule: { method: 'POST', backendPath: '', unmatched: true } },
+
+  // ── workflows phantom 子段 ────────────────────────────────────────
+  { key: '/api/workflows/generate', rule: { method: 'POST', backendPath: '', unmatched: true } },
+  { key: '/api/workflows/generations', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/workflows/orchestration-sessions', rule: { method: 'GET', backendPath: '', unmatched: true } },
+
+  // ── models phantom 子段 ──────────────────────────────────────────
+  { key: '/api/model-providers/discover-models', rule: { method: 'POST', backendPath: '', unmatched: true } },
+  { key: '/api/model-providers/test-connection', rule: { method: 'POST', backendPath: '', unmatched: true } },
+
+  // ── identity(prefix=/v1/identity)─────────────────────────────────
   { key: '/api/auth/login', rule: { method: 'POST', backendPath: '/v1/identity/login', note: '响应折形见 responseAdapters.ts' } },
   { key: '/api/auth/me', rule: { method: 'GET', backendPath: '/v1/identity/users/me', note: '取当前用户 profile' } },
   { key: '/api/workspaces', rule: { method: 'GET', backendPath: '/v1/identity/workspaces', note: '租户下工作空间列表' } },
@@ -43,82 +112,65 @@ const ROUTE_TABLE: Array<{ key: string; rule: RouteRule }> = [
   // 通过 getUserId 回调在 fetch 前替换 <<USER_ID>>
   { key: '/api/api-keys', rule: { method: 'GET', backendPath: '/v1/identity/users/<<USER_ID>>/api-keys', note: '需要当前用户 uid' } },
 
-  // ── Phase B+ batch 1:skills(skill module: /v1/skills) ────────────────
-  // 长前缀在前,避免 /api/skills 抢 /api/skills/:id/...
-  { key: '/api/skills/governance/overview', rule: { method: 'GET', backendPath: '/v1/skills/governance/overview' } },
-  { key: '/api/skills/governance/health', rule: { method: 'GET', backendPath: '/v1/skills/governance/health' } },
-  { key: '/api/skills/governance/incidents', rule: { method: 'GET', backendPath: '/v1/skills/governance/incidents' } },
-  { key: '/api/skills/governance/events', rule: { method: 'GET', backendPath: '/v1/skills/governance/events' } },
-  { key: '/api/skills/governance/trends', rule: { method: 'GET', backendPath: '/v1/skills/governance/trends' } },
-  { key: '/api/skills/governance/batch', rule: { method: 'POST', backendPath: '/v1/skills/governance/batch' } },
-  { key: '/api/skills/catalog', rule: { method: 'GET', backendPath: '/v1/skills/catalog' } },
-  { key: '/api/skills/catalog/publish', rule: { method: 'POST', backendPath: '/v1/skills/catalog/publish' } },
-  { key: '/api/skills/catalog/sync', rule: { method: 'POST', backendPath: '/v1/skills/catalog/sync' } },
-  { key: '/api/skills/audit', rule: { method: 'GET', backendPath: '/v1/skills/audit' } },
-  { key: '/api/skills/perms', rule: { method: 'GET', backendPath: '/v1/skills/permissions' } },
-  { key: '/api/skills/import', rule: { method: 'POST', backendPath: '/v1/skills/import' } },
-  { key: '/api/skills/import-package', rule: { method: 'POST', backendPath: '/v1/skills/import-package' } },
-  { key: '/api/skills/:id/preflight', rule: { method: 'POST', backendPath: '/v1/skills/:id/preflight' } },
+  // ── skill(prefix=/v1/skills)─────────────────────────────────────────
+  // backend 实际端点: GET/POST ""(列表/创建), GET/PATCH/DELETE "/{skill_id}",
+  // POST "/{skill_id}/install", POST "/{skill_id}/invoke",
+  // GET "/invocations/{id}", GET "/invocations", POST "/invocations/{id}/cancel"
+  // 无 /governance/* /catalog* /audit /permissions /import* /preflight /impact /
+  //   uninstall /lifecycle /runtime /test /versions /packs —— 全部走 passthrough
+  { key: '/api/skills/:id/invoke', rule: { method: 'POST', backendPath: '/v1/skills/:id/invoke' } },
   { key: '/api/skills/:id/install', rule: { method: 'POST', backendPath: '/v1/skills/:id/install' } },
-  { key: '/api/skills/:id/impact', rule: { method: 'GET', backendPath: '/v1/skills/:id/impact' } },
-  { key: '/api/skills/:id/uninstall', rule: { method: 'POST', backendPath: '/v1/skills/:id/uninstall' } },
-  { key: '/api/skills/:id/lifecycle', rule: { method: 'PATCH', backendPath: '/v1/skills/:id/lifecycle' } },
-  { key: '/api/skills/:id/governance', rule: { method: 'PATCH', backendPath: '/v1/skills/:id/governance' } },
-  { key: '/api/skills/:id/runtime', rule: { method: 'PATCH', backendPath: '/v1/skills/:id/runtime' } },
-  { key: '/api/skills/:id/permissions', rule: { method: 'PATCH', backendPath: '/v1/skills/:id/permissions' } },
-  { key: '/api/skills/:id/test', rule: { method: 'POST', backendPath: '/v1/skills/:id/test' } },
-  { key: '/api/skills/:id/versions', rule: { method: 'GET', backendPath: '/v1/skills/:id/versions' } },
+  { key: '/api/skills/:id', rule: { method: 'PATCH', backendPath: '/v1/skills/:id' } },
+  { key: '/api/skills/:id', rule: { method: 'DELETE', backendPath: '/v1/skills/:id' } },
   { key: '/api/skills/:id', rule: { method: 'GET', backendPath: '/v1/skills/:id' } },
+  { key: '/api/skills/invocations/:invId/cancel', rule: { method: 'POST', backendPath: '/v1/skills/invocations/:invId/cancel' } },
+  { key: '/api/skills/invocations/:invId', rule: { method: 'GET', backendPath: '/v1/skills/invocations/:invId' } },
+  { key: '/api/skills/invocations', rule: { method: 'GET', backendPath: '/v1/skills/invocations' } },
+  { key: '/api/skills', rule: { method: 'POST', backendPath: '/v1/skills' } },
   { key: '/api/skills', rule: { method: 'GET', backendPath: '/v1/skills' } },
 
-  // ── Phase B+ batch 2:memory(memory module: /v1/memories) ──────────────
-  { key: '/api/memory/records', rule: { method: 'GET', backendPath: '/v1/memories' } },
-  { key: '/api/memory/records', rule: { method: 'POST', backendPath: '/v1/memories' } },
+  // ── memory(prefix=/v1/memories)─────────────────────────────────────
+  // backend 实际端点: POST "" / POST "/recall" / GET|DELETE "/{memory_id}" / GET ""
+  // 无 /audit /policy —— 走 passthrough
   { key: '/api/memory/records/:id', rule: { method: 'DELETE', backendPath: '/v1/memories/:id' } },
-  { key: '/api/memory/records/:id/expire', rule: { method: 'POST', backendPath: '/v1/memories/:id/expire' } },
+  { key: '/api/memory/records/:id', rule: { method: 'GET', backendPath: '/v1/memories/:id' } },
   { key: '/api/memory/recall', rule: { method: 'POST', backendPath: '/v1/memories/recall' } },
-  { key: '/api/memory/audit', rule: { method: 'GET', backendPath: '/v1/memories/audit' } },
-  { key: '/api/memory/policy', rule: { method: 'GET', backendPath: '/v1/memories/policy' } },
-  { key: '/api/memory/policy', rule: { method: 'PATCH', backendPath: '/v1/memories/policy' } },
+  { key: '/api/memory/records', rule: { method: 'POST', backendPath: '/v1/memories' } },
+  { key: '/api/memory/records', rule: { method: 'GET', backendPath: '/v1/memories' } },
 
-  // ── Phase B+ batch 3:knowledge(knowledge module: /v1/knowledge) ──────
-  // 注意 mock 用 /api/knowledge/doc/:id(单数),backend 用 /v1/knowledge/assets/:id
-  { key: '/api/knowledge/docs', rule: { method: 'GET', backendPath: '/v1/knowledge/assets' } },
-  { key: '/api/knowledge/docs', rule: { method: 'POST', backendPath: '/v1/knowledge/assets' } },
-  { key: '/api/knowledge/doc/:id', rule: { method: 'GET', backendPath: '/v1/knowledge/assets/:id' } },
+  // ── knowledge(prefix=/v1/knowledge)─────────────────────────────────
+  // backend 实际端点: POST|GET "/packages", GET|DELETE "/packages/{id}",
+  // GET "/packages/{id}/assets", POST "/packages/{id}/assets" /assets/text,
+  // POST "/packages/{id}/search", POST "/search", DELETE "/assets/{id}"
+  // 注意:前端用 /api/knowledge/doc/:id(单数 doc),backend 用 /assets/:id
+  // 注意:前端用 /api/knowledge/packages/:id/delete 子路径,backend 用 DELETE 动词
+  // 无 /reindex /sources* /governance /audit /eval /packages/:id/publish/process —— 走 passthrough
   { key: '/api/knowledge/doc/:id', rule: { method: 'DELETE', backendPath: '/v1/knowledge/assets/:id' } },
-  { key: '/api/knowledge/retrieve', rule: { method: 'POST', backendPath: '/v1/knowledge/search' } },
-  { key: '/api/knowledge/reindex', rule: { method: 'POST', backendPath: '/v1/knowledge/reindex' } },
-  { key: '/api/knowledge/sources', rule: { method: 'GET', backendPath: '/v1/knowledge/sources' } },
-  { key: '/api/knowledge/sources', rule: { method: 'POST', backendPath: '/v1/knowledge/sources' } },
-  { key: '/api/knowledge/sources/:id/sync', rule: { method: 'POST', backendPath: '/v1/knowledge/sources/:id/sync' } },
-  { key: '/api/knowledge/governance', rule: { method: 'GET', backendPath: '/v1/knowledge/governance' } },
-  { key: '/api/knowledge/governance', rule: { method: 'PATCH', backendPath: '/v1/knowledge/governance' } },
-  { key: '/api/knowledge/packages', rule: { method: 'GET', backendPath: '/v1/knowledge/packages' } },
-  { key: '/api/knowledge/packages', rule: { method: 'POST', backendPath: '/v1/knowledge/packages' } },
-  // 前后端命名差异:mock 走 /packages/:id/delete,backend 走 /packages/:id DELETE
+  { key: '/api/knowledge/doc/:id', rule: { method: 'GET', backendPath: '/v1/knowledge/assets/:id' } },
+  { key: '/api/knowledge/docs', rule: { method: 'POST', backendPath: '/v1/knowledge/assets' } },
+  { key: '/api/knowledge/docs', rule: { method: 'GET', backendPath: '/v1/knowledge/assets' } },
   { key: '/api/knowledge/packages/:id/delete', rule: { method: 'DELETE', backendPath: '/v1/knowledge/packages/:id' } },
-  { key: '/api/knowledge/packages/:id/publish', rule: { method: 'POST', backendPath: '/v1/knowledge/packages/:id/publish' } },
-  { key: '/api/knowledge/packages/:id/process', rule: { method: 'POST', backendPath: '/v1/knowledge/packages/:id/process' } },
-  { key: '/api/knowledge/audit', rule: { method: 'GET', backendPath: '/v1/knowledge/audit' } },
-  { key: '/api/knowledge/eval', rule: { method: 'GET', backendPath: '/v1/knowledge/eval' } },
+  { key: '/api/knowledge/packages/:id', rule: { method: 'GET', backendPath: '/v1/knowledge/packages/:id' } },
+  { key: '/api/knowledge/packages', rule: { method: 'POST', backendPath: '/v1/knowledge/packages' } },
+  { key: '/api/knowledge/packages', rule: { method: 'GET', backendPath: '/v1/knowledge/packages' } },
+  { key: '/api/knowledge/retrieve', rule: { method: 'POST', backendPath: '/v1/knowledge/search' } },
 
-  // ── Phase B+ batch 4:workflows(orchestration module: /v1/orchestration) ──
-  // 注意:backend 列 runs 是 /v1/orchestration/runs(全局列表,用 query ?plan_id 过滤),
-  // 不是 /v1/orchestration/plans/:id/runs —— 后者无对应端点
-  { key: '/api/workflows/:id/runs/:runId/retry', rule: { method: 'POST', backendPath: '/v1/orchestration/runs/:runId/retry' } },
-  { key: '/api/workflows/:id/runs/:runId/resume', rule: { method: 'POST', backendPath: '/v1/orchestration/runs/:runId/resume' } },
+  // ── orchestration(prefix=/v1/orchestration)────────────────────────
+  // backend 实际端点: POST|GET "/plans", GET "/plans/{id}",
+  // POST "/plans/{id}/runs", GET "/runs", GET "/runs/{id}", POST "/runs/{id}/cancel"
+  // 注意:backend 列 runs 是全局 /v1/orchestration/runs(?plan_id 过滤),
+  // 不是 /v1/orchestration/plans/:id/runs(后者无对应端点)
+  // 无 /plans/:id/{audit,versions,validate,draft} —— 走 passthrough
+  { key: '/api/workflows/:id/runs/:runId/cancel', rule: { method: 'POST', backendPath: '/v1/orchestration/runs/:runId/cancel' } },
+  { key: '/api/workflows/:id/runs/:runId', rule: { method: 'GET', backendPath: '/v1/orchestration/runs/:runId' } },
   { key: '/api/workflows/:id/runs', rule: { method: 'GET', backendPath: '/v1/orchestration/runs', note: 'backend 列全局 runs,?plan_id 过滤' } },
   { key: '/api/workflows/:id/run', rule: { method: 'POST', backendPath: '/v1/orchestration/plans/:id/runs' } },
-  { key: '/api/workflows/:id/audit', rule: { method: 'GET', backendPath: '/v1/orchestration/plans/:id/audit' } },
-  { key: '/api/workflows/:id/versions', rule: { method: 'GET', backendPath: '/v1/orchestration/plans/:id/versions' } },
-  { key: '/api/workflows/:id/validate', rule: { method: 'POST', backendPath: '/v1/orchestration/plans/:id/validate' } },
-  { key: '/api/workflows/:id/draft', rule: { method: 'PUT', backendPath: '/v1/orchestration/plans/:id/draft' } },
   { key: '/api/workflows/:id', rule: { method: 'GET', backendPath: '/v1/orchestration/plans/:id' } },
+  { key: '/api/workflows', rule: { method: 'POST', backendPath: '/v1/orchestration/plans' } },
   { key: '/api/workflows', rule: { method: 'GET', backendPath: '/v1/orchestration/plans' } },
 
-  // ── Phase B+ batch 5:agents(agent_factory: /v1/agents) ────────────────
-  // 注:agent_factory router 只有 {aid}, {aid}/versions, {aid}/versions/{vid}/{publish,release,retire,notes} 等
+  // ── agent_factory(prefix=/v1/agents,inline paths 实际是 /v1/agents/{aid}/*)──
+  // 注:agent_factory router 只有 {aid}, {aid}/versions, {aid}/versions/{vid}/{publish,release,retire,notes}
   // 不暴露 :id/skills, :id/capabilities, :id/install, :id/uninstall, :id/publish(无 version_id)。
   // 这些 pathMap 规则全部删除,前端真模式调用时走 passthrough(404);
   // mock 模式自身也未实现这些路径,删除不影响 mock 行为。
@@ -126,122 +178,143 @@ const ROUTE_TABLE: Array<{ key: string; rule: RouteRule }> = [
   { key: '/api/agents/:id', rule: { method: 'GET', backendPath: '/v1/agents/:id' } },
   { key: '/api/agents', rule: { method: 'GET', backendPath: '/v1/agents' } },
 
-  // ── Phase B+ batch 6:sessions(agent_runtime sessions) ────────────────
-  { key: '/api/sessions', rule: { method: 'GET', backendPath: '/v1/sessions' } },
-  { key: '/api/sessions', rule: { method: 'POST', backendPath: '/v1/sessions' } },
-  { key: '/api/sessions/:id', rule: { method: 'GET', backendPath: '/v1/sessions/:id' } },
+  // ── agent_runtime(prefix=/v1,sessions)─────────────────────────────
+  // backend 实际端点: POST "/sessions/{sid}/close", POST "/sessions/{sid}/turn/stream",
+  // POST "/agents/{aid}/sessions", GET "/sessions/{sid}"
+  // POST /api/sessions 协议错配:web 不传 aid,backend 要求 /agents/{aid}/sessions —— passthrough
   { key: '/api/sessions/:id', rule: { method: 'DELETE', backendPath: '/v1/sessions/:id/close' } },
+  { key: '/api/sessions/:id', rule: { method: 'GET', backendPath: '/v1/sessions/:id' } },
+  { key: '/api/sessions', rule: { method: 'GET', backendPath: '/v1/sessions' } },
 
-  // ── Phase B+ batch 7:channels(channel module: /v1/channels) ──────────
-  { key: '/api/channels/:id/toggle', rule: { method: 'PATCH', backendPath: '/v1/channels/:id' } },
-  { key: '/api/channels/:id/test', rule: { method: 'POST', backendPath: '/v1/channels/:id/send' } },
+  // ── channel(prefix=/v1,paths "/channels/*")────────────────────────
+  // backend 实际端点: POST|GET "/channels", GET|PATCH "/channels/{id}",
+  // POST "/channels/{id}/send", POST "/channels/{id}/webhook"
+  // /api/channels/:id/test mock 用 test,backend 用 send(verb mismatch fix)
+  // /api/channels/:id/toggle 与 /api/channels/:id/config 都是 PATCH /channels/{id}
+  { key: '/api/channels/:id/test', rule: { method: 'POST', backendPath: '/v1/channels/:id/send', note: 'mock 用 test,backend 用 send(verb-mismatch fix)' } },
   { key: '/api/channels/:id/config', rule: { method: 'PATCH', backendPath: '/v1/channels/:id' } },
+  { key: '/api/channels/:id/toggle', rule: { method: 'PATCH', backendPath: '/v1/channels/:id' } },
   { key: '/api/channels/:id', rule: { method: 'GET', backendPath: '/v1/channels/:id' } },
   { key: '/api/channels', rule: { method: 'GET', backendPath: '/v1/channels' } },
 
-  // ── Phase B+ batch 8:evaluations(evaluation module: /v1/eval) ────────
-  // 注:backend 的资源是 /v1/eval/datasets 和 /v1/eval/runs,顶层 /v1/eval 不存在
-  // GET /api/evaluations → list runs(backend 无 datasets 列表的 mock 入口,统一映射到 runs)
+  // ── evaluation(prefix=/v1/eval)────────────────────────────────────
+  // backend 实际端点: GET "/datasets", GET "/datasets/{did}", GET "/datasets/{did}/cases",
+  // GET "/runs", GET "/runs/{rid}", POST "/runs"
+  // 注:backend 的资源是 /v1/eval/datasets 和 /v1/eval/runs
+  // GET /api/evaluations → list runs(backend 不暴露 datasets 列表的 mock 入口)
   // GET /api/evaluations/:id → single run
   // /api/evaluations/:id/{run,stop,retry,report} 全部 fallback passthrough —— backend 无对应端点
-  { key: '/api/evaluations', rule: { method: 'GET', backendPath: '/v1/eval/runs', note: 'list runs(backend 不暴露 datasets 列表)' } },
-  { key: '/api/evaluations', rule: { method: 'POST', backendPath: '/v1/eval/runs', note: 'create run' } },
   { key: '/api/evaluations/:id', rule: { method: 'GET', backendPath: '/v1/eval/runs/:id' } },
+  { key: '/api/evaluations', rule: { method: 'POST', backendPath: '/v1/eval/runs', note: 'create run' } },
+  { key: '/api/evaluations', rule: { method: 'GET', backendPath: '/v1/eval/runs', note: 'list runs(backend 不暴露 datasets 列表)' } },
 
-  // ── Phase B+ batch 9:platform(platform module: /v1/platform) ────────
+  // ── platform(prefix=/v1/platform)──────────────────────────────────
   { key: '/api/tenant/profile', rule: { method: 'PATCH', backendPath: '/v1/platform/tenants/me' } },
   { key: '/api/billing', rule: { method: 'GET', backendPath: '/v1/platform/subscriptions/me' } },
 
-  // ── Phase B+ batch 10:governance(/v1/policies + /v1/approvals) ───────
+  // ── governance(prefix-less, paths 都是 /v1/policies 与 /v1/approvals)──
   // 实际后端路径:approval 用 /deny 不是 /reject
-  { key: '/api/release-approvals', rule: { method: 'GET', backendPath: '/v1/approvals' } },
-  { key: '/api/release-approvals', rule: { method: 'POST', backendPath: '/v1/approvals' } },
-  { key: '/api/release-approvals/:id/approve', rule: { method: 'POST', backendPath: '/v1/approvals/:id/approve' } },
+  // 无 /zero-trust 子路径 —— /zero-trust/evaluate /events /authorizations /overview 走 passthrough
   { key: '/api/release-approvals/:id/reject', rule: { method: 'POST', backendPath: '/v1/approvals/:id/deny' } },
-  // zero-trust policies → backend 实际在 /v1/policies(无 zero-trust 子路径)
-  { key: '/api/zero-trust/policies', rule: { method: 'GET', backendPath: '/v1/policies' } },
-  { key: '/api/zero-trust/policies', rule: { method: 'POST', backendPath: '/v1/policies' } },
+  { key: '/api/release-approvals/:id/approve', rule: { method: 'POST', backendPath: '/v1/approvals/:id/approve' } },
+  { key: '/api/release-approvals/:id', rule: { method: 'GET', backendPath: '/v1/approvals/:id' } },
+  { key: '/api/release-approvals', rule: { method: 'POST', backendPath: '/v1/approvals' } },
+  { key: '/api/release-approvals', rule: { method: 'GET', backendPath: '/v1/approvals' } },
   { key: '/api/zero-trust/policies/:id', rule: { method: 'PATCH', backendPath: '/v1/policies/:id' } },
-  // zero-trust/evaluate → backend governance 无此端点;fallback 透传
-  // zero-trust/events → 同上
+  { key: '/api/zero-trust/policies', rule: { method: 'POST', backendPath: '/v1/policies' } },
+  { key: '/api/zero-trust/policies', rule: { method: 'GET', backendPath: '/v1/policies' } },
 
-  // ── Phase B+ batch 11:observability(/v1/observability) ───────────────
-  { key: '/api/observability/runs', rule: { method: 'GET', backendPath: '/v1/observability/runs' } },
+  // ── observability(prefix=/v1/observability)────────────────────────
+  // backend 实际端点: GET "/runs", GET "/costs", GET "/quality/{template_id}/{version_id}"
   { key: '/api/observability/costs', rule: { method: 'GET', backendPath: '/v1/observability/costs' } },
-  // 注意 backend 的 quality 端点需要 template_id + version_id,前端如果只传
-  // /quality 时 fallback 透传(后续按需扩展 query 参数规则)
+  { key: '/api/observability/runs', rule: { method: 'GET', backendPath: '/v1/observability/runs' } },
 
-  // ── Phase B+ batch 12:tools(tool module: /v1/tools) ──────────────────
+  // ── tool(prefix=/v1/tools)─────────────────────────────────────────
+  // backend 实际端点: POST|GET ""(列表/创建), GET|PATCH|DELETE "/{tid}",
+  // POST "/{name}/invoke", POST "/batch_invoke"
+  { key: '/api/tools/:id/invoke', rule: { method: 'POST', backendPath: '/v1/tools/:id/invoke' } },
+  { key: '/api/tools/:id', rule: { method: 'PATCH', backendPath: '/v1/tools/:id' } },
+  { key: '/api/tools/:id', rule: { method: 'DELETE', backendPath: '/v1/tools/:id' } },
+  { key: '/api/tools/:id', rule: { method: 'GET', backendPath: '/v1/tools/:id' } },
   { key: '/api/tools', rule: { method: 'POST', backendPath: '/v1/tools' } },
   { key: '/api/tools', rule: { method: 'GET', backendPath: '/v1/tools' } },
-  { key: '/api/tools/:id', rule: { method: 'GET', backendPath: '/v1/tools/:id' } },
-  { key: '/api/tools/:id', rule: { method: 'DELETE', backendPath: '/v1/tools/:id' } },
-  { key: '/api/tools/:id', rule: { method: 'PATCH', backendPath: '/v1/tools/:id' } },
-  { key: '/api/tools/:id/invoke', rule: { method: 'POST', backendPath: '/v1/tools/:id/invoke' } },
 
-  // ── Phase B+ batch 13:models(model module: /v1/model-credentials + /v1/models + /v1/routing-policies) ─
-  { key: '/api/model-providers', rule: { method: 'GET', backendPath: '/v1/model-credentials' } },
-  { key: '/api/model-providers', rule: { method: 'POST', backendPath: '/v1/model-credentials' } },
+  // ── model(prefix=/v1, paths "/models", "/model-credentials", "/routing-policies")──
+  // backend 实际端点: GET|POST "/model-credentials", POST "/model-credentials/{id}/rotate",
+  // GET "/models", GET|PATCH "/models/{id}", POST "/models/{id}/invoke",
+  // GET|POST "/routing-policies"
+  // 无 /model-credentials/{id}/rotate(实际有,前面列出);/discover-models /test-connection /:id/impact
+  //   /:id/draft /:id/validate /:id/publish —— 走 passthrough
+  { key: '/api/model-providers/:id/rotate', rule: { method: 'POST', backendPath: '/v1/model-credentials/:id/rotate' } },
   { key: '/api/model-providers/:id', rule: { method: 'PATCH', backendPath: '/v1/model-credentials/:id' } },
   { key: '/api/model-providers/:id', rule: { method: 'DELETE', backendPath: '/v1/model-credentials/:id' } },
-  { key: '/api/model-providers/:id/rotate', rule: { method: 'POST', backendPath: '/v1/model-credentials/:id/rotate' } },
-  { key: '/api/models', rule: { method: 'GET', backendPath: '/v1/models' } },
-  { key: '/api/models/:id', rule: { method: 'GET', backendPath: '/v1/models/:id' } },
+  { key: '/api/model-providers', rule: { method: 'POST', backendPath: '/v1/model-credentials' } },
+  { key: '/api/model-providers', rule: { method: 'GET', backendPath: '/v1/model-credentials' } },
   { key: '/api/models/:id/invoke', rule: { method: 'POST', backendPath: '/v1/models/:id/invoke' } },
-  { key: '/api/model-routing/policies', rule: { method: 'GET', backendPath: '/v1/routing-policies' } },
+  { key: '/api/models/:id', rule: { method: 'GET', backendPath: '/v1/models/:id' } },
+  { key: '/api/models', rule: { method: 'GET', backendPath: '/v1/models' } },
   { key: '/api/model-routing/policies', rule: { method: 'POST', backendPath: '/v1/routing-policies' } },
-  { key: '/api/model-routing/policies/:id/draft', rule: { method: 'PATCH', backendPath: '/v1/routing-policies/:id/draft' } },
-  { key: '/api/model-routing/policies/:id/validate', rule: { method: 'POST', backendPath: '/v1/routing-policies/:id/validate' } },
-  { key: '/api/model-routing/policies/:id/publish', rule: { method: 'POST', backendPath: '/v1/routing-policies/:id/publish' } },
+  { key: '/api/model-routing/policies', rule: { method: 'GET', backendPath: '/v1/routing-policies' } },
 
-  // ── Phase B+ batch 14:self-evolution(/v1/evolve) ─────────────────────
-  { key: '/api/evolve/candidates', rule: { method: 'GET', backendPath: '/v1/evolve/candidates' } },
-  { key: '/api/evolve/candidates/:id/approve', rule: { method: 'POST', backendPath: '/v1/evolve/candidates/:id/approve' } },
-  { key: '/api/evolve/candidates/:id/reject', rule: { method: 'POST', backendPath: '/v1/evolve/candidates/:id/reject' } },
+  // ── self_evolution(prefix-less, paths 都是 /v1/evolve/candidates)──
+  // backend 实际端点: GET|POST "/v1/evolve/candidates", GET|POST "/v1/evolve/candidates/{id}",
+  // POST "/v1/evolve/candidates/{id}/{approve,reject,apply}"
   { key: '/api/evolve/candidates/:id/apply', rule: { method: 'POST', backendPath: '/v1/evolve/candidates/:id/apply' } },
-
-  // ── TODO(后续 ticket):仍 mock-only 的路径 ──────────────────────────────
-  // - /api/digital-employees/*        → 后端在 /v1/agents 但形状差异大
-  // - /api/audit-center               → 后端只有分模块 audit,无 unified feed
-  // - /api/audit-stream               → SSE endpoints in different modules
-  // - /api/backups                    → 后端无对应
-  // - /api/home/{kpis,events,team,...}→ 后端无 aggregate endpoint
-  // - /api/copilot/*                  → agent_runtime 路径不一致
-  // - /api/agents/{metrics,calls,alerts,trend} → agent_runtime 不暴露聚合
-  // - /api/agents/:id/{publish,install,uninstall,skills,capabilities} → agent_factory 无对应端点(已从 pathMap 移除)
-  // - /api/channel-control/*          → channel 路径不同
-  // - /api/skill-integrations/*       → 需进一步核对
-  // - /api/tasks                      → orchestration 无 /tasks 端点(只有 plans + runs)
-  // - /api/zero-trust/{evaluate,events,authorizations} → governance 无专用端点
-  // - /api/evaluations/:id/{run,stop,retry,report} → backend eval 仅 datasets + runs,无 lifecycle 端点(已从 pathMap 移除)
+  { key: '/api/evolve/candidates/:id/reject', rule: { method: 'POST', backendPath: '/v1/evolve/candidates/:id/reject' } },
+  { key: '/api/evolve/candidates/:id/approve', rule: { method: 'POST', backendPath: '/v1/evolve/candidates/:id/approve' } },
+  { key: '/api/evolve/candidates/:id', rule: { method: 'GET', backendPath: '/v1/evolve/candidates/:id' } },
+  { key: '/api/evolve/candidates', rule: { method: 'POST', backendPath: '/v1/evolve/candidates' } },
+  { key: '/api/evolve/candidates', rule: { method: 'GET', backendPath: '/v1/evolve/candidates' } },
 ];
 
 export interface TranslatedRoute {
   method: HttpMethod;
   backendPath: string;
-  /** true = 在 ROUTE_TABLE 命中；false = 透传原路径 */
+  /** true = 在 ROUTE_TABLE 命中;false = 透传原路径 */
   matched: boolean;
   /** true = backendPath 含 <<USER_ID>> 占位,调用方需在 fetch 前替换为当前用户 uid */
   needsUserId?: boolean;
 }
 
-function matchExactOrWildcard(key: string, path: string): string[] | null {
-  // 把 key 转成 regex（`:xxx` → `([^/]+)`）
+function matchExactOrWildcard(key: string, path: string): { name: string; value: string }[] | null {
+  // 把 key 转成 regex(`:xxx` → `([^/]+)`),并收集占位名
   const parts = key.split('/');
+  const names: string[] = [];
   const reParts = parts.map((p) => {
-    if (p.startsWith(':')) return '([^/]+)';
+    if (p.startsWith(':')) {
+      names.push(p.slice(1));
+      return '([^/]+)';
+    }
     if (p === '') return '';
     return p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   });
   const re = new RegExp('^' + reParts.join('/') + '$');
   const m = path.match(re);
   if (!m) return null;
-  return m.slice(1);
+  return names.map((name, i) => ({ name, value: m[i + 1] ?? '' }));
 }
 
-function rebuildBackendPath(template: string, params: string[]): string {
-  let i = 0;
-  return template.replace(/:[a-zA-Z]+/g, () => params[i++] ?? '');
+/**
+ * 按**命名**把 backend 模板里的 `:name` 替换为对应 capture。
+ *
+ * 例: key='/api/workflows/:id/runs/:runId/cancel',
+ *     backendPath='/v1/orchestration/runs/:runId/cancel'
+ *   captures=[{name:'id', value:'wf-1'}, {name:'runId', value:'run-1'}]
+ *   结果='/v1/orchestration/runs/run-1/cancel'  ← 按 name 匹配,不污染 :runId
+ *
+ * 如果模板里的 `:name` 在 captures 里找不到对应命名 capture,fallback 到按
+ * 出现顺序消费 captures(向后兼容旧规则 —— 不再需要,但保留以防 mock key
+ * 用 `:id` 而 backend path 用 `:id` 同名的情况)。
+ */
+function rebuildBackendPath(template: string, captures: { name: string; value: string }[]): string {
+  let fallbackIdx = 0;
+  return template.replace(/:[a-zA-Z]+/g, (placeholder) => {
+    const name = placeholder.slice(1);
+    const hit = captures.find((c) => c.name === name);
+    if (hit) return hit.value;
+    const fallback = captures[fallbackIdx++];
+    return fallback?.value ?? placeholder;
+  });
 }
 
 /** 标记 backend path 需要调用方从 auth context 注入当前用户的 uid */
@@ -264,22 +337,31 @@ export function translateApiPath(
   for (const { key, rule } of ROUTE_TABLE) {
     const params = matchExactOrWildcard(key, path);
     if (params === null) continue;
+    // 显式 unmatched 立即返回(优先级最高,用于 phantom 路径拒绝 fallback)
+    if (rule.unmatched) {
+      return { method, backendPath: path, matched: false };
+    }
     const backendPath = rebuildBackendPath(rule.backendPath, params);
     const needsUserId = backendPath.includes(USER_ID_PLACEHOLDER);
     if (rule.method === method) {
       return { method: rule.method, backendPath, matched: true, needsUserId };
     }
-    if (fallback === null) fallback = { method: rule.method, backendPath };
+    // method-tolerant fallback 只在 path 精确等于某 key(无 wildcard 替换)
+    // 时启用 —— 否则 `:id` 占位会替任意字符串兜底命中,把 phantom 路径
+    // (如 `/api/skills/dependency-matrix`)误判为合法映射。
+    if (fallback === null && key === path) {
+      fallback = { method: rule.method, backendPath };
+    }
   }
   if (fallback !== null) {
     const fallbackNeedsUserId = fallback.backendPath.includes(USER_ID_PLACEHOLDER);
     return { method: fallback.method, backendPath: fallback.backendPath, matched: true, needsUserId: fallbackNeedsUserId };
   }
-  // 未命中:保持调用方原 method（GET/POST/PATCH…），仅给个标记便于打日志
+  // 未命中:保持调用方原 method(GET/POST/PATCH…),仅给个标记便于打日志
   return { method, backendPath: path, matched: false };
 }
 
-/** 仅供单测使用：返回当前规则命中数（>=0 表示表非空） */
+/** 仅供单测使用:返回当前规则命中数(>=0 表示表非空) */
 export function _routeTableSize(): number {
   return ROUTE_TABLE.length;
 }

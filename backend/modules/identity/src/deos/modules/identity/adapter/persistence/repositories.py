@@ -152,6 +152,20 @@ class SqlUserRepository(UserRepository):
         o = (await self._s.execute(q)).scalar_one_or_none()
         return user_orm_to_domain(o) if o else None
 
+    async def get_by_email_global(self, email: str) -> User | None:
+        # Login flow: caller does not know the tenant_id ahead of time. Email
+        # is assumed globally unique — a precondition enforced upstream by the
+        # registration flow. Returns the first match if multiple exist (TODO:
+        # harden once a global uniqueness constraint lands on users.email).
+        q = (
+            select(UserORM)
+            .where(UserORM.email == email.lower())
+            .order_by(UserORM.created_at)
+            .limit(1)
+        )
+        o = (await self._s.execute(q)).scalar_one_or_none()
+        return user_orm_to_domain(o) if o else None
+
 
 class SqlAPIKeyRepository(APIKeyRepository):
     def __init__(self, session: AsyncSession) -> None:

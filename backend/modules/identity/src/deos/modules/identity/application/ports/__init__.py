@@ -41,6 +41,18 @@ class UserRepository(ABC):
     async def get(self, user_id: UUID) -> User | None: ...
     @abstractmethod
     async def get_by_email(self, tenant_id: UUID, email: str) -> User | None: ...
+    @abstractmethod
+    async def get_by_email_global(self, email: str) -> User | None:
+        """Cross-tenant email lookup.
+
+        Used by the login flow when the caller does not know the tenant_id
+        ahead of time (typical for first-touch credential auth). Assumes
+        email is globally unique across tenants — a precondition enforced
+        upstream by the registration flow. Returns the first match if
+        multiple exist (TODO: harden once a global uniqueness constraint
+        lands on `users.email`).
+        """
+        ...
 
 
 class APIKeyRepository(ABC):

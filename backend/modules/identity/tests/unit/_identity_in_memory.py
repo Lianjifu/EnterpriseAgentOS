@@ -75,6 +75,16 @@ class InMemoryUserRepository(UserRepository):
         uid = self._by_tenant_email.get((tenant_id, email.lower()))
         return self._by_id.get(uid) if uid else None
 
+    async def get_by_email_global(self, email: str) -> User | None:
+        # First match across tenants. Email global uniqueness is enforced
+        # upstream by the registration flow.
+        email_lower = email.lower()
+        for uid in self._by_tenant_email.values():
+            user = self._by_id.get(uid)
+            if user is not None and user.email.lower() == email_lower:
+                return user
+        return None
+
 
 class InMemoryAPIKeyRepository(APIKeyRepository):
     def __init__(self) -> None:

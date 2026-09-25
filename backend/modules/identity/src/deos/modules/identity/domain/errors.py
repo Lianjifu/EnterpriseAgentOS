@@ -35,6 +35,10 @@ class UserAlreadyExists(ConflictError):
 
 class InvalidCredentials(BusinessRuleError):
     code = "INVALID_CREDENTIALS"
+    # Override BusinessRuleError's 422 with 401 — auth failures must surface
+    # as 401 per RFC 9110 §15.5.2 so HTTP middleware (basic-auth realm,
+    # WWW-Authenticate, etc.) handles them correctly.
+    status = 401
 
 
 class APIKeyRevoked(BusinessRuleError):

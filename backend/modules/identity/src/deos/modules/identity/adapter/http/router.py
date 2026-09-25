@@ -11,7 +11,7 @@ Public routes (mounted on `/v1/identity`):
   POST   /users/{uid}/api-keys                     issue_api_key
   POST   /users/{uid}/api-keys/{kid}/revoke        revoke_api_key
   GET    /tenants/current                          get_current_tenant
-  POST   /login                                    login
+  POST   /login                                    login  (auth subrouter)
 """
 
 from __future__ import annotations
@@ -21,13 +21,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query, Request
 
+from deos.modules.identity.adapter.http.auth.router import auth_router
+from deos.modules.identity.adapter.http.deps import get_identity_service
 from deos.modules.identity.adapter.http.dto import (
     APIKeyResponse,
     CreateTenantRequest,
     CreateWorkspaceRequest,
     IssueAPIKeyRequest,
-    LoginRequest,
-    LoginResponse,
     RegisterUserRequest,
     TenantResponse,
     UserResponse,
@@ -50,26 +50,6 @@ def get_service(request: Request) -> IdentityService:
     if svc is None:
         raise RuntimeError("IdentityService not bound on request.state")
     return svc
-
-
-async def get_identity_service(request: Request) -> IdentityService:
-    """FastAPI dependency — opens a per-request session and binds an
-    IdentityService to it for the lifetime of the request. The session is
-    committed on success and rolled back on exception."""
-    factory = getattr(request.app.state, "identity_factory", None)
-    container = getattr(request.app.state, "container", None)
-    if factory is None or container is None:
-        raise RuntimeError("IdentityService factory not wired on app.state")
-    sf = container.session_factory()
-    async with sf.session() as session:
-        svc = factory.for_session(session)
-        request.state.identity_service = svc
-        try:
-            yield svc
-        except Exception:
-            await session.rollback()
-            raise
-        await session.commit()
 
 
 def build_router() -> APIRouter:
@@ -228,15 +208,8 @@ def build_router() -> APIRouter:
         await svc.revoke_api_key().execute(api_key_id=kid)
 
     # ── login ──────────────────────────────────────────────────────────────
-    @router.post("/login", response_model=LoginResponse)
-    async def login(
-        body: LoginRequest,
-        svc: IdentityService = Depends(get_identity_service),  # noqa: B008
-    ) -> LoginResponse:
-        token, exp = await svc.login().execute(
-            tenant_id=body.tenant_id, email=body.email, password=body.password
-        )
-        return LoginResponse(access_token=token, expires_at=exp)
+    # Mounted from the auth subpackage — see adapter/http/auth/router.py.
+    router.include_router(auth_router)
 
     return router
 

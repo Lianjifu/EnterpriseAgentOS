@@ -50,11 +50,14 @@ class _ErrorEnvelopeMiddleware(BaseHTTPMiddleware):
             )
 
 
-def _build_app() -> tuple[FastAPI, InMemoryTenantRepository, InMemoryUserRepository]:
+def _build_app(
+    hasher: FakeHasher | None = None,
+) -> tuple[FastAPI, InMemoryTenantRepository, InMemoryUserRepository]:
     tenants = InMemoryTenantRepository()
     workspaces = InMemoryWorkspaceRepository()
     users = InMemoryUserRepository()
     api_keys = InMemoryAPIKeyRepository()
+    active_hasher = hasher or FakeHasher()
 
     def factory_for_session(_session: Any) -> IdentityService:
         return IdentityService(
@@ -62,7 +65,7 @@ def _build_app() -> tuple[FastAPI, InMemoryTenantRepository, InMemoryUserReposit
             workspaces=workspaces,
             users=users,
             api_keys=api_keys,
-            hasher=FakeHasher(),
+            hasher=active_hasher,
             issuer=FakeAccessTokenIssuer(),
         )
 
@@ -98,7 +101,12 @@ def _build_app() -> tuple[FastAPI, InMemoryTenantRepository, InMemoryUserReposit
     return app, tenants, users
 
 
-def _seed(tenants: InMemoryTenantRepository, users: InMemoryUserRepository) -> tuple[UUID, UUID]:
+def _seed(
+    tenants: InMemoryTenantRepository,
+    users: InMemoryUserRepository,
+    *,
+    hashed_password: str | None = None,
+) -> tuple[UUID, UUID]:
     tenant_id = uuid4()
     user_id = uuid4()
     asyncio_run = __import__("asyncio").run
@@ -118,6 +126,7 @@ def _seed(tenants: InMemoryTenantRepository, users: InMemoryUserRepository) -> t
                 tenant_id=tenant_id,
                 email="admin@acme.com",
                 display_name="Admin",
+                hashed_password=hashed_password,
             )
         )
     )
@@ -232,3 +241,58 @@ def test_users_me_literal_takes_priority_over_uid_wildcard() -> None:
     )
     assert resp.status_code == 200, resp.text
     assert resp.json()["id"] == str(user_id)
+
+
+def test_login_returns_user() -> None:
+    """POST /login must return the resolved user payload alongside the token
+    so the frontend can avoid the second /users/me round-trip."""
+    hasher = FakeHasher()
+    app, tenants, users = _build_app(hasher=hasher)
+    tenant_id, user_id = _seed(
+        tenants, users, hashed_password=hasher.hash("demo123456")
+    )
+    client = TestClient(app)
+    resp = client.post(
+        "/v1/identity/login",
+        json={"email": "admin@acme.com", "password": "demo123456"},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["token_type"] == "Bearer"
+    assert body["access_token"].startswith("token-")
+    assert body["expires_at"] > 0
+    assert body["user"]["id"] == str(user_id)
+    assert body["user"]["tenant_id"] == str(tenant_id)
+    assert body["user"]["email"] == "admin@acme.com"
+    assert body["user"]["display_name"] == "Admin"
+
+
+def test_login_with_bad_password_returns_401() -> None:
+    hasher = FakeHasher()
+    app, tenants, users = _build_app(hasher=hasher)
+    _tenant_id, _user_id = _seed(
+        tenants, users, hashed_password=hasher.hash("right")
+    )
+    client = TestClient(app)
+    resp = client.post(
+        "/v1/identity/login",
+        json={"email": "admin@acme.com", "password": "wrong"},
+    )
+    assert resp.status_code == 401
+
+
+def test_login_missing_tenant_id_field_returns_200() -> None:
+    """Regression: legacy contract required tenant_id, but the login form
+    never knew it. With the cross-tenant lookup the field is no longer
+    required — verify the request shape is {email, password} only."""
+    hasher = FakeHasher()
+    app, tenants, users = _build_app(hasher=hasher)
+    _tenant_id, _user_id = _seed(
+        tenants, users, hashed_password=hasher.hash("demo123456")
+    )
+    client = TestClient(app)
+    resp = client.post(
+        "/v1/identity/login",
+        json={"email": "admin@acme.com", "password": "demo123456"},
+    )
+    assert resp.status_code == 200, resp.text

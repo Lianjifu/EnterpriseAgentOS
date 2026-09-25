@@ -132,14 +132,12 @@ def test_login_with_bad_password() -> None:
             hasher=hasher,
             issuer=FakeAccessTokenIssuer(),
         )
-        token, _ = await svc.login().execute(
-            tenant_id=tenant.id, email="hi@x.com", password="right"
-        )
-        assert token.startswith("token-")
+        result = await svc.login().execute(email="hi@x.com", password="right")
+        assert result.token.startswith("token-")
+        assert result.expires_at > 0
+        assert result.user.email == "hi@x.com"
         with pytest.raises(InvalidCredentials):
-            await svc.login().execute(
-                tenant_id=tenant.id, email="hi@x.com", password="wrong"
-            )
+            await svc.login().execute(email="hi@x.com", password="wrong")
 
     asyncio.run(run())
 
@@ -173,9 +171,7 @@ def test_login_unknown_user() -> None:
             issuer=FakeAccessTokenIssuer(),
         )
         with pytest.raises(InvalidCredentials):
-            await svc.login().execute(
-                tenant_id=uuid4(), email="ghost@x.com", password="x"
-            )
+            await svc.login().execute(email="ghost@x.com", password="x")
 
     asyncio.run(run())
 

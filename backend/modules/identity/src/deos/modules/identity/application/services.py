@@ -17,6 +17,7 @@ from deos.modules.identity.application.ports import (
     UserRepository,
     WorkspaceRepository,
 )
+from deos.modules.identity.application.use_cases.auth.login import LoginUseCase
 from deos.modules.identity.application.use_cases.create_tenant import (
     CreateTenantUseCase,
 )
@@ -26,7 +27,6 @@ from deos.modules.identity.application.use_cases.create_workspace import (
 from deos.modules.identity.application.use_cases.issue_api_key import (
     IssueAPIKeyUseCase,
 )
-from deos.modules.identity.application.use_cases.login import LoginUseCase
 from deos.modules.identity.application.use_cases.register_user import (
     RegisterUserUseCase,
 )

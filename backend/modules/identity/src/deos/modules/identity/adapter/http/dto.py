@@ -76,13 +76,6 @@ class APIKeyResponse(BaseModel):
     raw_secret: str | None = None
 
 
-class LoginRequest(BaseModel):
-    tenant_id: UUID
-    email: EmailStr
-    password: str = Field(min_length=1)
-
-
-class LoginResponse(BaseModel):
-    access_token: str
-    token_type: Literal["Bearer"] = "Bearer"
-    expires_at: int
+# Login DTOs (LoginRequest / LoginResponse) live in
+# ``adapter.http.auth.dto`` — see the auth/ subfolder for the password-auth
+# contract.

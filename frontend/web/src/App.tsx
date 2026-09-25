@@ -7,7 +7,7 @@ import { ErrorBoundary, RouteErrorBoundary } from './components/ErrorBoundary';
 import { NotFound } from './pages/NotFound';
 import { useAuthStore } from './stores/authStore';
 
-const Login = lazy(() => import('./pages/Login'));
+const Login = lazy(() => import('./features/auth/login'));
 const Home = lazy(() => import('./pages/Home'));
 const Copilot = lazy(() => import('./pages/Copilot'));
 const CopilotShare = lazy(() => import('./pages/CopilotShare'));

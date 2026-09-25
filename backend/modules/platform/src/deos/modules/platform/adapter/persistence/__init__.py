@@ -6,12 +6,14 @@ from deos.modules.platform.adapter.persistence.models import (
     TenantSettingORM,
 )
 from deos.modules.platform.adapter.persistence.repositories import (
+    ObservabilityCostRepositoryBridge,
     SqlPlanRepository,
     SqlSubscriptionRepository,
     SqlTenantSettingRepository,
 )
 
 __all__ = [
+    "ObservabilityCostRepositoryBridge",
     "PlanORM",
     "SqlPlanRepository",
     "SqlSubscriptionRepository",

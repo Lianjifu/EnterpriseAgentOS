@@ -1432,9 +1432,9 @@ async def ensure_default_resources(container: Container) -> None:
                     hashed_password=container.hasher().hash(admin_password),
                 )
 
-                SqlTenantRepository(session).add(tenant)
-                SqlWorkspaceRepository(session).add(ws)
-                SqlUserRepository(session).add(admin)
+                await SqlTenantRepository(session).add(tenant)
+                await SqlWorkspaceRepository(session).add(ws)
+                await SqlUserRepository(session).add(admin)
                 await session.commit()
                 _log.info(
                     "seeded default resources",

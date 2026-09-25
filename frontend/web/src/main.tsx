@@ -29,6 +29,7 @@ function installApiClient() {
         return {
           ...base,
           'x-tenant-id': user.tenantId,
+          'x-user-id': user.id,
           ...(demoMode ? {
             'x-mock-role': user.role,
             'x-mock-actor': user.name,

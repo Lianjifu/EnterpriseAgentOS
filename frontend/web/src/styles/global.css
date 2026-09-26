@@ -11012,3 +11012,150 @@ a:focus-visible,
   .audit-evidence__stats,
   .zt-verify__kpis { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+ * C6h — Claude Code 风格 affordance 视觉补充
+ *  - 流式光标闪烁
+ *  - 工具调用 / 审批行入场淡入
+ *  - 状态点(运行中 / 成功 / 失败 / 待授权)脉冲
+ *  - SlashPalette / MentionPalette 全屏浮层 backdrop blur
+ *  - PermissionCard 三按钮 hover 高亮过渡
+ *  - 全部走 var(--*) token,light/dark 自动切换
+ * ============================================================ */
+
+/* 流式末尾闪烁光标(▍) */
+@keyframes copilot-streaming-cursor {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.copilot-streaming-cursor {
+  display: inline-block;
+  width: 0.5ch;
+  margin-left: 1px;
+  color: var(--brand);
+  font-weight: 600;
+  animation: copilot-streaming-cursor 1s steps(1) infinite;
+  vertical-align: text-bottom;
+}
+
+/* 工具调用行入场淡入 */
+@keyframes copilot-tool-fade-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.copilot-tool-fade-in { animation: copilot-tool-fade-in .18s ease-out both; }
+
+/* 审批行(整块)入场 */
+@keyframes copilot-approval-slide-in {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.copilot-approval-slide-in { animation: copilot-approval-slide-in .22s ease-out both; }
+
+/* 状态点 — running(脉冲) */
+@keyframes copilot-status-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand) 65%, transparent); }
+  50%      { box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 0%, transparent); }
+}
+.copilot-status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+.copilot-status-dot--running {
+  background: var(--brand);
+  animation: copilot-status-pulse 1.4s ease-out infinite;
+}
+.copilot-status-dot--success { background: var(--success); }
+.copilot-status-dot--failed  { background: var(--danger); }
+.copilot-status-dot--denied  { background: var(--warning); }
+.copilot-status-dot--pending { background: var(--text-muted); }
+
+/* PermissionCard 三按钮 hover 过渡 + 焦点 ring */
+.copilot-permission-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  transition: opacity .16s ease;
+}
+.copilot-permission-actions button {
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+.copilot-permission-actions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.copilot-permission-actions button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
+  outline-offset: 2px;
+}
+
+/* SlashPalette / MentionPalette 全屏浮层 backdrop */
+.copilot-palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: color-mix(in srgb, var(--bg) 35%, transparent);
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 18vh;
+  animation: copilot-tool-fade-in .14s ease-out both;
+}
+.copilot-palette-panel {
+  width: min(560px, calc(100vw - 32px));
+  max-height: 60vh;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: copilot-tool-fade-in .18s ease-out both;
+}
+.copilot-palette-panel input {
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.copilot-palette-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+  overflow-y: auto;
+  max-height: calc(60vh - 52px);
+}
+.copilot-palette-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color .1s ease;
+}
+.copilot-palette-item[data-active="true"],
+.copilot-palette-item:hover {
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+}
+.copilot-palette-item__desc {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.copilot-palette-empty {
+  padding: 18px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}

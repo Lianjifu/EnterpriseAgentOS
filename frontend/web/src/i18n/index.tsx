@@ -242,6 +242,17 @@ const zh: Dict = {
   'login.hero.stat3Value': '< 50ms',
   'login.hero.stat3Label': '鉴权响应',
   'login.hero.footnote': '© 2026 EAOS · Enterprise-grade Agent Operating System',
+  'copilot.toolCard.collapse': '折叠详情',
+  'copilot.toolCard.expand': '展开详情',
+  'copilot.permission.allowOnce': '允许一次',
+  'copilot.permission.allowSession': '允许本会话',
+  'copilot.permission.deny': '拒绝',
+  'copilot.permission.shortcutHint': '1 / 2 / 3 选择,Esc 取消',
+  'copilot.thinking.thinking': '思考中',
+  'copilot.composer.stop': '停止生成',
+  'copilot.composer.send': '发送',
+  'copilot.topBar.openHistory': '打开会话历史',
+  'copilot.topBar.openInspector': '打开上下文面板',
 };
 
 const en: Dict = {
@@ -479,6 +490,17 @@ const en: Dict = {
   'login.hero.stat3Value': '< 50ms',
   'login.hero.stat3Label': 'Auth latency',
   'login.hero.footnote': '© 2026 EAOS · Enterprise-grade Agent Operating System',
+  'copilot.toolCard.collapse': 'Collapse details',
+  'copilot.toolCard.expand': 'Expand details',
+  'copilot.permission.allowOnce': 'Allow once',
+  'copilot.permission.allowSession': 'Allow for session',
+  'copilot.permission.deny': 'Deny',
+  'copilot.permission.shortcutHint': '1 / 2 / 3 to choose, Esc to cancel',
+  'copilot.thinking.thinking': 'Thinking',
+  'copilot.composer.stop': 'Stop generating',
+  'copilot.composer.send': 'Send',
+  'copilot.topBar.openHistory': 'Open session history',
+  'copilot.topBar.openInspector': 'Open context panel',
 };
 
 export const DICTS: Record<Locale, Dict> = { 'zh-CN': zh, 'en-US': en };

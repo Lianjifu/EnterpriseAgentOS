@@ -111,6 +111,7 @@ import { UserBubble } from '@/features/copilot/user-bubble';
 import { AssistantBubble } from '@/features/copilot/assistant-bubble';
 import { MessageList } from '@/features/copilot/message-list';
 import { TopBar } from '@/features/copilot/top-bar';
+import { SessionsSidebar, type SessionsSidebarGroups, type SessionsSidebarItem } from '@/features/copilot/sessions-sidebar';
 import { DocumentPreviewPanel } from '@/features/copilot/document-preview';
 import { sortSessionsByRecency } from '@/features/copilot/session-sort';
 import { resolveHydratedMessages } from '@/features/copilot/conversation-merge';
@@ -902,6 +903,21 @@ export default function Copilot() {
     setExpertPickerOpen(true);
     setExpertPickerQuery('');
     setRebindBlockedReason(null);
+  };
+
+  const handleDeleteSession = (s: SessionsSidebarItem) => {
+    void (async () => {
+      const convId = s.conversationId ?? s.id;
+      await chat.delSession(s.id);
+      queryClient.removeQueries({ queryKey: ['conversation', convId] });
+      if (convId !== s.id) {
+        queryClient.removeQueries({ queryKey: ['conversation', s.id] });
+      }
+      queryClient.setQueryData<SessionItem[]>(['sessions', currentWorkspaceId], (prev) =>
+        (prev ?? []).filter((item) => item.id !== s.id),
+      );
+      void queryClient.invalidateQueries({ queryKey: ['sessions'] });
+    })();
   };
 
   const filteredExperts = useMemo(() => {
@@ -1921,121 +1937,20 @@ export default function Copilot() {
         />
       )}
       {/* ============ 左侧 session-list ============ */}
-      <aside
-        id="copilot-sessions"
-        className="copilot-sessions"
-        aria-label="会话列表"
-        data-open={sessionsOpen ? 'true' : 'false'}
-      >
-        <div className="copilot-sessions__head">
-          <div className="copilot-sessions__title-row">
-            <h2>{pageCopy.title}</h2>
-            <span className="copilot-sessions__count" title="当前工作区可见会话数">{filteredSessions.length}</span>
-          </div>
-          {canMutate ? (
-            <Button size="sm" className="copilot-sessions__new" onClick={openNewSessionPicker}>
-              <Plus className="h-3.5 w-3.5" />新会话
-            </Button>
-          ) : (
-            <p className="px-1 text-[10px] leading-4 text-[var(--text-muted)]">{pageCopy.subtitle}</p>
-          )}
-          <div className="copilot-sessions__search">
-            <Search className="h-3.5 w-3.5" />
-            <input
-              value={searchQ}
-              onChange={(e) => setSearchQ(e.target.value)}
-              placeholder="搜索会话..."
-              aria-label="搜索会话"
-            />
-          </div>
-        </div>
-
-        <div className="copilot-sessions__body">
-          {(['pinned', 'today', 'yesterday', 'week', 'earlier'] as const).map((g) =>
-            grouped[g].length === 0 ? null : (
-              <section key={g} className="copilot-sessions__group">
-                <div className="copilot-sessions__group-head">
-                  {g === 'pinned' && <Pin className="h-3 w-3" />}
-                  <span>{g === 'today' ? '今天' : g === 'yesterday' ? '昨天' : g === 'week' ? '本周' : g === 'earlier' ? '更早' : '置顶'}</span>
-                  <span className="copilot-sessions__group-count">{grouped[g].length}</span>
-                </div>
-                <div className="copilot-sessions__list">
-                  {grouped[g].map((s) => {
-                    const active = s.id === chat.state.activeId;
-                    const sessionGenerating = Boolean(s.pendingTurn)
-                      || s.messages.some((m) => m.status === 'streaming' || m.status === 'in_flight' || m.status === 'queued');
-                    return (
-                      <div key={s.id} className="copilot-session-item__wrap group">
-                        <button
-                          type="button"
-                          onClick={() => switchSession(s.id)}
-                          onDoubleClick={() => chat.togglePin(s.id)}
-                          className={cn('session-item copilot-session-item', active && 'session-item--active')}
-                          aria-current={active ? 'page' : undefined}
-                          aria-label={`${s.title}，${sessionGenerating ? '生成中' : s.status === 'active' ? '进行中' : '已完成'}${s.unread ? `，${s.unread} 条未读` : ''}`}
-                        >
-                          <div className="session-item__top">
-                            <div className="session-item__title">
-                              {s.pinned && <Pin className="h-3 w-3 shrink-0 text-[var(--brand)]" />}
-                              <span className="truncate">{s.title}</span>
-                            </div>
-                            {s.unread ? (
-                              <span className="session-item__unread">{s.unread}</span>
-                            ) : (
-                              <time className="session-item__time">{s.time}</time>
-                            )}
-                          </div>
-                          <div className="session-item__preview">{s.preview || '暂无消息'}</div>
-                          <div className="session-item__meta">
-                            <span className="session-item__agent">{s.agent}</span>
-                            <Badge tone={sessionGenerating ? 'info' : s.status === 'active' ? 'brand' : 'success'} className="text-[10px]">
-                              {sessionGenerating ? '生成中' : s.status === 'active' ? '进行中' : '已完成'}
-                            </Badge>
-                          </div>
-                        </button>
-                        {canMutate && (
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              void (async () => {
-                                const convId = s.conversationId ?? s.id;
-                                await chat.delSession(s.id);
-                                queryClient.removeQueries({ queryKey: ['conversation', convId] });
-                                if (convId !== s.id) {
-                                  queryClient.removeQueries({ queryKey: ['conversation', s.id] });
-                                }
-                                queryClient.setQueryData<SessionItem[]>(['sessions', currentWorkspaceId], (prev) =>
-                                  (prev ?? []).filter((item) => item.id !== s.id),
-                                );
-                                void queryClient.invalidateQueries({ queryKey: ['sessions'] });
-                              })();
-                            }}
-                            className="copilot-session-item__delete"
-                            aria-label={`删除会话：${s.title}`}
-                            title="删除"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )
-          )}
-          {filteredSessions.length === 0 && (
-            <div className="copilot-sessions__empty">
-              <Bot className="h-8 w-8" />
-              <strong>{canMutate ? '还没有会话' : '暂无协作记录'}</strong>
-              <span>{canMutate ? '点击「新会话」选择在岗专家开始协作' : '工作区会话证据将在此只读展示'}</span>
-            </div>
-          )}
-        </div>
-      </aside>
-
+      <SessionsSidebar
+        open={sessionsOpen}
+        canMutate={canMutate}
+        pageCopy={pageCopy}
+        searchQ={searchQ}
+        setSearchQ={setSearchQ}
+        filteredCount={filteredSessions.length}
+        grouped={grouped as unknown as SessionsSidebarGroups}
+        activeId={chat.state.activeId ?? null}
+        onNewSession={openNewSessionPicker}
+        onSwitch={switchSession}
+        onTogglePin={chat.togglePin}
+        onDelete={handleDeleteSession}
+      />
       <div
         role="separator"
         aria-orientation="vertical"

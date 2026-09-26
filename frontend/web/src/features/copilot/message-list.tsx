@@ -107,7 +107,6 @@ function MessageList({
 
   const renderMessageBubble = (m: ChatMessageEx) => {
     const sharedBaseProps = {
-      key: m.id,
       m,
       copiedId,
       selectedContextMessageId: contextSelection.scope === 'message' ? contextSelection.messageId : undefined,
@@ -120,6 +119,7 @@ function MessageList({
     if (m.role === 'user') {
       return (
         <UserBubble
+          key={m.id}
           {...sharedBaseProps}
           onCopy={onCopy}
           onEdit={onEdit}
@@ -128,6 +128,7 @@ function MessageList({
     }
     return (
       <AssistantBubble
+        key={m.id}
         {...sharedBaseProps}
         expandedArgs={expandedArgs}
         setExpandedArgs={setExpandedArgs}

@@ -2691,7 +2691,7 @@ export default function Copilot() {
           executions: contextSummary.executions,
         }}
         turnProgress={turnProgress}
-        currentModel={{ label: currentModel.label, tier: currentModel.tier }}
+        currentModel={currentModel ? { label: currentModel.label, tier: currentModel.tier } : { label: '未选模型', tier: '-' }}
         enabledToolCount={enabledToolCount}
         availableToolsCount={availableTools.length}
         sessionMode={sessionMode}

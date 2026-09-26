@@ -3,7 +3,18 @@ import { extractSkillArtifacts } from '@/features/copilot/artifact-links';
 
 export type WorkbenchContextTab = 'overview' | 'document' | 'evidence' | 'tasks' | 'approvals' | 'audit' | 'admin';
 
-export function deriveWorkbenchSummary(session?: Pick<ChatSession, 'title' | 'messages'>) {
+export type WorkbenchSummary = {
+  title: string;
+  pendingApprovals: number;
+  linkedTasks: number;
+  evidence: number;
+  executions: number;
+  documents: number;
+  nextAction: string;
+  tone: 'warning' | 'brand';
+};
+
+export function deriveWorkbenchSummary(session?: Pick<ChatSession, 'title' | 'messages'>): WorkbenchSummary {
   const messages = session?.messages ?? [];
   const pendingApprovals = messages.filter((message) => message.approvalRequest?.decision === 'pending').length;
   const linkedTasks = messages.filter((message) => message.linkedTaskId ?? message.approvalRequest?.ticketId).length;

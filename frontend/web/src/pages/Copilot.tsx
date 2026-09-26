@@ -29,8 +29,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Avatar, Badge, Button, Input, Row, CollapsedPanelHandle, toast } from '@de/web-ui';
 import {
   Bot, Search, ListChecks as ListChecksIcon, Wrench, Workflow as WorkflowIcon, FileText, ShieldCheck,
-  AlertTriangle, Upload, MoreHorizontal, Download,
-  Link2, CheckCircle2, BarChart3, Volume2, Zap, Server, BellOff,
+  AlertTriangle, Upload, Download,
+  Link2, BarChart3, Volume2, Zap, Server, BellOff,
   Star, Share2, Settings, X, Pin, ChevronDown, ChevronLeft,
   Sparkles, Code, Cpu, Users, AlertCircle, AtSign,
   Hash, Activity, Languages, BookOpenCheck, RotateCcw,
@@ -110,6 +110,7 @@ import { FeedbackForm } from '@/features/copilot/feedback-form';
 import { UserBubble } from '@/features/copilot/user-bubble';
 import { AssistantBubble } from '@/features/copilot/assistant-bubble';
 import { MessageList } from '@/features/copilot/message-list';
+import { TopBar } from '@/features/copilot/top-bar';
 import { DocumentPreviewPanel } from '@/features/copilot/document-preview';
 import { sortSessionsByRecency } from '@/features/copilot/session-sort';
 import { resolveHydratedMessages } from '@/features/copilot/conversation-merge';
@@ -367,11 +368,8 @@ export default function Copilot() {
   const [expertPickerOpen, setExpertPickerOpen] = useState(false);
   const [expertPickerMode, setExpertPickerMode] = useState<'new' | 'rebind'>('new');
   const [expertPickerQuery, setExpertPickerQuery] = useState('');
-  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
-  const [exportSubOpen, setExportSubOpen] = useState(false);
   const [rebindBlockedReason, setRebindBlockedReason] = useState<string | null>(null);
   const deepLinkHandled = useRef<string | null>(null);
-  const moreMenuRef = useRef<HTMLDivElement | null>(null);
 
   // Composer 增强状态
   const [modelOpen, setModelOpen] = useState(false);
@@ -1900,18 +1898,6 @@ export default function Copilot() {
     setEnabledTools((prev) => prev.filter((key) => !availableTools.find((tool) => tool.key === key)?.requiresApproval));
   }, [sessionMode, availableTools]);
 
-  useEffect(() => {
-    if (!moreMenuOpen) return;
-    const onPointer = (event: MouseEvent) => {
-      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
-        setMoreMenuOpen(false);
-        setExportSubOpen(false);
-      }
-    };
-    window.addEventListener('mousedown', onPointer);
-    return () => window.removeEventListener('mousedown', onPointer);
-  }, [moreMenuOpen]);
-
   return (
     <div
       ref={shellRef}
@@ -2078,127 +2064,28 @@ export default function Copilot() {
       <section className="copilot-conversation flex min-w-0 min-h-0 flex-1 flex-col bg-[var(--bg)] overflow-hidden">
         <div className="px-4 pt-2 sm:px-5"><RoleReadonlyBanner className="mb-1 flex items-start gap-2 rounded-lg bg-[var(--info-bg)] px-3 py-2 text-[11px] leading-5 text-[var(--info)]" /></div>
         {/* 当前事件工作头：对话页首先呈现处置对象和下一待办。 */}
-        <header className="app-glass copilot-header px-4 py-3 sm:px-5">
-          {(() => {
-            const decision = handoffActive
-              ? { label: '人工交接', tone: 'warn' as const, text: `写操作已暂停，由 ${handoffOwner} 继续处置。` }
-              : workbench.pendingApprovals
-                ? { label: '需审批', tone: 'warn' as const, text: `${workbench.pendingApprovals} 项写操作待人工审核 · 打开消息中的审批卡授权` }
-                : runMode === 'agent' && riskLevel === 'high'
-                  ? { label: '需审批', tone: 'warn' as const, text: '高风险执行 · 写操作需人工审核授权' }
-                  : runMode === 'agent'
-                    ? { label: '脱敏放行', tone: 'info' as const, text: '执行模式 · 写操作进入审批与审计' }
-                    : runMode === 'ask'
-                      ? { label: '仅问答', tone: 'success' as const, text: '只回答不改系统 · 需要变更请切换方案或执行' }
-                      : { label: '方案优先', tone: 'success' as const, text: '先出计划再确认 · 写操作请切换到执行' };
-            const showCost = sessionUsage.tokens > 0;
-            const showSanitizedTag = runMode === 'agent' && riskLevel === 'low' && !workbench.pendingApprovals && !handoffActive;
-            return (
-              <>
-          <div className="copilot-work-header">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className={cn('grid h-10 w-10 shrink-0 place-items-center rounded-lg', workbench.tone === 'warning' ? 'bg-[var(--warning-bg)] text-[var(--warning)]' : 'bg-[var(--brand-light)] text-[var(--brand)]')}>
-                {workbench.tone === 'warning' ? <AlertTriangle className="h-5 w-5" /> : <Activity className="h-5 w-5" />}
-              </div>
-              <div className="min-w-0">
-                <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                  <span className="copilot-work-title truncate font-semibold" title={workbench.title}>{workbench.title}</span>
-                  <Badge tone={workbench.tone === 'warning' ? 'warn' : isGenerating ? 'info' : 'brand'} className="shrink-0 text-[10px]">
-                    {workbench.pendingApprovals ? '待处置' : isGenerating ? '生成中' : runMode === 'agent' ? '执行模式' : runMode === 'ask' ? '问答中' : '方案中'}
-                  </Badge>
-                  {riskLevel !== 'low' && (
-                    <Badge tone={riskLevel === 'high' ? 'error' : 'warn'} className="shrink-0 text-[10px] font-semibold ring-1 ring-inset ring-current/30">
-                      {riskLevel === 'high' ? '高风险' : '中风险'}
-                    </Badge>
-                  )}
-                  {showSanitizedTag && (
-                    <Badge tone="success" className="shrink-0 text-[10px] ring-1 ring-inset ring-[var(--success)]/30">
-                      <ShieldCheck className="mr-0.5 inline h-2.5 w-2.5" />已脱敏
-                    </Badge>
-                  )}
-                </div>
-                {(workbench.nextAction || handoffActive) && (
-                  <div className="copilot-header__meta copilot-work-next mt-0.5 flex items-center gap-1.5 text-[var(--text-muted)]">
-                    {workbench.nextAction && <span className="truncate">下一步：{workbench.nextAction}</span>}
-                    {handoffActive && <span className="hidden sm:inline">{workbench.nextAction ? '· ' : ''}已由 {handoffOwner} 接管</span>}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="copilot-header__actions shrink-0">
-              <button type="button" onClick={openRebindExpertPicker} className="copilot-toolbar-btn copilot-toolbar-btn--expert hidden sm:inline-flex" title={hasBoundExpert ? '查看或改绑智能体' : '选择智能体（可选）'}>
-                <span className="copilot-toolbar-btn__icon relative !bg-transparent !p-0" style={{ boxShadow: 'none' }}>
-                  <DigitalEmployeeAvatar
-                    employee={activeEmployee ?? { id: 'assistant', name: expertName }}
-                    size={22}
-                  />
-                  {hasBoundExpert && activeEmployee?.lifecycle === 'active' && <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-[var(--success)] ring-1 ring-white" />}
-                </span>
-                <span className="copilot-toolbar-btn__label">
-                  <span className="copilot-toolbar-btn__name">{hasBoundExpert ? expertName : '选择专家'}</span>
-                  {expertMeta && <span className="copilot-toolbar-btn__role">{expertMeta}</span>}
-                </span>
-              </button>
-              {canOpenExpertContext && (
-                <Button ref={detailsToggleRef} variant="secondary" size="sm" className="copilot-header-action" onClick={() => openContext('overview')}>
-                  <FileText className="h-3.5 w-3.5" />专家上下文
-                </Button>
-              )}
-              <div className="relative" ref={moreMenuRef}>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="copilot-header-action"
-                  aria-haspopup="menu"
-                  aria-expanded={moreMenuOpen}
-                  onClick={() => { setMoreMenuOpen((open) => !open); setExportSubOpen(false); }}
-                >
-                  <MoreHorizontal className="h-3.5 w-3.5" />更多
-                </Button>
-                {moreMenuOpen && (
-                  <div role="menu" className="absolute right-0 top-full z-40 mt-1 w-48 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface-1)] py-1 shadow-lg">
-                    <button type="button" role="menuitem" disabled={isClosed} className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-[var(--bg-hover)] disabled:opacity-40" onClick={() => { setMoreMenuOpen(false); setCloseoutOpen(true); }}>
-                      <CheckCircle2 className="h-3.5 w-3.5 text-[var(--text-muted)]" />结束会话
-                    </button>
-                    <button type="button" role="menuitem" disabled={isClosed || handoffActive} className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-[var(--bg-hover)] disabled:opacity-40" onClick={() => { setMoreMenuOpen(false); setHandoffOpen(true); }}>
-                      <Users className="h-3.5 w-3.5 text-[var(--text-muted)]" />人工交接
-                    </button>
-                    <div className="my-1 border-t border-[var(--border)]" />
-                    <button type="button" role="menuitem" className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-[var(--bg-hover)]" onClick={() => setExportSubOpen((open) => !open)}>
-                      <ShieldCheck className="h-3.5 w-3.5 text-[var(--text-muted)]" />导出证据
-                      <ChevronRight className="ml-auto h-3 w-3 text-[var(--text-muted)]" />
-                    </button>
-                    {exportSubOpen && (
-                      <div className="border-t border-[var(--border)] bg-[var(--bg-elevated)] py-1">
-                        <button type="button" role="menuitem" className="flex w-full px-3 py-1.5 text-left text-[11px] hover:bg-[var(--bg-hover)]" onClick={() => { setMoreMenuOpen(false); printAuditRecord(); }}>证据包 · 打印 / PDF</button>
-                        <button type="button" role="menuitem" className="flex w-full px-3 py-1.5 text-left text-[11px] hover:bg-[var(--bg-hover)]" onClick={() => { setMoreMenuOpen(false); handleExport('markdown'); }}>Markdown</button>
-                        <button type="button" role="menuitem" className="flex w-full px-3 py-1.5 text-left text-[11px] hover:bg-[var(--bg-hover)]" onClick={() => { setMoreMenuOpen(false); handleExport('json'); }}>JSON</button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-            <div className="copilot-header__decision" role="status" aria-label="策略裁决">
-              <div className="flex min-w-0 flex-1 items-center gap-2">
-                {decision.label !== '脱敏放行' && (
-                  <Badge tone={decision.tone} className="shrink-0">{decision.label}</Badge>
-                )}
-                <span className="copilot-header__decision-text">{decision.text}</span>
-              </div>
-              {showCost && (
-                <span className="shrink-0 font-mono text-[10px] text-[var(--text-muted)]" title={`计入 ${expertName}`}>
-                  {sessionUsage.priced != null ? `¥${sessionUsage.priced}` : '计量中'} · {sessionUsage.tokens} tok · {expertName}
-                </span>
-              )}
-            </div>
-              </>
-            );
-          })()}
-        </header>
+        <TopBar
+          workbench={workbench}
+          runMode={runMode}
+          riskLevel={riskLevel}
+          isGenerating={isGenerating}
+          handoffActive={handoffActive}
+          handoffOwner={handoffOwner}
+          sessionUsage={sessionUsage}
+          expertName={expertName}
+          expertMeta={expertMeta}
+          activeEmployee={activeEmployee}
+          hasBoundExpert={hasBoundExpert}
+          canOpenExpertContext={canOpenExpertContext}
+          isClosed={isClosed}
+          detailsToggleRef={detailsToggleRef}
+          onOpenRebindExpertPicker={openRebindExpertPicker}
+          onOpenContext={openContext}
+          onCloseSession={() => setCloseoutOpen(true)}
+          onHandoffOpen={() => setHandoffOpen(true)}
+          onPrintAuditRecord={printAuditRecord}
+          onExport={handleExport}
+        />
 
         {/* 消息流 */}
         <div className="copilot-message-stream flex-1 min-h-0 flex flex-col">

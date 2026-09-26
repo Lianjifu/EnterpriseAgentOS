@@ -46,6 +46,7 @@ import { compareDigitalEmployees, employeePrimaryLabel, employeeSecondaryLabel, 
 import { Modal } from '@/components/shared';
 import type { DigitalEmployee, ModelProvider, RoutingPolicyDraft } from '@de/web-types';
 import { buildCopilotModelOptions, defaultCopilotModelKey, matchCopilotModelKey, resolveCopilotModelId, resolveSendModelId, isDemoCopilotModelKey } from '@/features/copilot/copilot-models';
+import { MentionRow, PopoverEmpty, SlashRow } from '@/features/copilot/palette-row';
 import { DebugPanel } from '@/components/DebugPanel';
 import { useChat } from '@/hooks/useChat';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
@@ -2205,20 +2206,14 @@ export default function Copilot() {
                     {cmds.map((c) => {
                       const Icon = SLASH_ICON[c.icon] ?? Sparkles;
                       return (
-                        <button
+                        <SlashRow
                           key={c.cmd}
+                          icon={<Icon className="h-3.5 w-3.5" />}
+                          cmd={c.cmd}
+                          desc={c.desc}
+                          category={c.category}
                           onClick={() => insertSlash(c.cmd)}
-                          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left hover:bg-[var(--bg-hover)]"
-                        >
-                          <span className="grid h-7 w-7 place-items-center rounded-md bg-[var(--brand-light)] text-[var(--brand)]">
-                            <Icon className="h-3.5 w-3.5" />
-                          </span>
-                          <div className="flex-1">
-                            <div className="text-xs font-mono font-semibold">{c.cmd}</div>
-                            <div className="text-[10px] text-[var(--text-muted)]">{c.desc}</div>
-                          </div>
-                          <Badge tone="neutral" className="text-[9px]">{c.category}</Badge>
-                        </button>
+                        />
                       );
                     })}
                   </div>
@@ -2241,101 +2236,70 @@ export default function Copilot() {
               {mentionPane === 'root' && MENTION_CATEGORIES.map((m) => {
                 const Icon = MENTION_ICONS[m.kind];
                 return (
-                  <button
+                  <MentionRow
                     key={m.key}
-                    type="button"
+                    icon={<Icon className="h-3.5 w-3.5" />}
+                    title={m.key}
+                    desc={m.desc}
+                    monospace
+                    showChevron
                     onClick={() => pickMentionCategory(m.kind)}
-                    className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left hover:bg-[var(--bg-hover)]"
-                  >
-                    <span className="grid h-7 w-7 place-items-center rounded-md bg-[var(--info-bg)] text-[var(--info)]">
-                      <Icon className="h-3.5 w-3.5" />
-                    </span>
-                    <div className="flex-1">
-                      <div className="text-xs font-mono font-semibold">{m.key}</div>
-                      <div className="text-[10px] text-[var(--text-muted)]">{m.desc}</div>
-                    </div>
-                    <ChevronRight className="h-3.5 w-3.5 text-[var(--text-muted)]" />
-                  </button>
+                  />
                 );
               })}
               {mentionPane === 'skill' && (
                 filterByQuery(mentionSkillItems, mentionQuery.replace(/^(skill|tool|workflow):?/i, '')).length === 0 ? (
-                  <p className="px-3 py-3 text-[11px] leading-5 text-[var(--text-muted)]">
+                  <PopoverEmpty leading>
                     {hasBoundExpert ? '当前专家未装配可用技能/工具。请到「能力装配」绑定后再试。' : '请先绑定在岗智能体，再通过 @ 选用其装配技能。'}
-                  </p>
+                  </PopoverEmpty>
                 ) : filterByQuery(mentionSkillItems, mentionQuery.replace(/^(skill|tool|workflow):?/i, '')).map((t) => (
-                  <button
+                  <MentionRow
                     key={t.key}
-                    type="button"
+                    icon={<Wrench className="h-3.5 w-3.5" />}
+                    title={t.name}
+                    desc={t.desc}
+                    truncate
+                    badge={{ label: t.kind === 'skill' ? '技能' : t.kind === 'workflow' ? '流程' : '工具', tone: t.requiresApproval ? 'warn' : 'neutral' }}
                     onClick={() => applyMentionToken(`@${t.key}`, t.key)}
-                    className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left hover:bg-[var(--bg-hover)]"
-                  >
-                    <span className="grid h-7 w-7 place-items-center rounded-md bg-[var(--brand-light)] text-[var(--brand)]">
-                      <Wrench className="h-3.5 w-3.5" />
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-semibold truncate">{t.name}</div>
-                      <div className="text-[10px] text-[var(--text-muted)] truncate">{t.desc}</div>
-                    </div>
-                    <Badge tone={t.requiresApproval ? 'warn' : 'neutral'} className="text-[9px] shrink-0">{t.kind === 'skill' ? '技能' : t.kind === 'workflow' ? '流程' : '工具'}</Badge>
-                  </button>
+                  />
                 ))
               )}
               {mentionPane === 'expert' && (
                 filterByQuery(mentionExpertItems, mentionQuery.replace(/^expert:?/i, '')).length === 0 ? (
-                  <p className="px-3 py-3 text-[11px] text-[var(--text-muted)]">暂无在岗专家可提及</p>
+                  <PopoverEmpty>暂无在岗专家可提及</PopoverEmpty>
                 ) : filterByQuery(mentionExpertItems, mentionQuery.replace(/^expert:?/i, '')).map((e) => (
-                  <button
+                  <MentionRow
                     key={e.key}
-                    type="button"
+                    icon={<BriefcaseBusiness className="h-3.5 w-3.5" />}
+                    title={e.name}
+                    desc={e.desc}
+                    truncate
                     onClick={() => applyMentionToken(`@expert:${e.name}`)}
-                    className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left hover:bg-[var(--bg-hover)]"
-                  >
-                    <span className="grid h-7 w-7 place-items-center rounded-md bg-[var(--info-bg)] text-[var(--info)]">
-                      <BriefcaseBusiness className="h-3.5 w-3.5" />
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-semibold truncate">{e.name}</div>
-                      <div className="text-[10px] text-[var(--text-muted)] truncate">{e.desc}</div>
-                    </div>
-                  </button>
+                  />
                 ))
               )}
               {mentionPane === 'doc' && (
                 filterByQuery(mentionDocItems, mentionQuery.replace(/^doc:?/i, '')).length === 0 ? (
-                  <p className="px-3 py-3 text-[11px] text-[var(--text-muted)]">当前专家未装配知识库文档</p>
+                  <PopoverEmpty>当前专家未装配知识库文档</PopoverEmpty>
                 ) : filterByQuery(mentionDocItems, mentionQuery.replace(/^doc:?/i, '')).map((d) => (
-                  <button
+                  <MentionRow
                     key={d.key}
-                    type="button"
+                    icon={<FileText className="h-3.5 w-3.5" />}
+                    title={d.name}
+                    desc={d.desc}
+                    truncate
                     onClick={() => applyMentionToken(`@doc:${d.name}`)}
-                    className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left hover:bg-[var(--bg-hover)]"
-                  >
-                    <span className="grid h-7 w-7 place-items-center rounded-md bg-[var(--info-bg)] text-[var(--info)]">
-                      <FileText className="h-3.5 w-3.5" />
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-semibold truncate">{d.name}</div>
-                      <div className="text-[10px] text-[var(--text-muted)]">{d.desc}</div>
-                    </div>
-                  </button>
+                  />
                 ))
               )}
               {mentionPane === 'member' && filterByQuery(mentionMemberItems, mentionQuery.replace(/^member:?/i, '')).map((m) => (
-                <button
+                <MentionRow
                   key={m.key}
-                  type="button"
+                  icon={<Users className="h-3.5 w-3.5" />}
+                  title={m.name}
+                  desc={m.desc}
                   onClick={() => applyMentionToken(`@member:${m.name}`)}
-                  className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left hover:bg-[var(--bg-hover)]"
-                >
-                  <span className="grid h-7 w-7 place-items-center rounded-md bg-[var(--info-bg)] text-[var(--info)]">
-                    <Users className="h-3.5 w-3.5" />
-                  </span>
-                  <div className="flex-1">
-                    <div className="text-xs font-semibold">{m.name}</div>
-                    <div className="text-[10px] text-[var(--text-muted)]">{m.desc}</div>
-                  </div>
-                </button>
+                />
               ))}
             </div>
           )}

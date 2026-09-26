@@ -112,6 +112,7 @@ import { AssistantBubble } from '@/features/copilot/assistant-bubble';
 import { MessageList } from '@/features/copilot/message-list';
 import { TopBar } from '@/features/copilot/top-bar';
 import { SessionsSidebar, type SessionsSidebarGroups, type SessionsSidebarItem } from '@/features/copilot/sessions-sidebar';
+import { InspectorPanel } from '@/features/copilot/inspector-panel';
 import { DocumentPreviewPanel } from '@/features/copilot/document-preview';
 import { sortSessionsByRecency } from '@/features/copilot/session-sort';
 import { resolveHydratedMessages } from '@/features/copilot/conversation-merge';
@@ -920,6 +921,13 @@ export default function Copilot() {
     })();
   };
 
+  const handleRiskLevelChange = (next: 'low' | 'medium' | 'high') => {
+    setRiskLevel(next);
+    if (currentSession) {
+      void chat.persistSession({ ...currentSession, sessionMode, riskLevel: next });
+    }
+  };
+
   const filteredExperts = useMemo(() => {
     const q = expertPickerQuery.trim().toLowerCase();
     return onDutyEmployees.filter((item) => !q || [item.name, item.role, item.department].join(' ').toLowerCase().includes(q));
@@ -1726,6 +1734,9 @@ export default function Copilot() {
       : undefined,
     [contextSelection.messageId, contextSelection.scope, currentSession],
   );
+  const selectedContextMessageCreatedAt = selectedContextMessage
+    ? formatShanghaiTime(selectedContextMessage.createdAt)
+    : undefined;
   const contextMessages = useMemo(
     () => selectedContextMessage ? [selectedContextMessage] : currentSession?.messages ?? [],
     [currentSession, selectedContextMessage],
@@ -2684,108 +2695,51 @@ export default function Copilot() {
       </div>
 
       {/* ============ 右侧详情 ============ */}
-      <aside
-        id="copilot-agent-details"
-        className="copilot-agent-details"
-        aria-label="会话上下文"
-        data-open={detailsOpen ? 'true' : 'false'}
-        aria-expanded={detailsOpen}
-      >
-        {detailsOpen ? (
-        <div className="copilot-agent-details__inner flex min-h-0 flex-1 flex-col">
-          <header className="copilot-agent-details__header shrink-0">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex min-w-0 items-start gap-2.5">
-                <span className="copilot-agent-details__avatar shrink-0 overflow-hidden rounded-full">
-                  <DigitalEmployeeAvatar
-                    employee={activeEmployee ?? { id: 'assistant', name: expertName }}
-                    size={32}
-                  />
-                </span>
-                <div className="min-w-0">
-                  <div className="copilot-agent-details__eyebrow">{contextSelection.scope === 'message' ? '消息上下文' : '专家上下文'}</div>
-                  <div className="copilot-agent-details__title truncate">{expertName}</div>
-                  {expertMeta && <div className="mt-0.5 truncate text-[10px] text-[var(--text-muted)]">{expertMeta}</div>}
-                  <div className="mt-1 truncate text-[11px] text-[var(--text-muted)]">
-                    {contextSelection.scope === 'message' && selectedContextMessage
-                      ? `来源消息 · ${formatShanghaiTime(selectedContextMessage.createdAt)}`
-                      : `会话 · ${workbench.title}`}
-                  </div>
-                </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-1.5">
-                {contextSelection.scope === 'message' && <button type="button" onClick={() => jumpToMessage(contextSelection.messageId)} title="回到来源消息" aria-label="回到来源消息" className="copilot-details-header-action grid h-8 w-8 place-items-center rounded-lg bg-[var(--surface-1)] text-[var(--text-muted)]"><ArrowUp className="h-4 w-4" /></button>}
-                <button type="button" onClick={() => setContextSelection((selection) => ({ ...selection, pinned: !selection.pinned }))} title={contextSelection.pinned ? '取消固定上下文' : '固定当前上下文'} aria-label={contextSelection.pinned ? '取消固定上下文' : '固定当前上下文'} aria-pressed={contextSelection.pinned} className={cn('copilot-details-header-action grid h-8 w-8 place-items-center rounded-lg bg-[var(--surface-1)] text-[var(--text-muted)]', contextSelection.pinned && 'is-pinned')}><Pin className="h-3.5 w-3.5" /></button>
-                <button type="button" onClick={closeContext} title="关闭会话上下文" aria-label="关闭会话上下文" className="copilot-details-header-action grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[var(--surface-1)] text-[var(--text-muted)] hover:!bg-[var(--danger-bg)] hover:!text-[var(--danger)]"><X className="h-4 w-4" /></button>
-              </div>
-            </div>
-            <div className="copilot-agent-details__status-row">
-              <span className={cn('copilot-agent-details__status-dot', handoffActive || runMode === 'agent' ? 'copilot-agent-details__status-dot--warning' : 'copilot-agent-details__status-dot--active')} aria-hidden="true" />
-              <Badge tone={handoffActive || runMode === 'agent' ? 'warn' : isGenerating ? 'info' : 'brand'} className="text-[10px]">{handoffActive ? '人工接管中' : isGenerating ? '生成中' : runMode === 'agent' ? '执行模式' : runMode === 'ask' ? '问答中' : '方案中'}</Badge>
-              <span className={cn('copilot-agent-details__risk', riskLevel === 'high' ? 'copilot-agent-details__risk--high' : riskLevel === 'medium' ? 'copilot-agent-details__risk--medium' : 'copilot-agent-details__risk--low')}>
-                风险 {riskLevel === 'high' ? '高' : riskLevel === 'medium' ? '中' : '低'}
-              </span>
-              {handoffActive && <span className="copilot-agent-details__handoff">由 {handoffOwner} 处理后续变更</span>}
-            </div>
-          </header>
-
-          <nav className="copilot-agent-details__tabs shrink-0" aria-label="会话上下文分区">
-            {visibleContextTabs.map(({ tab, label, count }) => (
-              <button key={tab} type="button" onClick={() => setContextTab(tab)} aria-current={contextTab === tab ? 'page' : undefined} className={cn('copilot-agent-details__tab', contextTab === tab && 'is-active')}>
-                <span>{label}</span>
-                {count !== undefined && <span className="copilot-agent-details__tab-count">{count}</span>}
-              </button>
-            ))}
-          </nav>
-
-          <div className="copilot-agent-details__body min-h-0 flex-1">
-            {contextTab === 'admin' && (
-              <section className="copilot-agent-details__section copilot-agent-details__section--admin space-y-3">
-                <div className="copilot-agent-details__section-heading flex items-center gap-1.5"><Settings className="h-3.5 w-3.5 text-[var(--brand)]" />运行控制 <Badge tone="brand" className="ml-auto text-[9px]">管理员</Badge></div>
-                <Row label="当前模型" value={<span className="font-mono text-[11px]">{currentModel.label} · {currentModel.tier}</span>} />
-                <Row label="启用工具" value={<span className="font-mono text-[11px]">{enabledToolCount}/{availableTools.length}</span>} />
-                <label className="flex items-center justify-between gap-3 text-xs"><span className="text-[var(--text-muted)]">执行风险</span><select value={riskLevel} onChange={(event) => {
-                  const next = event.target.value as 'low' | 'medium' | 'high';
-                  setRiskLevel(next);
-                  if (currentSession) {
-                    void chat.persistSession({ ...currentSession, sessionMode, riskLevel: next });
-                  }
-                }} className="rounded border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-[11px]"><option value="low">低 · 仅可逆操作</option><option value="medium">中 · 需审批</option><option value="high">高 · 人工审核与回滚</option></select></label>
-                <Button size="sm" variant="secondary" className="w-full justify-center" onClick={() => setDebugOpen(true)}><Activity className="h-3.5 w-3.5" />查看调试与链路指标</Button>
-              </section>
-            )}
-            {contextTab !== 'overview' && contextTab !== 'admin' && (
-              <ContextDrawerPanel tab={contextTab} messages={contextMessages} onCitation={openCitation} focusedCitation={focusedCitation} artifact={selectedDocumentArtifact} startSlide={contextSelection.startSlide} />
-            )}
-            {contextTab === 'overview' && (
-              <ExpertContextPanel
-                employee={activeEmployee}
-                overview={expertContext}
-                sessionOverview={sessionExpertContext}
-                messageOverview={messageExpertContext}
-                scope={contextSelection.scope}
-                runMode={runMode}
-                riskLevel={riskLevel}
-                handoffActive={handoffActive}
-                handoffOwner={handoffOwner}
-                nextAction={contextSummary.nextAction}
-                summaryCounts={{
-                  linkedTasks: contextSummary.linkedTasks,
-                  pendingApprovals: contextSummary.pendingApprovals,
-                  evidence: contextSummary.evidence,
-                  executions: contextSummary.executions,
-                }}
-                onOpenTab={setContextTab}
-                onCitation={(c) => openCitation(c)}
-                onJumpMessage={jumpToMessage}
-                onPickExpert={openNewSessionPicker}
-                turnProgress={turnProgress}
-              />
-            )}
-          </div>
-        </div>
-        ) : null}
-      </aside>
+      <InspectorPanel
+        open={detailsOpen}
+        scope={contextSelection.scope}
+        tab={contextTab}
+        pinned={contextSelection.pinned}
+        messageId={contextSelection.messageId}
+        startSlide={contextSelection.startSlide}
+        expertName={expertName}
+        expertMeta={expertMeta}
+        activeEmployee={activeEmployee}
+        workbenchTitle={workbench.title}
+        selectedContextMessageCreatedAt={selectedContextMessageCreatedAt}
+        riskLevel={riskLevel}
+        runMode={runMode}
+        handoffActive={handoffActive}
+        handoffOwner={handoffOwner}
+        isGenerating={isGenerating}
+        visibleContextTabs={visibleContextTabs}
+        contextMessages={contextMessages}
+        focusedCitation={focusedCitation}
+        selectedDocumentArtifact={selectedDocumentArtifact}
+        expertOverview={expertContext}
+        sessionExpertContext={sessionExpertContext}
+        messageExpertContext={messageExpertContext}
+        contextSummary={{
+          nextAction: contextSummary.nextAction,
+          linkedTasks: contextSummary.linkedTasks,
+          pendingApprovals: contextSummary.pendingApprovals,
+          evidence: contextSummary.evidence,
+          executions: contextSummary.executions,
+        }}
+        turnProgress={turnProgress}
+        currentModel={{ label: currentModel.label, tier: currentModel.tier }}
+        enabledToolCount={enabledToolCount}
+        availableToolsCount={availableTools.length}
+        sessionMode={sessionMode}
+        onRiskLevelChange={handleRiskLevelChange}
+        onOpenDebug={() => setDebugOpen(true)}
+        onClose={closeContext}
+        onPinToggle={() => setContextSelection((selection) => ({ ...selection, pinned: !selection.pinned }))}
+        onJumpMessage={jumpToMessage}
+        onOpenTab={setContextTab}
+        onPickExpert={openNewSessionPicker}
+        onCitation={(c) => openCitation(c)}
+      />
 
       <Modal
         open={expertPickerOpen}

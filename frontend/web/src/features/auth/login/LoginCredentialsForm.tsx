@@ -1,9 +1,9 @@
 /**
  * LoginCredentialsForm — Step 1: 邮箱 / 密码 / MFA(可选) + 演示角色
  */
-import { Building2, KeyRound, Sparkles } from 'lucide-react';
+import { Building2, Eye, EyeOff, KeyRound, Sparkles } from 'lucide-react';
 import { Button, Input } from '@de/web-ui';
-import type { ComponentProps } from 'react';
+import { useState, type ComponentProps } from 'react';
 import { LoginDemoChips, type LoginDemoRole } from './LoginDemoChips';
 
 interface LoginCredentialsFormProps {
@@ -44,6 +44,7 @@ interface LoginCredentialsFormProps {
 type InputProps = ComponentProps<typeof Input>;
 
 export function LoginCredentialsForm(props: LoginCredentialsFormProps) {
+  const [showPassword, setShowPassword] = useState(false);
   return (
     <div className="animate-[loginSlideUp_350ms_ease-out]">
       <form noValidate onSubmit={props.submit} className="space-y-5">
@@ -72,14 +73,23 @@ export function LoginCredentialsForm(props: LoginCredentialsFormProps) {
           <div className="relative">
             <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
             <Input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               value={props.password}
               onChange={(e) => props.setPassword(e.target.value)}
               placeholder={props.passwordPlaceholder}
               autoComplete="current-password"
-              className="pl-9"
+              className="pl-9 pr-10"
               {...(props.compositionHandlers as InputProps)}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword((value) => !value)}
+              aria-label={showPassword ? '隐藏密码' : '显示密码'}
+              title={showPassword ? '隐藏密码' : '显示密码'}
+              className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text)]"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
         </div>
 

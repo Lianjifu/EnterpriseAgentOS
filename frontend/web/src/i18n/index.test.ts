@@ -66,7 +66,7 @@ describe('enterprise navigation translations', () => {
     expect(DICTS['zh-CN']['nav.agents.auditor']).toBe('伙伴档案');
     expect([...DICTS['zh-CN']['nav.agents']].length).toBe(5);
     expect([...DICTS['zh-CN']['nav.agents.auditor']].length).toBe(4);
-    expect(DICTS['zh-CN']['app.title']).toBe('企业级智能体操作系统');
+    expect(DICTS['zh-CN']['app.title']).toBe('企智搭 · 智能体平台');
     expect(DICTS['zh-CN']['app.shortName']).toBe('EA');
     expect(DICTS['en-US']['app.title']).toBe('Enterprise Agent OS');
     expect(DICTS['en-US']['app.shortName']).toBe('EA');

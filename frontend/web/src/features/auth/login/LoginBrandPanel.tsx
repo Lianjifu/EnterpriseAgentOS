@@ -58,36 +58,15 @@ export function LoginBrandPanel(props: LoginBrandPanelProps) {
                  xl:px-24 xl:py-28"
       aria-label="产品介绍"
     >
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-violet-50
-                   dark:from-indigo-950/40 dark:via-[var(--bg)] dark:to-violet-950/40"
-      />
+      <div aria-hidden className="absolute inset-0 bg-slate-50 dark:bg-[#101827]" />
       {/* Dot grid texture overlay */}
       <div
         aria-hidden
-        className="absolute inset-0 opacity-[0.35] dark:opacity-[0.18]
-                   [background-image:radial-gradient(circle_at_1px_1px,rgba(79,70,229,0.18)_1px,transparent_0)]
+        className="absolute inset-0 opacity-[0.5] dark:opacity-[0.22]
+                   [background-image:linear-gradient(rgba(79,70,229,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(79,70,229,0.06)_1px,transparent_1px)]
+                   dark:[background-image:linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)]
                    [background-size:24px_24px]
                    animate-[loginDotDrift_12s_ease-in-out_infinite]"
-      />
-      <div
-        aria-hidden
-        className="absolute -right-24 -top-32 h-[420px] w-[420px] rounded-full
-                   bg-indigo-200/50 blur-3xl dark:bg-indigo-800/30
-                   animate-[loginFloat_18s_ease-in-out_infinite]"
-      />
-      <div
-        aria-hidden
-        className="absolute -bottom-24 -left-24 h-[360px] w-[360px] rounded-full
-                   bg-violet-200/50 blur-3xl dark:bg-violet-800/30
-                   animate-[loginFloat_22s_ease-in-out_infinite_reverse]"
-      />
-      <div
-        aria-hidden
-        className="absolute top-1/3 left-1/4 h-[260px] w-[260px] rounded-full
-                   bg-fuchsia-200/30 blur-3xl dark:bg-fuchsia-800/20
-                   animate-[loginFloat_26s_ease-in-out_infinite]"
       />
 
       {/* Single centred content block — brand mark + hero段 stack together,
@@ -96,15 +75,14 @@ export function LoginBrandPanel(props: LoginBrandPanelProps) {
         {/* Top: brand mark */}
         <div className="relative flex items-center gap-2.5 self-start text-left">
           <div
-            className="grid h-10 w-10 place-items-center rounded-lg bg-gradient-to-br
-                        from-[var(--brand)] to-[var(--purple)] text-white shadow-sm"
+            className="grid h-10 w-10 place-items-center rounded-lg bg-[var(--brand)] text-white shadow-sm"
             aria-hidden
           >
             <Bot className="h-5 w-5" />
           </div>
           <div className="leading-tight">
-            <div className="text-[15px] font-semibold text-[var(--text)]">{props.product}</div>
-            <div className="text-[12px] text-[var(--text-muted)]">{props.tagline}</div>
+            <div className="text-[15px] font-semibold text-slate-900 dark:text-white">{props.product}</div>
+            <div className="text-[12px] text-slate-500 dark:text-slate-400">{props.tagline}</div>
           </div>
         </div>
 
@@ -116,18 +94,18 @@ export function LoginBrandPanel(props: LoginBrandPanelProps) {
           <Sparkles className="h-3 w-3 text-[var(--brand)]" />
           {props.badge}
         </div>
-        <h2 className="text-[28px] font-semibold leading-[1.2] tracking-tight text-[var(--text)] md:text-[30px] lg:text-[32px]">
+        <h2 className="text-[28px] font-semibold leading-[1.2] tracking-tight text-slate-900 dark:text-white md:text-[30px] lg:text-[32px]">
           {props.title1}
           <br />
-          <span className="bg-gradient-to-r from-[var(--brand)] to-[var(--purple)] bg-clip-text text-transparent">
+          <span className="text-indigo-600 dark:text-indigo-300">
             {props.title2}
           </span>
         </h2>
-        <p className="mt-6 text-[15px] leading-[1.75] text-[var(--text-secondary)]">
+        <p className="mt-6 text-[15px] leading-[1.75] text-slate-600 dark:text-slate-300">
           {props.subtitle}
         </p>
 
-        <ul className="mt-8 space-y-4 text-[14px] text-[var(--text-secondary)]">
+        <ul className="mt-8 space-y-4 text-[14px] text-slate-600 dark:text-slate-300">
           {props.bullets.map((b) => (
             <li key={b.title} className="flex items-start gap-3">
               <span
@@ -136,8 +114,8 @@ export function LoginBrandPanel(props: LoginBrandPanelProps) {
                 <b.Icon className="h-3.5 w-3.5" />
               </span>
               <span className="leading-relaxed">
-                <b className="text-[var(--text)]">{b.title}</b>
-                <span className="text-[var(--text-muted)]"> · </span>
+                <b className="text-slate-900 dark:text-white">{b.title}</b>
+                <span className="text-slate-400 dark:text-[var(--text-muted)]"> · </span>
                 {b.desc}
               </span>
             </li>
@@ -152,21 +130,21 @@ export function LoginBrandPanel(props: LoginBrandPanelProps) {
             return (
               <div
                 key={s.label}
-                className="rounded-lg bg-white/80 ring-1 ring-[var(--border)]
+                className="rounded-lg bg-white/80 ring-1 ring-slate-200
                            px-3.5 py-3 backdrop-blur-sm
-                           dark:bg-[var(--surface-1)]/60 dark:ring-[var(--border)]"
+                           dark:bg-white/5 dark:ring-white/10"
               >
                 <Icon className={`mb-1.5 h-4 w-4 ${iconClass}`} />
-                <div className="text-[16px] font-semibold leading-tight tracking-tight text-[var(--text)]">
+                  <div className="text-[16px] font-semibold leading-tight tracking-tight text-slate-900 dark:text-white">
                   {s.value}
                 </div>
-                <div className="text-[11.5px] leading-tight text-[var(--text-muted)]">{s.label}</div>
+                <div className="text-[11.5px] leading-tight text-slate-500 dark:text-slate-400">{s.label}</div>
               </div>
             );
           })}
         </div>
 
-        <div className="mt-6 text-[12px] leading-relaxed text-[var(--text-muted)]">{props.footnote}</div>
+        <div className="mt-6 text-[12px] leading-relaxed text-slate-500 dark:text-slate-500">{props.footnote}</div>
         </div>
       </div>
     </aside>

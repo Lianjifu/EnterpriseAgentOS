@@ -42,6 +42,12 @@ export interface UseLoginOpts {
 const MFA_EMAIL_PATTERN = /_mfa@acme\.com$/i;
 const MFA_CODE_PATTERN = /^\d{6}$/;
 
+function defaultRouteForRole(role?: User['role']): string {
+  if (role === 'admin') return '/admin/overview';
+  if (role === 'auditor') return '/audit-center';
+  return '/home';
+}
+
 function readBuildVersion(): string {
   return ((import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env
     ?.VITE_BUILD_VERSION) ?? 'dev';
@@ -112,8 +118,7 @@ export function useLogin(opts: UseLoginOpts = {}) {
             });
         }
         const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
-        const roleDefault = data.user.role === 'auditor' ? '/audit-center' : '/home';
-        navigate(from ?? roleDefault, { replace: true });
+        navigate(from ?? defaultRouteForRole(data.user.role), { replace: true });
       },
       onError: (err: unknown) => {
         const message =
@@ -128,8 +133,7 @@ export function useLogin(opts: UseLoginOpts = {}) {
   useEffect(() => {
     if (!isAuthed) return;
     const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
-    const roleDefault = user?.role === 'auditor' ? '/audit-center' : '/home';
-    navigate(from ?? roleDefault, { replace: true });
+    navigate(from ?? defaultRouteForRole(user?.role), { replace: true });
   }, [isAuthed, navigate, location.state, user?.role]);
 
   const submit = useCallback(

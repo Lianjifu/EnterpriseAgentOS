@@ -23,9 +23,9 @@ export function LoginDemoChips({ title, roles, onChoose }: LoginDemoChipsProps) 
         {title}
       </p>
       <div className="grid grid-cols-2 gap-2.5">
-        {roles.map((r) => (
+        {roles.map((r, index) => (
           <button
-            key={r.email}
+            key={`${r.email}-${index}`}
             type="button"
             onClick={() => onChoose(r.email)}
             title={`${r.label} · ${r.sub}`}

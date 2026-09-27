@@ -89,7 +89,7 @@ describe('Login', () => {
     expect(screen.getByText('99.99%')).toBeTruthy();
     expect(screen.getByText('< 50ms')).toBeTruthy();
     // hero title (appears in both brand mark and hero — assert at least one match)
-    expect(screen.getAllByText('企业级智能体操作系统').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('企智搭 · 智能体平台').length).toBeGreaterThanOrEqual(1);
     // new copy: smart/control/governance terminology
     expect(screen.getByText('持续验证 · 零信任')).toBeTruthy();
     expect(screen.getByText('智能体协同 · 受控执行')).toBeTruthy();
@@ -103,8 +103,14 @@ describe('Login', () => {
     fireEvent.click(admin);
     const emailInput = screen.getByPlaceholderText('name@company.com') as HTMLInputElement;
     const pwInput = screen.getByPlaceholderText('••••••••') as HTMLInputElement;
-    expect(emailInput.value).toBe('admin@example.com');
+    expect(emailInput.value).toBe('admin@acme.com');
     expect(pwInput.value).toBe('dev-admin-password-change-me');
+  });
+
+  it('clicking 普通用户登录 demo chip uses the user account', () => {
+    renderLogin(['/login']);
+    fireEvent.click(screen.getByRole('button', { name: /普通用户登录/ }));
+    expect((screen.getByPlaceholderText('name@company.com') as HTMLInputElement).value).toBe('user@acme.com');
   });
 
   it('form submit calls mutate with email + password', () => {

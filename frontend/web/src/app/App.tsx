@@ -61,6 +61,9 @@ export default function App() {
           <Route element={<WorkspaceShell />}>
             <Route path="/home" element={<Home />} />
             <Route path="/agents" element={<Agents />} />
+            <Route path="/agents/new" element={<Navigate to="/agents" replace />} />
+            <Route path="/agents/templates" element={<Navigate to="/agents" replace />} />
+            <Route path="/agents/mine" element={<Navigate to="/agents" replace />} />
             <Route path="/agents/*" element={<Agents />} />
             <Route path="/team/agents" element={<Agents />} />
             <Route path="/copilot/*" element={<Copilot />} />

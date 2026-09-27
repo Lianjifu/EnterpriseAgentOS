@@ -70,6 +70,16 @@ describe('Copilot workspace preview', () => {
     expect(screen.queryByRole('status')).toBeNull();
   });
 
+  it('preserves the knowledge source handoff', () => {
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/copilot', state: { knowledgeTitle: '差旅与报销指南' } }]}>
+        <Copilot />
+      </MemoryRouter>,
+    );
+
+    expect((screen.getByPlaceholderText('描述你想完成的工作...') as HTMLTextAreaElement).value).toContain('差旅与报销指南');
+  });
+
   it('exposes the model and workspace control semantics', () => {
     render(
       <MemoryRouter>

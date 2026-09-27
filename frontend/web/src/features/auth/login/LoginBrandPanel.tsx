@@ -5,7 +5,8 @@
  *   → bullets → stats → footnote)
  * aside 用 `justify-center` 让内容块在视口高度中居中,避免上半部空白
  */
-import { Bot, ShieldCheck, Gauge, Sparkles, Shield, Activity } from 'lucide-react';
+import { ShieldCheck, Gauge, Sparkles, Shield, Activity } from 'lucide-react';
+import { BrandLogo } from '@/components/feedback/BrandLogo';
 
 export interface LoginHeroStat {
   value: string;
@@ -74,12 +75,7 @@ export function LoginBrandPanel(props: LoginBrandPanelProps) {
       <div className="relative mx-auto flex w-full max-w-[520px] flex-col text-left">
         {/* Top: brand mark */}
         <div className="relative flex items-center gap-2.5 self-start text-left">
-          <div
-            className="grid h-10 w-10 place-items-center rounded-lg bg-[var(--brand)] text-white shadow-sm"
-            aria-hidden
-          >
-            <Bot className="h-5 w-5" />
-          </div>
+          <BrandLogo size={40} className="text-[var(--brand)]" ariaLabel="企智搭 · 智能体平台" />
           <div className="leading-tight">
             <div className="text-[15px] font-semibold text-slate-900 dark:text-white">{props.product}</div>
             <div className="text-[12px] text-slate-500 dark:text-slate-400">{props.tagline}</div>

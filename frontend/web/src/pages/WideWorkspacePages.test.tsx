@@ -25,7 +25,7 @@ describe('效果看板', () => {
   });
 });
 
-describe('任务记录', () => {
+describe('我的任务', () => {
   it('filters and completes a pending task from the detail drawer', () => {
     render(<MyTasks />);
     fireEvent.change(screen.getByPlaceholderText('搜索任务、来源或负责人'), { target: { value: '报价单' } });

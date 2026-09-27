@@ -6,7 +6,6 @@ import { WorkspaceShell } from '@/widgets/app-shell';
 import WorkspacePlaceholder from '@/pages/WorkspacePlaceholder';
 import Home from '@/pages/Home';
 import Agents from '@/pages/Agents';
-import Settings from '@/pages/Settings';
 import Copilot from '@/pages/Copilot';
 
 const Login = lazy(() => import('./pages/Login'));
@@ -17,6 +16,8 @@ const MySkills = lazy(() => import('@/pages/MySkills'));
 const MyTasks = lazy(() => import('@/pages/MyTasks'));
 const HelpCenter = lazy(() => import('@/pages/HelpCenter'));
 const AccountSettings = lazy(() => import('@/pages/AccountSettings'));
+const AdminOverview = lazy(() => import('@/pages/AdminOverview'));
+const AdminAgents = lazy(() => import('@/pages/AdminAgents'));
 
 function PageFallback() {
   return (
@@ -64,7 +65,6 @@ export default function App() {
             <Route path="/agents/new" element={<Navigate to="/agents" replace />} />
             <Route path="/agents/templates" element={<Navigate to="/agents" replace />} />
             <Route path="/agents/mine" element={<Navigate to="/agents" replace />} />
-            <Route path="/agents/*" element={<Agents />} />
             <Route path="/team/agents" element={<Agents />} />
             <Route path="/copilot/*" element={<Copilot />} />
             <Route path="/tasks/*" element={<MyTasks />} />
@@ -75,8 +75,10 @@ export default function App() {
             <Route path="/insights" element={<Navigate to="/home" replace />} />
             <Route path="/account" element={<AccountSettings />} />
             <Route path="/help" element={<HelpCenter />} />
-            <Route path="/admin/overview" element={<WorkspacePlaceholder />} />
-            <Route path="/admin/knowledge" element={<WorkspacePlaceholder />} />
+            <Route path="/admin/help" element={<HelpCenter audience="admin" />} />
+            <Route path="/admin/settings" element={<AccountSettings audience="admin" />} />
+            <Route path="/admin/overview" element={<AdminOverview />} />
+            <Route path="/admin/agents" element={<AdminAgents />} />
             <Route path="/admin/*" element={<WorkspacePlaceholder />} />
           </Route>
           <Route path="/app" element={<RebuildPlaceholder />} />

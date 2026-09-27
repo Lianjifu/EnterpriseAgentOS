@@ -1,5 +1,8 @@
-import { ArrowRight, Bot, Check, ChevronRight, FileCheck2, FileText, Heart, MailPlus, MessageSquareText, Search, Share2, Sparkles, UsersRound, X } from 'lucide-react';
+import { ArrowRight, Bot, Check, ChevronRight, FileCheck2, FileText, Heart, MailPlus, MessageSquareText, Search, Share2, Sparkles, UsersRound } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { CenterModal } from '@/components/feedback/CenterModal';
+import { NoticeBanner } from '@/components/feedback/NoticeBanner';
+import { SideDrawer } from '@/components/feedback/SideDrawer';
 
 type Tab = '成员' | '智能体' | '知识' | '产出物';
 type SharedItem = { id: string; title: string; kind: Exclude<Tab, '成员'>; team: string; owner: string; description: string; updated: string; label: string };
@@ -58,7 +61,7 @@ export default function MyTeam() {
     <div className="mx-auto max-w-7xl space-y-8 p-5 pb-16 sm:p-8">
       <section className="relative overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--surface-1)] px-6 py-8 shadow-[var(--shadow-sm)] sm:px-9 sm:py-10"><div aria-hidden="true" className="pointer-events-none absolute -right-10 top-0 flex gap-2 opacity-15"><span className="mt-16 h-32 w-32 rounded-full bg-sky-400" /><span className="h-40 w-40 rounded-full bg-[var(--brand)]" /></div><div className="relative grid gap-8 lg:grid-cols-[1fr_300px] lg:items-end"><div><p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-700 dark:text-sky-300">TOGETHER / 我的协作</p><h2 className="mt-4 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">好的工作，不必从零开始。</h2><p className="mt-4 max-w-xl text-sm leading-7 text-[var(--text-muted)]">找到一起工作的人，接住团队共享的智能体、知识与成果。</p><button type="button" onClick={() => setInviting(true)} className="mt-7 inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--brand-hover)]"><MailPlus className="h-4 w-4" />邀请协作者</button></div><div className="relative rounded-2xl border border-sky-400/20 bg-sky-50/80 p-5 dark:bg-sky-500/10"><p className="flex items-center gap-2 text-xs font-semibold text-sky-800 dark:text-sky-300"><Share2 className="h-4 w-4" />协作约定</p><p className="mt-4 text-lg font-semibold leading-7">分享的是可用的上下文，不只是一个链接。</p><p className="mt-2 text-xs leading-6 text-[var(--text-muted)]">每份共享内容都带着维护人、归属团队和用途说明。</p></div></div></section>
 
-      {notice && <div role="status" className="flex items-start justify-between gap-3 rounded-xl border border-sky-400/25 bg-sky-50 p-3 text-xs text-sky-900 dark:bg-sky-500/10 dark:text-sky-200"><span>{notice}</span><button type="button" onClick={() => setNotice('')} aria-label="关闭提示"><X className="h-4 w-4" /></button></div>}
+      {notice && <NoticeBanner tone="sky" onClose={() => setNotice('')}>{notice}</NoticeBanner>}
 
       <div className="grid gap-6 xl:grid-cols-[270px_minmax(0,1fr)]"><aside className="space-y-5"><section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4"><div className="px-2 pb-3"><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">SPACES</p><h3 className="mt-2 text-sm font-semibold">我的协作空间</h3></div><div className="space-y-1" role="group" aria-label="选择协作空间">{teams.map((team) => <button key={team.name} type="button" aria-pressed={activeTeam === team.name} onClick={() => { setActiveTeam(team.name); setQuery(''); setSelected(null); }} className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition ${activeTeam === team.name ? 'bg-[var(--brand-light)] text-[var(--brand)] dark:text-indigo-200' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'}`}><span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${team.accent === 'emerald' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' : team.accent === 'sky' ? 'bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'}`}><UsersRound className="h-4 w-4" /></span><span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold">{team.name}</span><span className="mt-0.5 block truncate text-[10px] opacity-70">{team.note}</span></span><ChevronRight className="h-4 w-4 shrink-0" /></button>)}</div></section><div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5"><span className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--brand-light)] text-[var(--brand)]"><Sparkles className="h-4 w-4" /></span><p className="mt-4 text-sm font-semibold">一起推进，而不是来回寻找</p><p className="mt-2 text-xs leading-6 text-[var(--text-muted)]">切换空间，查看当前团队已经准备好的成员与共享内容。</p></div></aside>
         <section className="min-w-0 space-y-5"><div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5 sm:p-6"><div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700 dark:text-sky-300">CURRENT SPACE</p><h3 className="mt-2 text-xl font-semibold">{currentTeam.name}</h3><p className="mt-1 text-xs leading-6 text-[var(--text-muted)]">{currentTeam.note}</p></div><span className="inline-flex w-fit items-center gap-1 rounded-full bg-[var(--success-bg)] px-3 py-1.5 text-[11px] font-semibold text-[var(--success)]"><Check className="h-3.5 w-3.5" />演示空间</span></div><div className="mt-6 grid gap-3 sm:grid-cols-3"><div className="rounded-xl bg-[var(--bg-elevated)] p-4"><p className="text-xs font-semibold">一起参与</p><p className="mt-1 text-xs text-[var(--text-muted)]">找到协作伙伴与职责</p></div><div className="rounded-xl bg-[var(--bg-elevated)] p-4"><p className="text-xs font-semibold">共享能力</p><p className="mt-1 text-xs text-[var(--text-muted)]">复用已经验证的做法</p></div><div className="rounded-xl bg-[var(--bg-elevated)] p-4"><p className="text-xs font-semibold">保留成果</p><p className="mt-1 text-xs text-[var(--text-muted)]">让工作结果可追溯</p></div></div></div>
@@ -67,8 +70,73 @@ export default function MyTeam() {
             {(tab === '成员' ? visibleMembers.length : visibleItems.length) === 0 && <div className="mt-4 rounded-2xl border border-dashed border-[var(--border-strong)] bg-[var(--surface-1)] p-12 text-center"><Search className="mx-auto h-6 w-6 text-[var(--text-muted)]" /><p className="mt-3 text-sm font-semibold">当前视图没有匹配内容</p><p className="mt-1 text-xs text-[var(--text-muted)]">切换分类或尝试其他关键词。</p></div>}
           </div></section></div>
 
-      {selected && <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/45" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelected(null); }}><section role="dialog" aria-modal="true" aria-label={`${isResource(selected) ? selected.title : selected.name}详情`} onKeyDown={(event) => { if (event.key === 'Escape') setSelected(null); }} className="h-full w-full max-w-lg overflow-auto bg-[var(--surface-1)] p-6 shadow-2xl sm:p-8"><div className="flex items-center justify-between"><p className="text-[11px] font-semibold tracking-[0.2em] text-sky-700 dark:text-sky-300">{activeTeam} / 详情</p><button type="button" autoFocus onClick={() => setSelected(null)} aria-label="关闭协作详情" className="rounded-lg p-2 text-[var(--text-muted)] hover:bg-[var(--bg-hover)]"><X className="h-5 w-5" /></button></div><span className="mt-10 grid h-14 w-14 place-items-center rounded-2xl bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">{isResource(selected) ? <Share2 className="h-7 w-7" /> : <UsersRound className="h-7 w-7" />}</span><h3 className="mt-5 text-2xl font-semibold">{isResource(selected) ? selected.title : selected.name}</h3><p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">{isResource(selected) ? selected.description : `${selected.role} · ${selected.team}`}</p><div className="mt-8 divide-y divide-[var(--border)] rounded-2xl border border-[var(--border)] px-5"><div className="flex justify-between gap-4 py-4 text-xs"><span className="text-[var(--text-muted)]">归属空间</span><span className="font-semibold">{selected.team}</span></div><div className="flex justify-between gap-4 py-4 text-xs"><span className="text-[var(--text-muted)]">{isResource(selected) ? '共享者' : '参与方式'}</span><span className="font-semibold">{isResource(selected) ? selected.owner : selected.role}</span></div>{isResource(selected) && <div className="flex justify-between gap-4 py-4 text-xs"><span className="text-[var(--text-muted)]">最近动态</span><span className="font-semibold">{selected.updated}</span></div>}</div><div className="mt-8 rounded-2xl bg-[var(--bg-elevated)] p-5"><p className="flex items-center gap-2 text-xs font-semibold"><MessageSquareText className="h-4 w-4 text-[var(--brand)]" />协作提示</p><p className="mt-2 text-xs leading-6 text-[var(--text-muted)]">这个视图展示前端演示数据。真实分享范围和成员权限需要接入协作服务后确认。</p></div></section></div>}
-      {inviting && <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setInviting(false); }}><form role="dialog" aria-modal="true" aria-label="邀请协作者" onKeyDown={(event) => { if (event.key === 'Escape') setInviting(false); }} onSubmit={(event) => { event.preventDefault(); invite(); }} className="w-full max-w-md rounded-2xl bg-[var(--surface-1)] p-6 shadow-2xl"><div className="flex items-center justify-between"><h3 className="text-lg font-semibold">邀请加入 {activeTeam}</h3><button type="button" onClick={() => setInviting(false)} aria-label="关闭邀请窗口" className="rounded-lg p-2 text-[var(--text-muted)] hover:bg-[var(--bg-hover)]"><X className="h-5 w-5" /></button></div><p className="mt-2 text-xs leading-6 text-[var(--text-muted)]">填写邮箱后将加入本页演示列表，不会发送邮件。</p><label className="mt-6 block text-xs font-semibold">协作者邮箱<input autoFocus type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@company.com" className="mt-2 h-11 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm outline-none focus:border-[var(--brand)]" /></label><div className="mt-7 flex justify-end gap-2"><button type="button" onClick={() => setInviting(false)} className="rounded-xl border border-[var(--border)] px-4 py-2.5 text-sm font-medium">取消</button><button type="submit" disabled={!email.trim()} className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"><MailPlus className="h-4 w-4" />加入演示列表</button></div></form></div>}
+      <SideDrawer
+        open={selected !== null}
+        onClose={() => setSelected(null)}
+        ariaLabel={selected ? (isResource(selected) ? `${selected.title}详情` : `${selected.name}详情`) : '协作详情'}
+        eyebrow={<p className="text-[11px] font-semibold tracking-[0.2em] text-sky-700 dark:text-sky-300">{activeTeam} / 详情</p>}
+        closeLabel="关闭协作详情"
+      >
+        {selected && (
+          <>
+            <span className="mt-10 grid h-14 w-14 place-items-center rounded-2xl bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">
+              {isResource(selected) ? <Share2 className="h-7 w-7" /> : <UsersRound className="h-7 w-7" />}
+            </span>
+            <h3 className="mt-5 text-2xl font-semibold">{isResource(selected) ? selected.title : selected.name}</h3>
+            <p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">{isResource(selected) ? selected.description : `${selected.role} · ${selected.team}`}</p>
+            <div className="mt-8 divide-y divide-[var(--border)] rounded-2xl border border-[var(--border)] px-5">
+              <div className="flex justify-between gap-4 py-4 text-xs">
+                <span className="text-[var(--text-muted)]">归属空间</span>
+                <span className="font-semibold">{selected.team}</span>
+              </div>
+              <div className="flex justify-between gap-4 py-4 text-xs">
+                <span className="text-[var(--text-muted)]">{isResource(selected) ? '共享者' : '参与方式'}</span>
+                <span className="font-semibold">{isResource(selected) ? selected.owner : selected.role}</span>
+              </div>
+              {isResource(selected) && (
+                <div className="flex justify-between gap-4 py-4 text-xs">
+                  <span className="text-[var(--text-muted)]">最近动态</span>
+                  <span className="font-semibold">{selected.updated}</span>
+                </div>
+              )}
+            </div>
+            <div className="mt-8 rounded-2xl bg-[var(--bg-elevated)] p-5">
+              <p className="flex items-center gap-2 text-xs font-semibold"><MessageSquareText className="h-4 w-4 text-[var(--brand)]" />协作提示</p>
+              <p className="mt-2 text-xs leading-6 text-[var(--text-muted)]">这个视图展示前端演示数据。真实分享范围和成员权限需要接入协作服务后确认。</p>
+            </div>
+          </>
+        )}
+      </SideDrawer>
+      <CenterModal
+        open={inviting}
+        onClose={() => setInviting(false)}
+        ariaLabel="邀请协作者"
+        title={`邀请加入 ${activeTeam}`}
+        description="填写邮箱后将加入本页演示列表，不会发送邮件。"
+        closeLabel="关闭邀请窗口"
+        panelClassName="max-w-md"
+        onSubmit={(event) => { event.preventDefault(); invite(); }}
+        footer={
+          <>
+            <button type="button" onClick={() => setInviting(false)} className="rounded-xl border border-[var(--border)] px-4 py-2.5 text-sm font-medium">取消</button>
+            <button type="submit" disabled={!email.trim()} className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
+              <MailPlus className="h-4 w-4" />加入演示列表
+            </button>
+          </>
+        }
+      >
+        <label className="mt-6 block text-xs font-semibold">协作者邮箱
+          <input
+            autoFocus
+            type="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="name@company.com"
+            className="mt-2 h-11 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm outline-none focus:border-[var(--brand)]"
+          />
+        </label>
+      </CenterModal>
     </div>
   );
 }

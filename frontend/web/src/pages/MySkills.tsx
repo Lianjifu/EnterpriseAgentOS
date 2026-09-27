@@ -1,6 +1,9 @@
-import { Bot, Check, ChevronRight, CircleAlert, Clock3, Code2, Copy, ExternalLink, FileJson, Heart, Network, Search, ShieldCheck, Sparkles, TerminalSquare, Wrench, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { Bot, Check, ChevronRight, CircleAlert, Clock3, Copy, ExternalLink, FileJson, Heart, Network, Search, ShieldCheck, Sparkles, TerminalSquare, Wrench } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { CenterModal } from '@/components/feedback/CenterModal';
+import { NoticeBanner } from '@/components/feedback/NoticeBanner';
+import { SideDrawer } from '@/components/feedback/SideDrawer';
 
 type CapabilityType = 'Skill' | 'Tool' | 'MCP';
 type CapabilityStatus = '可使用' | '暂不可用';
@@ -39,12 +42,6 @@ export default function MySkills() {
   ]);
   const [notice, setNotice] = useState('');
 
-  useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') { setSelected(null); setUseTarget(null); } };
-    window.addEventListener('keydown', closeOnEscape);
-    return () => window.removeEventListener('keydown', closeOnEscape);
-  }, []);
-
   const visible = useMemo(() => capabilities.filter((item) =>
     (type === '全部' || item.type === type) &&
     (status === '全部' || item.status === status) &&
@@ -66,11 +63,81 @@ export default function MySkills() {
   return (
     <div className="mx-auto w-full max-w-[1440px] space-y-8 p-5 pb-16 sm:p-8 xl:px-10">
       <section className="relative overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--surface-1)] px-6 py-8 shadow-[var(--shadow-sm)] sm:px-9 sm:py-10"><div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-16 h-72 w-72 rounded-full border-[42px] border-violet-400/10" /><div className="relative grid gap-8 lg:grid-cols-[1fr_340px] lg:items-end"><div><p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-violet-700 dark:text-violet-300">CAPABILITIES / 我的技能</p><h2 className="mt-4 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">选择已经准备好的能力，直接开始工作。</h2><p className="mt-4 max-w-xl text-sm leading-7 text-[var(--text-muted)]">Skill、Tool 和 MCP 由管理员统一配置。你可以查看用途、确认范围，然后将它用于当前任务。</p><div className="mt-7 flex flex-wrap gap-3"><a href="#skills-catalog" className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--brand-hover)]"><Sparkles className="h-4 w-4" />浏览能力</a><span className="rounded-xl border border-violet-400/25 bg-violet-50 px-3 py-2.5 text-xs text-violet-800 dark:bg-violet-500/10 dark:text-violet-200">管理员维护 · 用户使用</span></div></div><div className="relative rounded-2xl border border-violet-400/20 bg-violet-50/80 p-5 dark:bg-violet-500/10"><div className="flex items-center gap-2 text-xs font-semibold text-violet-700 dark:text-violet-300"><ShieldCheck className="h-4 w-4" />使用前确认</div><p className="mt-4 text-lg font-semibold leading-7 text-[var(--text)]">知道它做什么，也知道它不会做什么。</p><p className="mt-2 text-xs leading-6 text-[var(--text-muted)]">每项能力都标注输入、输出和风险范围。</p></div></div></section>
-      {notice && <div role="status" className="flex items-center justify-between gap-3 rounded-xl border border-violet-400/25 bg-violet-50 p-3 text-xs text-violet-900 dark:bg-violet-500/10 dark:text-violet-200"><span>{notice}</span><button type="button" onClick={() => setNotice('')} aria-label="关闭提示"><X className="h-4 w-4" /></button></div>}
+      {notice && <NoticeBanner tone="violet" onClose={() => setNotice('')}>{notice}</NoticeBanner>}
       <section className="grid gap-4 md:grid-cols-3"><div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5"><p className="text-xs text-[var(--text-muted)]">可用 Skill</p><p className="mt-3 text-3xl font-semibold">{capabilities.filter((item) => item.type === 'Skill' && item.status === '可使用').length}</p><p className="mt-1 text-xs text-[var(--text-muted)]">把经验带入工作</p></div><div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5"><p className="text-xs text-[var(--text-muted)]">受控 Tool</p><p className="mt-3 text-3xl font-semibold">{capabilities.filter((item) => item.type === 'Tool').length}</p><p className="mt-1 text-xs text-[var(--text-muted)]">需要确认后调用</p></div><div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5"><p className="text-xs text-[var(--text-muted)]">最近使用</p><p className="mt-3 text-3xl font-semibold">{recent.length}</p><p className="mt-1 text-xs text-[var(--text-muted)]">本地演示记录</p></div></section>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]"><section id="skills-catalog" aria-labelledby="skills-title" className="min-w-0"><div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"><div><p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--brand)]">READY CAPABILITIES</p><h3 id="skills-title" className="mt-2 text-xl font-semibold">能力目录</h3><p className="mt-1 text-xs text-[var(--text-muted)]">管理员已配置的可用能力 · {visible.length} 项结果</p></div><div className="relative w-full xl:max-w-xs"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" /><label className="sr-only" htmlFor="skills-search">搜索能力</label><input id="skills-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索 Skill、Tool 或 MCP" className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-1)] pl-10 pr-3 text-sm outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--brand)]" /></div></div><div className="mt-5 flex flex-wrap items-center gap-2"><div role="tablist" aria-label="能力类型" className="flex gap-1 overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-1">{types.map((item) => <button key={item} type="button" role="tab" aria-selected={type === item} onClick={() => setType(item)} className={`rounded-lg px-3 py-2 text-xs font-semibold ${type === item ? 'bg-[var(--text)] text-[var(--surface-1)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)]'}`}>{item === '全部' ? '全部' : item}</button>)}</div><label className="sr-only" htmlFor="skills-status">按状态筛选</label><select id="skills-status" value={status} onChange={(event) => setStatus(event.target.value as '全部' | CapabilityStatus)} className="h-9 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 text-xs font-medium outline-none"><option>全部</option><option>可使用</option><option>暂不可用</option></select><button type="button" aria-pressed={onlyFavorites} onClick={() => setOnlyFavorites((value) => !value)} className={`inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold ${onlyFavorites ? 'border-rose-300 bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300' : 'border-[var(--border)] text-[var(--text-muted)]'}`}><Heart className="h-3.5 w-3.5" fill={onlyFavorites ? 'currentColor' : 'none'} />我的收藏</button></div><div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{visible.map((item) => { const meta = typeMeta[item.type]; const Icon = meta.icon; return <article key={item.id} className="group flex min-h-[250px] flex-col rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5 transition hover:-translate-y-0.5 hover:border-[var(--brand)] hover:shadow-[var(--shadow-sm)]"><div className="flex items-start justify-between"><span className={`grid h-10 w-10 place-items-center rounded-xl ${meta.tone}`}><Icon className="h-5 w-5" /></span><button type="button" aria-label={`${favorites.includes(item.id) ? '取消收藏' : '收藏'}${item.name}`} aria-pressed={favorites.includes(item.id)} onClick={() => toggleFavorite(item)} className={`rounded-lg p-2 ${favorites.includes(item.id) ? 'text-rose-500' : 'text-[var(--text-muted)] hover:text-rose-500'}`}><Heart className="h-4 w-4" fill={favorites.includes(item.id) ? 'currentColor' : 'none'} /></button></div><button type="button" onClick={() => setSelected(item)} className="mt-4 text-left"><span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">{item.type} · {meta.label}</span><h4 className="mt-2 text-base font-semibold leading-6 group-hover:text-[var(--brand)]">{item.name}</h4><p className="mt-2 line-clamp-2 text-xs leading-6 text-[var(--text-muted)]">{item.description}</p></button><div className="mt-auto flex items-center justify-between gap-2 border-t border-[var(--border)] pt-4 text-[11px] text-[var(--text-muted)]"><span className="truncate">{item.owner}</span><span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${item.status === '可使用' ? 'bg-[var(--success-bg)] text-[var(--success)]' : 'bg-[var(--bg-hover)] text-[var(--text-muted)]'}`}>{item.status}</span></div></article>; })}</div>{visible.length === 0 && <div className="mt-5 rounded-2xl border border-dashed border-[var(--border-strong)] p-12 text-center"><Search className="mx-auto h-6 w-6 text-[var(--text-muted)]" /><p className="mt-3 text-sm font-semibold">没有匹配的能力</p><p className="mt-1 text-xs text-[var(--text-muted)]">尝试其他关键词或清除筛选。</p></div>}</section><aside className="space-y-5"><section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5"><div className="flex items-center gap-2 text-sm font-semibold"><Clock3 className="h-4 w-4 text-[var(--brand)]" />最近使用</div><p className="mt-2 text-xs text-[var(--text-muted)]">你最近带入工作中的能力。</p><ol className="mt-5 space-y-3">{recent.map((item) => <li key={item.id} className="flex items-center gap-3"><span className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--bg-elevated)] text-[var(--brand)]"><Sparkles className="h-4 w-4" /></span><span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold">{item.name}</span><span className="mt-1 block text-[10px] text-[var(--text-muted)]">{item.type} · {item.time}</span></span></li>)}</ol></section><section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5"><span className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--brand-light)] text-[var(--brand)]"><Bot className="h-4 w-4" /></span><h3 className="mt-4 text-sm font-semibold">在对话里使用</h3><p className="mt-2 text-xs leading-6 text-[var(--text-muted)]">Tool 和 MCP 会在确认后进入对话上下文，不会在这里修改连接配置。</p></section></aside></div>
-      {selected && <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/45" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelected(null); }}><section role="dialog" aria-modal="true" aria-label={`${selected.name}详情`} className="h-full w-full max-w-lg overflow-auto bg-[var(--surface-1)] p-6 shadow-2xl sm:p-8"><div className="flex items-center justify-between"><p className="text-[11px] font-semibold tracking-[0.2em] text-[var(--brand)]">{selected.type} / 能力详情</p><button type="button" autoFocus onClick={() => setSelected(null)} aria-label="关闭能力详情" className="rounded-lg p-2 text-[var(--text-muted)] hover:bg-[var(--bg-hover)]"><X className="h-5 w-5" /></button></div><div className="mt-10 grid h-14 w-14 place-items-center rounded-2xl bg-[var(--brand-light)] text-[var(--brand)]">{selected.type === 'MCP' ? <Network className="h-7 w-7" /> : selected.type === 'Tool' ? <Wrench className="h-7 w-7" /> : <Sparkles className="h-7 w-7" />}</div><h3 className="mt-5 text-2xl font-semibold">{selected.name}</h3><p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">{selected.description}</p><div className="mt-7 flex flex-wrap gap-2">{selected.tags.map((tag) => <span key={tag} className="rounded-full bg-[var(--bg-elevated)] px-3 py-1.5 text-xs text-[var(--text-secondary)]">{tag}</span>)}</div><div className="mt-7 grid grid-cols-2 gap-3 text-xs"><div className="rounded-xl bg-[var(--bg-elevated)] p-4"><p className="text-[var(--text-muted)]">输入</p><p className="mt-2 font-semibold">{selected.input}</p></div><div className="rounded-xl bg-[var(--bg-elevated)] p-4"><p className="text-[var(--text-muted)]">输出</p><p className="mt-2 font-semibold">{selected.output}</p></div></div><div className="mt-5 rounded-xl border border-amber-400/25 bg-amber-50 p-4 text-xs text-amber-900 dark:bg-amber-500/10 dark:text-amber-200"><div className="flex items-center gap-2 font-semibold"><CircleAlert className="h-4 w-4" />{selected.risk}</div><p className="mt-2 leading-6">使用前确认输入范围，涉及外部系统时只会在授权范围内读取或执行。</p></div><div className="mt-7 flex gap-2"><button type="button" onClick={() => toggleFavorite(selected)} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--border)] px-3 py-2.5 text-xs font-semibold"><Heart className="h-3.5 w-3.5" fill={favorites.includes(selected.id) ? 'currentColor' : 'none'} />{favorites.includes(selected.id) ? '取消收藏' : '收藏'}</button><button type="button" disabled={selected.status !== '可使用'} onClick={() => selected.type === 'Tool' ? useToolInCopilot(selected) : (setUseTarget(selected), setSelected(null))} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-3 py-2.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">{selected.type === 'Tool' ? '在对话中调用' : '使用能力'}</button></div><p className="mt-5 text-xs leading-6 text-[var(--text-muted)]">能力由管理员维护；用户侧只选择和使用，不修改配置。</p></section></div>}
-      {useTarget && <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setUseTarget(null); }}><form role="dialog" aria-modal="true" aria-label={`使用${useTarget.name}`} onSubmit={(event) => { event.preventDefault(); confirmUse(); }} className="w-full max-w-lg rounded-2xl bg-[var(--surface-1)] p-6 shadow-2xl"><div className="flex items-center justify-between"><h3 className="text-lg font-semibold">使用能力：{useTarget.name}</h3><button type="button" onClick={() => setUseTarget(null)} aria-label="关闭使用能力窗口" className="rounded-lg p-2 text-[var(--text-muted)] hover:bg-[var(--bg-hover)]"><X className="h-5 w-5" /></button></div><p className="mt-2 text-xs leading-6 text-[var(--text-muted)]">填写这次使用的目标，确认后会记录到最近使用，不会触发真实执行。</p><label className="mt-6 block text-xs font-semibold">本次任务目标<textarea autoFocus value={goal} onChange={(event) => setGoal(event.target.value)} required placeholder="例如：整理本周客户反馈并提取三个行动项" className="mt-2 min-h-24 w-full resize-y rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] p-3 text-sm font-normal outline-none focus:border-[var(--brand)]" /></label><div className="mt-6 flex justify-end gap-2"><button type="button" onClick={() => setUseTarget(null)} className="rounded-xl border border-[var(--border)] px-4 py-2.5 text-sm font-medium">取消</button><button type="submit" className="rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-white">确认使用</button></div></form></div>}
+      <SideDrawer
+        open={selected !== null}
+        onClose={() => setSelected(null)}
+        ariaLabel={selected ? `${selected.name}详情` : '能力详情'}
+        eyebrow={<p className="text-[11px] font-semibold tracking-[0.2em] text-[var(--brand)]">{selected?.type ?? ''} / 能力详情</p>}
+        closeLabel="关闭能力详情"
+      >
+        {selected && (
+          <>
+            <div className="mt-10 grid h-14 w-14 place-items-center rounded-2xl bg-[var(--brand-light)] text-[var(--brand)]">
+              {selected.type === 'MCP' ? <Network className="h-7 w-7" /> : selected.type === 'Tool' ? <Wrench className="h-7 w-7" /> : <Sparkles className="h-7 w-7" />}
+            </div>
+            <h3 className="mt-5 text-2xl font-semibold">{selected.name}</h3>
+            <p className="mt-3 text-sm leading-7 text-[var(--text-muted)]">{selected.description}</p>
+            <div className="mt-7 flex flex-wrap gap-2">
+              {selected.tags.map((tag) => <span key={tag} className="rounded-full bg-[var(--bg-elevated)] px-3 py-1.5 text-xs text-[var(--text-secondary)]">{tag}</span>)}
+            </div>
+            <div className="mt-7 grid grid-cols-2 gap-3 text-xs">
+              <div className="rounded-xl bg-[var(--bg-elevated)] p-4">
+                <p className="text-[var(--text-muted)]">输入</p>
+                <p className="mt-2 font-semibold">{selected.input}</p>
+              </div>
+              <div className="rounded-xl bg-[var(--bg-elevated)] p-4">
+                <p className="text-[var(--text-muted)]">输出</p>
+                <p className="mt-2 font-semibold">{selected.output}</p>
+              </div>
+            </div>
+            <div className="mt-5 rounded-xl border border-amber-400/25 bg-amber-50 p-4 text-xs text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+              <div className="flex items-center gap-2 font-semibold">
+                <CircleAlert className="h-4 w-4" />{selected.risk}
+              </div>
+              <p className="mt-2 leading-6">使用前确认输入范围，涉及外部系统时只会在授权范围内读取或执行。</p>
+            </div>
+            <div className="mt-7 flex gap-2">
+              <button type="button" onClick={() => toggleFavorite(selected)} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--border)] px-3 py-2.5 text-xs font-semibold">
+                <Heart className="h-3.5 w-3.5" fill={favorites.includes(selected.id) ? 'currentColor' : 'none'} />
+                {favorites.includes(selected.id) ? '取消收藏' : '收藏'}
+              </button>
+              <button type="button" disabled={selected.status !== '可使用'} onClick={() => selected.type === 'Tool' ? useToolInCopilot(selected) : (setUseTarget(selected), setSelected(null))} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-3 py-2.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
+                {selected.type === 'Tool' ? '在对话中调用' : '使用能力'}
+              </button>
+            </div>
+            <p className="mt-5 text-xs leading-6 text-[var(--text-muted)]">能力由管理员维护；用户侧只选择和使用，不修改配置。</p>
+          </>
+        )}
+      </SideDrawer>
+      <CenterModal
+        open={useTarget !== null}
+        onClose={() => setUseTarget(null)}
+        ariaLabel={useTarget ? `使用${useTarget.name}` : '使用能力'}
+        title={useTarget ? `使用能力：${useTarget.name}` : '使用能力'}
+        description="填写这次使用的目标，确认后会记录到最近使用，不会触发真实执行。"
+        closeLabel="关闭使用能力窗口"
+        onSubmit={(event) => { event.preventDefault(); confirmUse(); }}
+        footer={
+          <>
+            <button type="button" onClick={() => setUseTarget(null)} className="rounded-xl border border-[var(--border)] px-4 py-2.5 text-sm font-medium">取消</button>
+            <button type="submit" className="rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-white">确认使用</button>
+          </>
+        }
+      >
+        <label className="mt-6 block text-xs font-semibold">本次任务目标
+          <textarea
+            autoFocus
+            value={goal}
+            onChange={(event) => setGoal(event.target.value)}
+            required
+            placeholder="例如：整理本周客户反馈并提取三个行动项"
+            className="mt-2 min-h-24 w-full resize-y rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] p-3 text-sm font-normal outline-none focus:border-[var(--brand)]"
+          />
+        </label>
+      </CenterModal>
     </div>
   );
 }

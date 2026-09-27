@@ -18,7 +18,7 @@ function renderDirectory(path = '/agents') {
   );
 }
 
-describe('智能体广场', () => {
+describe('智能体库', () => {
   it('shows only available agents and filters by scene and keyword', () => {
     renderDirectory();
     expect(screen.getByRole('heading', { name: '可用智能体' })).toBeTruthy();

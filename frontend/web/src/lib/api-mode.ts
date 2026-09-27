@@ -6,11 +6,6 @@ export function isDemoApiMode(): boolean {
   return import.meta.env.VITE_USE_DEMO === 'true' || import.meta.env.VITE_USE_MOCK === 'true';
 }
 
-/** @deprecated 使用 isDemoApiMode */
-export function isMockApiMode(): boolean {
-  return isDemoApiMode();
-}
-
 function isLoopbackBase(url: string): boolean {
   try {
     const host = new URL(url).hostname;

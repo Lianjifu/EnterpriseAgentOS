@@ -1,9 +1,11 @@
 import { Menu, Moon, PanelLeftClose, PanelLeftOpen, Sun, X } from 'lucide-react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { BrandLogo } from '@/components/feedback/BrandLogo';
 import { useAuthStore } from '@/entities/auth';
 import { useUiStore } from '@/stores/uiStore';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
-import { adminNavigationSections, taskNavigation, utilityNavigation, workspaceNavigation, type NavigationItem } from './navigation';
+import { adminNavigationSections, workspaceNavigation, type NavigationItem } from './navigation';
+import { UserFooter } from './UserFooter';
 
 function NavigationLink({ item, collapsed, onNavigate }: { item: NavigationItem; collapsed: boolean; onNavigate: () => void }) {
   const Icon = item.icon;
@@ -22,17 +24,6 @@ function NavigationLink({ item, collapsed, onNavigate }: { item: NavigationItem;
   );
 }
 
-function Section({ title, items, collapsed, onNavigate }: { title: string; items: NavigationItem[]; collapsed: boolean; onNavigate: () => void }) {
-  return (
-    <section className="mt-6 first:mt-2">
-      {!collapsed ? <h2 className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">{title}</h2> : null}
-      <div className="space-y-1">
-        {items.map((item) => <NavigationLink key={item.href} item={item} collapsed={collapsed} onNavigate={onNavigate} />)}
-      </div>
-    </section>
-  );
-}
-
 export function WorkspaceShell() {
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
@@ -40,28 +31,46 @@ export function WorkspaceShell() {
   const { theme, toggleTheme, sidebarCollapsed, toggleSidebar, mobileDrawerOpen, closeMobileDrawer, openMobileDrawer } = useUiStore();
   const isAdmin = user?.role === 'admin';
   const adminItems = adminNavigationSections.flatMap((section) => section.items);
-  const currentItem = [...workspaceNavigation, ...taskNavigation, ...utilityNavigation, ...adminItems].find((item) => location.pathname.startsWith(item.href));
+  const currentItem = [...workspaceNavigation, ...adminItems].find((item) => location.pathname.startsWith(item.href));
   const workspaceName = workspace?.name ?? '默认工作空间';
   const isAdminArea = isAdmin && location.pathname.startsWith('/admin');
+  const flatNav = isAdminArea ? adminNavigationSections.flatMap((section) => section.items) : workspaceNavigation;
 
   const sidebar = (
     <aside className={`flex h-full flex-col border-r border-[var(--border)] bg-[var(--surface-1)] px-3 py-4 ${sidebarCollapsed ? 'w-[76px]' : 'w-[248px]'}`}>
       <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} px-2`}>
         <NavLink to="/home" className="flex items-center gap-2.5" aria-label="返回首页">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[var(--brand)] text-sm font-bold text-white">N</span>
-          {!sidebarCollapsed ? <span className="text-sm font-semibold text-[var(--text)]">企智搭 · 智能体平台</span> : null}
+          {sidebarCollapsed ? (
+            <BrandLogo size={36} className="text-[var(--brand)]" ariaLabel="企智搭 · 智能体平台" />
+          ) : (
+            <BrandLogo size={36} withWordmark className="text-[var(--brand)]" />
+          )}
         </NavLink>
         <button type="button" onClick={toggleSidebar} className="hidden rounded-md p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text)] lg:block" aria-label={sidebarCollapsed ? '展开侧栏' : '收起侧栏'} title={sidebarCollapsed ? '展开侧栏' : '收起侧栏'}>
           {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
         </button>
       </div>
       <nav className="mt-7 flex-1 overflow-y-auto" aria-label="智能体工作台导航">
-        {isAdminArea ? adminNavigationSections.map((section) => <Section key={section.title} title={section.title} items={section.items} collapsed={sidebarCollapsed} onNavigate={closeMobileDrawer} />) : <>
-          <Section title="工作台" items={workspaceNavigation} collapsed={sidebarCollapsed} onNavigate={closeMobileDrawer} />
-          <Section title="任务" items={taskNavigation} collapsed={sidebarCollapsed} onNavigate={closeMobileDrawer} />
-        </>}
+        {isAdminArea ? (
+          <div className="space-y-5">
+            {adminNavigationSections.map((section, index) => (
+              <div key={section.title} className={`${index === 0 ? '' : 'border-t border-[var(--border)] pt-4'} space-y-1`}>
+                {!sidebarCollapsed && (
+                  <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">{section.title}</p>
+                )}
+                {section.items.map((item) => <NavigationLink key={item.href} item={item} collapsed={sidebarCollapsed} onNavigate={closeMobileDrawer} />)}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {workspaceNavigation.map((item) => <NavigationLink key={item.href} item={item} collapsed={sidebarCollapsed} onNavigate={closeMobileDrawer} />)}
+          </div>
+        )}
       </nav>
-      <div className="mt-4 border-t border-[var(--border)] pt-3"><Section title="更多" items={utilityNavigation} collapsed={sidebarCollapsed} onNavigate={closeMobileDrawer} /></div>
+      <div className="mt-3 border-t border-[var(--border)] pt-3">
+        <UserFooter collapsed={sidebarCollapsed} audience={isAdminArea ? 'admin' : 'user'} onNavigate={closeMobileDrawer} />
+      </div>
     </aside>
   );
 
@@ -81,7 +90,6 @@ export function WorkspaceShell() {
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             <button type="button" onClick={toggleTheme} className="rounded-md p-2 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text)]" aria-label={theme === 'light' ? '切换深色模式' : '切换浅色模式'} title={theme === 'light' ? '切换深色模式' : '切换浅色模式'}>{theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}</button>
-            {isAdminArea ? <NavLink to="/home" className="hidden rounded-md px-3 py-2 text-xs font-medium text-[var(--brand)] hover:bg-[var(--brand-light)] sm:inline-flex">返回企智搭工作台</NavLink> : null}
             <button type="button" className="rounded-md p-1 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] lg:hidden" onClick={closeMobileDrawer} aria-label="关闭导航菜单"><X className="h-4 w-4" /></button>
           </div>
         </header>

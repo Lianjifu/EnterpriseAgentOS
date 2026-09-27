@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, ArrowUp, Bot, CheckCircle2, ChevronDown, ChevronRight, ClipboardCheck, Code2, Copy, FileText, Folder, FolderTree, Globe2, Menu, MoreHorizontal, PanelRightClose, Paperclip, Plus, RefreshCw, Search, Settings2, Sparkles, TerminalSquare, UserRound } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUp, Bot, ChevronDown, ChevronRight, ClipboardCheck, Copy, FileText, Folder, FolderTree, Globe2, Menu, MoreHorizontal, PanelRightClose, Paperclip, Plus, RefreshCw, Search, Settings2, Sparkles, TerminalSquare } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 

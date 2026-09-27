@@ -11,6 +11,7 @@
  */
 import { ShieldCheck, Sun, Moon, UserRound, Shield, ScrollText, Gauge, Lock, Bot, ArrowUpRight } from 'lucide-react';
 import { toast } from '@de/web-ui';
+import { BrandLogo } from '@/components/feedback/BrandLogo';
 import { useUiStore } from '@/stores/uiStore';
 import { useT } from '@/i18n';
 import { TrustStrip } from '@/features/auth/TrustStrip';
@@ -151,7 +152,7 @@ export default function LoginPage() {
           <div className="relative m-auto w-full max-w-[470px] rounded-2xl border border-slate-200/80 bg-white px-6 py-7 shadow-[0_18px_50px_rgba(15,23,42,0.08)] dark:border-[var(--border)] dark:bg-[var(--surface-1)] sm:px-9 sm:py-9 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none">
             <div className="mb-7 flex items-center justify-between md:hidden">
               <div className="flex items-center gap-2.5">
-                <span className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--brand)] text-white"><Bot className="h-4 w-4" /></span>
+                <BrandLogo size={36} className="text-[var(--brand)]" ariaLabel="企智搭 · 智能体平台" />
                 <span className="text-sm font-semibold text-[var(--text)]">{t('login.brand.product')}</span>
               </div>
               <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--text-muted)]">QiZhiDa</span>

@@ -1,14 +1,21 @@
 /**
  * Drawer 9 个子面板 — basic / prompt / skills / knowledge / memory / flow / versions / evaluation / permission。
  */
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import { Beaker, Brain, Copy, FileText, FolderTree, GitBranch, Layers, Play, Plus, RotateCcw, ShieldCheck, Sparkles, Tag, Workflow, X } from 'lucide-react';
+import {
+  AlertTriangle, Beaker, Brain, CheckCircle2, Copy, Download, Edit3, FileText,
+  FolderTree, GitBranch, Hash, History, Layers, Play, Plus, RotateCcw,
+  Save, ShieldCheck, Sparkles, Tag, Workflow, X,
+} from 'lucide-react';
 import type { AgentEntry, KnowledgeRef, MemoryPolicy, FlowRef, PromptDocs, PromptKey, EvalCase, CustomPromptDoc } from '@/api/admin/agents/schema';
 import { KNOWN_TONES, formatCalls, buildPrompts } from '@/mock/admin/agents.fixtures';
 import { EvalProgress } from './Primitives';
 import { MarkdownView } from './MarkdownView';
-import { MEMORY_RETENTION_OPTIONS, MEMORY_SCOPE_OPTIONS, PROMPT_DOCS, statusBadge, toneClass } from './constants';
+import {
+  DOCUMENT_TARGET_LIMITS, MEMORY_RETENTION_OPTIONS, MEMORY_SCOPE_OPTIONS,
+  PROMPT_DOCS, PROMPT_SNIPPETS, statusBadge, toneClass,
+} from './constants';
 
 export function DrawerPanelBasic({ draft, onChange }: { draft: AgentEntry; onChange: (patch: Partial<AgentEntry>) => void }) {
   const update = (patch: Partial<AgentEntry>) => onChange(patch);
@@ -506,6 +513,9 @@ export function DrawerPanelPrompt({
   const [draftFile, setDraftFile] = useState('');
   const [draftLabel, setDraftLabel] = useState('');
   const [draftDescription, setDraftDescription] = useState('');
+  const [metaOpen, setMetaOpen] = useState(false);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const saveTimer = useRef<number | null>(null);
 
   const content = coreMeta ? draft.prompts[coreMeta.key] : customDoc?.content ?? '';
   const currentLabel = coreMeta?.label ?? customDoc?.label ?? '';
@@ -514,6 +524,37 @@ export function DrawerPanelPrompt({
   const chars = content.length;
   const lines = content.split('\n').length;
   const totalDocs = PROMPT_DOCS.length + customDocs.length;
+  const totalChars = useMemo(() => {
+    const coreSum = PROMPT_DOCS.reduce((sum, d) => sum + (draft.prompts[d.key]?.length ?? 0), 0);
+    const customSum = customDocs.reduce((sum, d) => sum + (d.content?.length ?? 0), 0);
+    return coreSum + customSum;
+  }, [draft.prompts, customDocs]);
+
+  // 全局初始 prompt(用于"是否已修改"判定)
+  const initialPrompts = useMemo(() => buildPrompts(draft.name, draft.category, draft.owner), [draft.name, draft.category, draft.owner]);
+  const dirtyCount = PROMPT_DOCS.filter((d) => draft.prompts[d.key] !== initialPrompts[d.key]).length;
+
+  // 文档目标长度进度
+  const target = coreMeta?.targetChars ?? null;
+  const ratio = target ? chars / target : 0;
+  const limitTone = !target
+    ? 'muted'
+    : ratio <= DOCUMENT_TARGET_LIMITS.soft
+      ? 'success'
+      : ratio <= DOCUMENT_TARGET_LIMITS.warn
+        ? 'warn'
+        : ratio <= DOCUMENT_TARGET_LIMITS.danger
+          ? 'warning'
+          : 'danger';
+
+  // 自动暂存指示器:每次内容变化 → 600ms 后设 savedAt
+  useEffect(() => {
+    if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(() => setSavedAt(new Date()), 600);
+    return () => {
+      if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    };
+  }, [content]);
 
   const handleCopy = async () => {
     try {
@@ -525,10 +566,22 @@ export function DrawerPanelPrompt({
     }
   };
 
+  const handleDownload = () => {
+    if (typeof window === 'undefined') return;
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = currentFile.endsWith('.md') ? currentFile : `${currentFile}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handleReset = () => {
     if (!coreMeta) return;
-    const initial = buildPrompts(draft.name, draft.category, draft.owner);
-    onChange({ [coreMeta.key]: initial[coreMeta.key] } as Partial<PromptDocs>);
+    onChange({ [coreMeta.key]: initialPrompts[coreMeta.key] } as Partial<PromptDocs>);
   };
 
   const handleAddCustom = () => {
@@ -549,12 +602,14 @@ export function DrawerPanelPrompt({
     setDraftLabel('');
     setDraftDescription('');
     setPromptDoc(`custom:${id}`);
+    setMetaOpen(false);
   };
 
   const handleDeleteCustom = (id: string) => {
     const next = customDocs.filter((d) => d.id !== id);
     onChangeCustom(next);
     if (promptDoc === `custom:${id}`) setPromptDoc('prompt');
+    if (customDoc?.id === id) setMetaOpen(false);
   };
 
   const handleEditCore = (next: string) => {
@@ -566,17 +621,49 @@ export function DrawerPanelPrompt({
     onChangeCustom(customDocs.map((d) => d.id === customDoc.id ? { ...d, content: next } : d));
   };
 
+  const handleRenameCustom = (patch: Partial<Pick<CustomPromptDoc, 'label' | 'description'>>) => {
+    if (!customDoc) return;
+    onChangeCustom(customDocs.map((d) => d.id === customDoc.id ? { ...d, ...patch } : d));
+  };
+
+  const handleInsertSnippet = (body: string) => {
+    if (coreMeta) {
+      const sep = content.endsWith('\n') || content.length === 0 ? '' : '\n';
+      handleEditCore(`${content}${sep}${body}`);
+    } else if (customDoc) {
+      const sep = content.endsWith('\n') || content.length === 0 ? '' : '\n';
+      handleEditCustom(`${content}${sep}${body}`);
+    }
+  };
+
+  const snippets = coreMeta ? PROMPT_SNIPPETS[coreMeta.key] ?? [] : [];
+
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4">
-        <p className="text-xs text-[var(--text-secondary)]">
-          智能体运行时使用 {totalDocs} 份文档(5 份核心 + {customDocs.length} 份自定义),变更后随下次版本发布生效。
-        </p>
-      </div>
+      {/* Hero 概览 */}
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-5">
+        <header className="mb-4 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">提示词工作区</p>
+            <h3 className="mt-1 text-sm font-semibold">智能体运行时由 {totalDocs} 份文档组成 · 共 {totalChars.toLocaleString()} 字</h3>
+          </div>
+          <div className="text-right text-[10px] text-[var(--text-muted)]">
+            {savedAt ? <span className="inline-flex items-center gap-1"><Save className="h-3 w-3" />已自动暂存 · {savedAt.toLocaleTimeString('zh-Hans-CN', { hour: '2-digit', minute: '2-digit' })}</span> : '尚未编辑'}
+          </div>
+        </header>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <HeroStat label="核心文档" value={`${PROMPT_DOCS.length}`} hint="PROMPT/SOUL/AGENTS/USER/TOOLS" />
+          <HeroStat label="自定义文档" value={`${customDocs.length}`} hint="团队自有协议" />
+          <HeroStat label="已修改" value={`${dirtyCount}`} hint="相对默认模板" tone={dirtyCount > 0 ? 'warn' : 'muted'} />
+          <HeroStat label="总字符" value={totalChars.toLocaleString()} hint="跨所有文档" />
+        </div>
+      </section>
+
+      {/* Tab 行 */}
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-1.5">
         {PROMPT_DOCS.map((item) => {
           const active = item.key === promptDoc;
-          const isDirty = draft.prompts[item.key] !== buildPrompts(draft.name, draft.category, draft.owner)[item.key];
+          const isDirty = draft.prompts[item.key] !== initialPrompts[item.key];
           return (
             <button
               key={item.key}
@@ -630,6 +717,7 @@ export function DrawerPanelPrompt({
         </button>
       </div>
 
+      {/* 新建自定义文档 */}
       {addOpen && (
         <div className="rounded-2xl border border-[var(--brand)] bg-[var(--brand-light)]/40 p-4">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--brand)]">新建自定义文档</p>
@@ -685,54 +773,173 @@ export function DrawerPanelPrompt({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[var(--text-muted)]">
+      {/* 当前文档元信息 + 工具栏 */}
+      <section className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h4 className="text-sm font-semibold">{currentLabel}</h4>
+            <span className="rounded-md bg-[var(--bg-elevated)] px-2 py-0.5 font-mono text-[11px] text-[var(--text-muted)]">{currentFile}</span>
+            {target && (
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${limitTone === 'success' ? 'bg-[var(--success-bg)] text-[var(--success)]' : limitTone === 'warn' ? 'bg-[var(--warning-bg)] text-[var(--warning)]' : limitTone === 'danger' ? 'bg-[var(--danger-bg)] text-[var(--danger)]' : 'bg-[var(--bg-elevated)] text-[var(--text-muted)]'}`}>
+                <Hash className="h-3 w-3" />{chars.toLocaleString()} / {target.toLocaleString()} 字
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-[11px] text-[var(--text-muted)]">{currentDescription}</p>
+          {target && (
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-elevated)]">
+              <div
+                className={`h-full rounded-full transition-all ${limitTone === 'success' ? 'bg-[var(--success)]' : limitTone === 'warn' ? 'bg-[var(--warning)]' : 'bg-[var(--danger)]'}`}
+                style={{ width: `${Math.min(100, ratio * 100)}%` }}
+                aria-hidden="true"
+              />
+            </div>
+          )}
+        </div>
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setMetaOpen((v) => !v)}
+            aria-expanded={metaOpen}
+            disabled={!customDoc}
+            title={customDoc ? '编辑文档元信息' : '核心文档元信息不可编辑'}
+            className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-2.5 py-1 text-[11px] font-semibold hover:border-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Edit3 className="h-3 w-3" />元信息
+          </button>
           <button
             type="button"
             onClick={handleReset}
             disabled={!coreMeta}
-            className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-2.5 py-1 text-[11px] font-semibold hover:border-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-2.5 py-1 text-[11px] font-semibold hover:border-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             <RotateCcw className="h-3 w-3" />重置为模板
           </button>
           <button
             type="button"
             onClick={handleCopy}
-            className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-2.5 py-1 text-[11px] font-semibold hover:border-[var(--brand)]"
+            className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-2.5 py-1 text-[11px] font-semibold hover:border-[var(--brand)]"
           >
             <Copy className="h-3 w-3" />复制全文
           </button>
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-2.5 py-1 text-[11px] font-semibold hover:border-[var(--brand)]"
+          >
+            <Download className="h-3 w-3" />导出文件
+          </button>
         </div>
-      </div>
+      </section>
 
-      <div>
-        <p className="text-[10px] text-[var(--text-muted)]">{currentDescription}</p>
-        <div className="mt-2 grid gap-3 lg:grid-cols-2">
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between rounded-t-xl border border-b-0 border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-              <span>Markdown 源码</span>
-              <span className="font-mono normal-case tracking-normal text-[var(--text-muted)]">{currentFile} · {chars.toLocaleString()} 字 · {lines} 行</span>
-            </div>
-            <textarea
-              value={content}
-              onChange={(event) => (coreMeta ? handleEditCore(event.target.value) : handleEditCustom(event.target.value))}
-              rows={18}
-              spellCheck={false}
-              className="min-h-[420px] w-full flex-1 rounded-b-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] p-3 font-mono text-xs leading-6 outline-none focus:border-[var(--brand)]"
-            />
+      {/* 自定义文档元信息编辑器 */}
+      {customDoc && metaOpen && (
+        <div className="rounded-2xl border border-[var(--brand)] bg-[var(--brand-light)]/40 p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--brand)]">自定义文档 · 元信息</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">显示名称</span>
+              <input
+                type="text"
+                value={customDoc.label}
+                onChange={(event) => handleRenameCustom({ label: event.target.value })}
+                className="mt-1 h-8 w-full rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-2 text-xs outline-none focus:border-[var(--brand)]"
+              />
+            </label>
+            <label className="block">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">说明</span>
+              <input
+                type="text"
+                value={customDoc.description}
+                onChange={(event) => handleRenameCustom({ description: event.target.value })}
+                className="mt-1 h-8 w-full rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-2 text-xs outline-none focus:border-[var(--brand)]"
+              />
+            </label>
           </div>
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between rounded-t-xl border border-b-0 border-[var(--border-strong)] bg-[var(--surface-1)] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-              <span>实时预览</span>
-              <span className="font-mono normal-case tracking-normal text-[var(--text-muted)]">{currentLabel}</span>
-            </div>
-            <div className="min-h-[420px] flex-1 overflow-auto rounded-b-xl border border-[var(--border-strong)] bg-[var(--surface-1)] p-4">
-              <MarkdownView source={content} />
-            </div>
-          </div>
+          <p className="mt-2 text-[10px] text-[var(--text-muted)]">文件名 (ID) 由创建时确定,不能在此修改;如需更名,请删除后重建。</p>
         </div>
-      </div>
-      <p className="text-[10px] text-[var(--text-muted)]">支持 Markdown 语法 · 保存后随下次版本发布生效。</p>
+      )}
+
+      {/* 工作区:左侧 (片段 + 提示) + 右侧 (源码/预览) */}
+      <section className="grid gap-4 xl:grid-cols-[220px_minmax(0,1fr)]">
+        {/* 侧栏:片段 + 运行建议 */}
+        <aside className="space-y-3">
+          {snippets.length > 0 && (
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-3">
+              <p className="mb-2 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                <Sparkles className="h-3 w-3" />插入模板片段
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {snippets.map((s) => (
+                  <button
+                    key={s.name}
+                    type="button"
+                    onClick={() => handleInsertSnippet(s.body)}
+                    className="rounded-md border border-dashed border-[var(--border)] bg-[var(--bg-elevated)] px-2 py-1.5 text-left text-[11px] font-semibold text-[var(--text-secondary)] transition hover:border-[var(--brand)] hover:text-[var(--brand)]"
+                  >
+                    + {s.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-3">
+            <p className="mb-2 inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+              <History className="h-3 w-3" />运行建议
+            </p>
+            <ul className="space-y-1 text-[11px] text-[var(--text-secondary)]">
+              <li className="flex gap-1.5"><CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-[var(--success)]" />先写「任务目标」与「输出约束」</li>
+              <li className="flex gap-1.5"><CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-[var(--success)]" />段落用 H2,便于版式统一</li>
+              <li className="flex gap-1.5"><AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-[var(--warning)]" />字符超过目标 1.4 倍会触发风险告警</li>
+              <li className="flex gap-1.5"><CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-[var(--success)]" />完成后在「版本」面板提交审核</li>
+            </ul>
+          </div>
+        </aside>
+
+        {/* 主区:源码 + 预览 */}
+        <div>
+          <div className="grid gap-3 lg:grid-cols-2">
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between rounded-t-xl border border-b-0 border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
+                <span>Markdown 源码</span>
+                <span className="font-mono normal-case tracking-normal text-[var(--text-muted)]">{chars.toLocaleString()} 字 · {lines} 行</span>
+              </div>
+              <textarea
+                data-prompt-editor
+                value={content}
+                onChange={(event) => (coreMeta ? handleEditCore(event.target.value) : handleEditCustom(event.target.value))}
+                rows={20}
+                spellCheck={false}
+                placeholder={coreMeta?.placeholder ?? '在此书写 Markdown 内容'}
+                aria-label={`${currentLabel} Markdown 源码`}
+                className="min-h-[460px] w-full flex-1 resize-y rounded-b-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] p-3 font-mono text-xs leading-6 outline-none focus:border-[var(--brand)]"
+              />
+            </div>
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between rounded-t-xl border border-b-0 border-[var(--border-strong)] bg-[var(--surface-1)] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
+                <span>实时预览</span>
+                <span className="font-mono normal-case tracking-normal text-[var(--text-muted)]">{currentLabel}</span>
+              </div>
+              <div className="min-h-[460px] flex-1 overflow-auto rounded-b-xl border border-[var(--border-strong)] bg-[var(--surface-1)] p-4">
+                <MarkdownView source={content} />
+              </div>
+            </div>
+          </div>
+          <p className="mt-3 text-[10px] text-[var(--text-muted)]">支持 Markdown 语法 · 保存后随下次版本发布生效。</p>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function HeroStat({ label, value, hint, tone = 'default' }: { label: string; value: string; hint?: string; tone?: 'default' | 'warn' | 'muted' }) {
+  const valueClass = tone === 'warn' ? 'text-[var(--warning)]' : tone === 'muted' ? 'text-[var(--text-muted)]' : 'text-[var(--text)]';
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2.5">
+      <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">{label}</p>
+      <p className={`mt-1 text-xl font-semibold tabular-nums ${valueClass}`}>{value}</p>
+      {hint && <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">{hint}</p>}
     </div>
   );
 }

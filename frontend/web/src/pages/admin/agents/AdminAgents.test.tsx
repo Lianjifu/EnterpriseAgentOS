@@ -1,11 +1,13 @@
 /**
- * AdminAgents 页面测试 — Hero / 状态 Tab / 卡片 / 批量工具栏 / Drawer / 向导 / Diff 等关键交互。
+ * AdminAgents 页面测试 — Hero / 状态 Tab / 卡片 / 批量工具栏 / 向导 / 详情路由等关键交互。
  */
 import { describe, expect, it, afterEach } from 'vitest';
 import { cleanup, fireEvent, screen, within } from '@testing-library/react';
+import { Route, Routes } from 'react-router-dom';
 import { qk } from '@/api/shared/query-keys';
 import { renderWithProviders } from '@/test-utils/seed';
 import AgentsPage from '@/pages/admin/agents';
+import AgentDetailPage from '@/pages/admin/agents/AgentDetailPage';
 import { mockAgents } from '@/mock/admin/agents.fixtures';
 
 function renderPage() {
@@ -15,6 +17,21 @@ function renderPage() {
       { key: [...qk.admin.agents.list, {}, 'w1'], data: mockAgents },
     ],
   });
+}
+
+function renderApp(initialPath: string) {
+  return renderWithProviders(
+    <Routes>
+      <Route path="/admin/agents" element={<AgentsPage />} />
+      <Route path="/admin/agents/:id" element={<AgentDetailPage />} />
+    </Routes>,
+    {
+      initialEntries: [initialPath],
+      seeds: [
+        { key: [...qk.admin.agents.list, {}, 'w1'], data: mockAgents },
+      ],
+    },
+  );
 }
 
 describe('AdminAgents', () => {
@@ -54,18 +71,17 @@ describe('AdminAgents', () => {
     expect(screen.queryByText('销售支持')).toBeNull();
   });
 
-  it('opens drawer when clicking a card', () => {
-    renderPage();
+  it('navigates to detail page when clicking a card', () => {
+    renderApp('/admin/agents');
     const trigger = screen.getByRole('button', { name: /查看 客户沟通助手 详情/ });
     fireEvent.click(trigger);
-    const drawer = screen.getByRole('dialog', { name: /客户沟通助手 详情/ });
-    expect(drawer).toBeTruthy();
-    const sidebar = drawer.querySelector('[aria-label="智能体工作区导航"]') as HTMLElement | null;
-    expect(sidebar).toBeTruthy();
-    expect(within(sidebar!).getByText(/基本信息/)).toBeTruthy();
-    // 关闭
-    fireEvent.click(screen.getByRole('button', { name: '关闭' }));
-    expect(screen.queryByRole('dialog', { name: /客户沟通助手 详情/ })).toBeNull();
+    // 路由切换后详情页应渲染:顶部返回按钮 + 工作区导航 + 基本信息面板
+    expect(screen.getByRole('button', { name: /返回智能体管理/ })).toBeTruthy();
+    const sidebar = screen.getByLabelText('智能体工作区导航');
+    expect(within(sidebar).getByText(/基本信息/)).toBeTruthy();
+    // 返回上一级
+    fireEvent.click(screen.getByRole('button', { name: /返回智能体管理/ }));
+    expect(screen.getByText(/让智能体成为可治理、可观测的能力/)).toBeTruthy();
   });
 
   it('selects card and shows batch toolbar', () => {
@@ -117,14 +133,12 @@ describe('AdminAgents', () => {
     expect(within(dialog).getByText(/选择导出范围、格式与字段/)).toBeTruthy();
   });
 
-  it('switches drawer panel to versions and eval', () => {
-    renderPage();
-    fireEvent.click(screen.getByRole('button', { name: /查看 客户沟通助手 详情/ }));
-    const drawer = screen.getByRole('dialog', { name: /客户沟通助手 详情/ });
-    const sidebar = drawer.querySelector('[aria-label="智能体工作区导航"]') as HTMLElement;
+  it('switches detail page panel to versions and eval', () => {
+    renderApp('/admin/agents/a-customer-v3');
+    const sidebar = screen.getByLabelText('智能体工作区导航');
     fireEvent.click(within(sidebar).getByText('版本'));
-    expect(within(drawer).getAllByText(/查看 diff/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/查看 diff/).length).toBeGreaterThan(0);
     fireEvent.click(within(sidebar).getByText('评测'));
-    expect(within(drawer).getByText(/最近评测批次/)).toBeTruthy();
+    expect(screen.getByText(/最近评测批次/)).toBeTruthy();
   });
 });

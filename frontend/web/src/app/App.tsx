@@ -20,6 +20,7 @@ const AdminHelp = lazy(() => import('@/pages/admin/help'));
 const AdminSettings = lazy(() => import('@/pages/admin/settings'));
 const AdminOverview = lazy(() => import('@/pages/admin/overview'));
 const AdminAgents = lazy(() => import('@/pages/admin/agents'));
+const AdminAgentDetail = lazy(() => import('@/pages/admin/agents/AgentDetailPage'));
 const AdminKnowledge = lazy(() => import('@/pages/admin/knowledge'));
 const AdminMemory = lazy(() => import('@/pages/admin/memory'));
 const AdminWorkflows = lazy(() => import('@/pages/admin/workflows'));
@@ -94,6 +95,7 @@ export default function App() {
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/overview" element={<AdminOverview />} />
             <Route path="/admin/agents" element={<AdminAgents />} />
+            <Route path="/admin/agents/:id" element={<AdminAgentDetail />} />
             <Route path="/admin/knowledge" element={<AdminKnowledge />} />
             <Route path="/admin/memory" element={<AdminMemory />} />
             <Route path="/admin/workflows" element={<AdminWorkflows />} />

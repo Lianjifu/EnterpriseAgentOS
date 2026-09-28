@@ -1,33 +1,33 @@
 /**
- * 管理侧「智能体工作台」主面板 — Hero + Tab + 筛选 + 卡片网格 + 批量工具栏 + Drawer + 向导/导入/导出/删除/对比/沉浸式工作区。
+ * 管理侧「智能体工作台」主面板 — Hero + Tab + 筛选 + 卡片网格(分页)+ 批量工具栏 + 向导/导入/导出/删除。
+ *
+ * 详情查看已迁移到独立路由 /admin/agents/:id (AgentDetailPage),
+ * 这里只负责列表 + 批量操作,不再内嵌 Drawer。
  */
-import { useMemo, useState } from 'react';
-import { Activity, AlertTriangle, Bot, ChevronDown, Filter, GitBranch, Maximize2, Plus, Search, Sparkles, Star, TrendingUp, Upload, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Activity, AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, Filter, Plus, Search, Star, Upload } from 'lucide-react';
 import type {
-  AgentEntry, AgentFilters, DrawerPanel, EvalCase, ImportExtension, ImportRow, ExportField, ExportFormat, ExportScope, PromptKey, Status, SortKey, TabId, VisibleScope, WizardDraft,
+  AgentEntry, AgentFilters, ImportExtension, ImportRow, ExportField, ExportFormat, ExportScope, SortKey, TabId, VisibleScope, WizardDraft,
 } from '@/api/admin/agents/schema';
 import type { DeletePayload } from './components/DeleteConfirmModal';
 import {
-  useAgentsList, useAgentVersions, useBatchSetStatus, useCreateAgent, useDeleteAgents, useDiffVersions, useExportAgents,
-  useImportAgents, useRunEval, useToggleStar, useUpdateAgent,
+  useAgentsList, useBatchSetStatus, useCreateAgent, useDeleteAgents, useExportAgents, useImportAgents, useToggleStar, useUpdateAgent,
 } from '@/api/admin/agents';
 import {
-  buildPrompts, getLifecycleMetrics, mockAgents, SAMPLE_IMPORT, SAMPLE_IMPORT_ZIP,
+  buildPrompts, mockAgents, SAMPLE_IMPORT, SAMPLE_IMPORT_ZIP,
 } from '@/mock/admin/agents.fixtures';
 import { AgentCard } from './components/AgentCard';
 import { BatchToolbar } from './components/DrawerSidebar';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
-import { DiffDialog, type DiffPair } from './components/DiffDialog';
-import { DrawerPanelBasic, DrawerPanelEvaluation, DrawerPanelFlow, DrawerPanelKnowledge, DrawerPanelMemory, DrawerPanelPermission, DrawerPanelPrompt, DrawerPanelSkills, DrawerPanelVersions } from './components/DrawerPanels';
-import { DrawerSidebar } from './components/DrawerSidebar';
 import { ExportDialog, ImportDialog } from './components/ImportExportModals';
-import { FullscreenWorkspace } from './components/FullscreenWorkspace';
-import { EvalProgress } from './components/Primitives';
-import { INITIAL_WIZARD_DRAFT, SCENES, SORT_OPTIONS, TABS, statusBadge, toneClass } from './components/constants';
-import { DEFAULT_EXPORT_FIELDS } from './components/constants';
+import { INITIAL_WIZARD_DRAFT, SCENES, SORT_OPTIONS, TABS, DEFAULT_EXPORT_FIELDS } from './components/constants';
 import { WizardModal } from './components/WizardModal';
 
+const PAGE_SIZE = 4;
+
 export default function AgentsPage() {
+  const navigate = useNavigate();
   const [filters, setFilters] = useState<AgentFilters>({ tab: 'all', sortKey: 'calls', search: '', scene: '全部场景' });
   const { data: list = mockAgents, isLoading } = useAgentsList(filters);
   const createAgent = useCreateAgent();
@@ -35,19 +35,11 @@ export default function AgentsPage() {
   const deleteAgents = useDeleteAgents();
   const batchStatus = useBatchSetStatus();
   const toggleStar = useToggleStar();
-  const runEval = useRunEval();
-  const diffVersions = useDiffVersions();
   const importAgents = useImportAgents();
   const exportAgents = useExportAgents();
 
-  const metrics = useMemo(() => getLifecycleMetrics(list), [list]);
-
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
-
-  const [drawerAgent, setDrawerAgent] = useState<AgentEntry | null>(null);
-  const [drawerPanel, setDrawerPanel] = useState<DrawerPanel>('basic');
-  const [drawerPromptDoc, setDrawerPromptDoc] = useState<PromptKey>('prompt');
 
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardStep, setWizardStep] = useState<1 | 2 | 3 | 4>(1);
@@ -66,15 +58,7 @@ export default function AgentsPage() {
 
   const [deletePayload, setDeletePayload] = useState<DeletePayload | null>(null);
 
-  const [diffOpen, setDiffOpen] = useState(false);
-  const [diffPair, setDiffPair] = useState<DiffPair>({ base: { id: 'v3.1', label: 'v3.1' }, target: { id: 'v3.2', label: 'v3.2' } });
-  const [diffBase, setDiffBase] = useState<Record<PromptKey, string>>({} as Record<PromptKey, string>);
-  const [diffTarget, setDiffTarget] = useState<Record<PromptKey, string>>({} as Record<PromptKey, string>);
-
-  const [fullscreenAgent, setFullscreenAgent] = useState<AgentEntry | null>(null);
-
-  const [evalRunning, setEvalRunning] = useState<{ id: string; progress: number } | null>(null);
-  const [lastEvalResult, setLastEvalResult] = useState<{ id: string; cases: EvalCase[] } | null>(null);
+  const [page, setPage] = useState(1);
 
   const filteredList = useMemo(() => {
     const search = (filters.search ?? '').trim().toLowerCase();
@@ -97,6 +81,19 @@ export default function AgentsPage() {
     });
   }, [list, filters]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedList = useMemo(
+    () => filteredList.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
+    [filteredList, safePage],
+  );
+  const pageStart = filteredList.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const pageEnd = Math.min(safePage * PAGE_SIZE, filteredList.length);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
+
   const handleToggleSelect = (id: string) => {
     setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   };
@@ -105,10 +102,6 @@ export default function AgentsPage() {
   const handleBatchPublish = () => batchStatus.mutate({ ids: selectedIds, status: 'published' });
   const handleBatchRetire = () => batchStatus.mutate({ ids: selectedIds, status: 'retired' });
   const handleBatchDelete = () => setDeletePayload({ kind: 'bulk', agentNames: selectedIds.map((id) => list.find((a) => a.id === id)?.name ?? id) });
-  const handleBatchExport = () => {
-    setExportScope('selected');
-    setExportOpen(true);
-  };
 
   const handleToggleStar = (id: string) => {
     const agent = list.find((a) => a.id === id);
@@ -116,10 +109,10 @@ export default function AgentsPage() {
     toggleStar.mutate({ id, starred: !agent.starred });
   };
 
-  const handleEdit = (agent: AgentEntry) => {
-    setDrawerAgent(agent);
-    setDrawerPanel('basic');
+  const handleOpenDetail = (agent: AgentEntry) => {
+    navigate(`/admin/agents/${agent.id}`);
   };
+
   const handleDuplicate = (agent: AgentEntry) => {
     createAgent.mutate({
       ...agent,
@@ -136,11 +129,6 @@ export default function AgentsPage() {
     setExportOpen(true);
   };
   const handleRequestDelete = (agent: AgentEntry) => setDeletePayload({ kind: 'single', agentName: agent.name });
-
-  const handleSelectCard = (agent: AgentEntry) => {
-    setDrawerAgent(agent);
-    setDrawerPanel('basic');
-  };
 
   const handleCreateAgent = () => {
     createAgent.mutate({
@@ -163,34 +151,6 @@ export default function AgentsPage() {
     setWizardOpen(false);
     setWizardStep(1);
     setWizardDraft(INITIAL_WIZARD_DRAFT);
-  };
-
-  const handleOpenDiff = async (agent: AgentEntry) => {
-    const { data: versionsResp } = useAgentVersions(agent.id);
-    const versions = versionsResp?.versions ?? agent.versions;
-    if (versions.length < 2) return;
-    const previous = versions.find((v) => !v.current) ?? versions[versions.length - 1];
-    const current = versions.find((v) => v.current) ?? versions[0];
-    const resp = await diffVersions.mutateAsync({
-      agentId: agent.id,
-      leftVersion: previous.version,
-      rightVersion: current.version,
-    });
-    setDiffPair({ base: { id: previous.version, label: previous.version }, target: { id: current.version, label: current.version } });
-    setDiffBase(resp.leftPrompts);
-    setDiffTarget(resp.rightPrompts);
-    setDiffOpen(true);
-  };
-
-  const handleRunEval = async (agent: AgentEntry) => {
-    setEvalRunning({ id: agent.id, progress: 0 });
-    const timer = window.setInterval(() => {
-      setEvalRunning((prev) => prev ? { ...prev, progress: Math.min(prev.progress + 12, 96) } : null);
-    }, 220);
-    const resp = await runEval.mutateAsync({ id: agent.id });
-    window.clearInterval(timer);
-    setEvalRunning(null);
-    setLastEvalResult({ id: agent.id, cases: resp.cases });
   };
 
   const handleConfirmDelete = () => {
@@ -235,59 +195,38 @@ export default function AgentsPage() {
     setExportOpen(false);
   };
 
-  const handleOpenFullscreen = (agent: AgentEntry) => {
-    setFullscreenAgent(agent);
-    setDrawerPanel('basic');
-  };
-
   const countsForExport = { all: list.length, tab: filteredList.length, selected: selectedIds.length };
 
   return (
     <div className="mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-6">
       {/* Hero */}
       <section className="relative overflow-hidden rounded-3xl border border-[var(--border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-white p-6 shadow-[var(--shadow-sm)] dark:from-[var(--brand)]/10 dark:via-[var(--surface-1)] dark:to-[var(--surface-1)] sm:p-8">
-        <div className="relative z-10 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">智能体工作台</p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">让智能体成为可治理、可观测的能力。</h1>
-            <p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">统一管理 Prompt、技能、知识、流程与权限;支持版本对比、批量发布、灰度评估与全量导入导出。</p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setWizardOpen(true)}
-                className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white shadow-[var(--shadow-sm)] hover:bg-[var(--brand-hover)]"
-              >
-                <Plus className="h-3.5 w-3.5" />新建智能体
-              </button>
-              <button
-                type="button"
-                onClick={() => { setImportOpen(true); setImportStep(1); setImportPreview([]); setImportFileName(''); }}
-                className="inline-flex items-center gap-2 rounded-xl border border-[var(--brand)] bg-white px-4 py-2 text-xs font-semibold text-[var(--brand)] hover:bg-[var(--brand-light)] dark:bg-[var(--surface-1)]"
-              >
-                <Upload className="h-3.5 w-3.5" />批量导入
-              </button>
-              <button
-                type="button"
-                onClick={() => setExportOpen(true)}
-                className="inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)] dark:bg-[var(--surface-1)]"
-              >
-                导出全部
-              </button>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-3 sm:gap-4">
-            <div className="rounded-2xl border border-[var(--border)] bg-white/80 px-4 py-3 text-center backdrop-blur dark:bg-[var(--surface-1)]">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">已发布</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums text-[var(--success)]">{metrics.published}</p>
-            </div>
-            <div className="rounded-2xl border border-[var(--border)] bg-white/80 px-4 py-3 text-center backdrop-blur dark:bg-[var(--surface-1)]">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">灰度中</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums text-[var(--info)]">{metrics.graying}</p>
-            </div>
-            <div className="rounded-2xl border border-[var(--border)] bg-white/80 px-4 py-3 text-center backdrop-blur dark:bg-[var(--surface-1)]">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">总调用</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums">{metrics.totalCalls >= 10000 ? `${(metrics.totalCalls / 10000).toFixed(1)}万` : metrics.totalCalls}</p>
-            </div>
+        <div className="relative z-10">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">智能体工作台</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">让智能体成为可治理、可观测的能力。</h1>
+          <p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">统一管理 Prompt、技能、知识、流程与权限;支持版本对比、批量发布、灰度评估与全量导入导出。</p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setWizardOpen(true)}
+              className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white shadow-[var(--shadow-sm)] hover:bg-[var(--brand-hover)]"
+            >
+              <Plus className="h-3.5 w-3.5" />新建智能体
+            </button>
+            <button
+              type="button"
+              onClick={() => { setImportOpen(true); setImportStep(1); setImportPreview([]); setImportFileName(''); }}
+              className="inline-flex items-center gap-2 rounded-xl border border-[var(--brand)] bg-white px-4 py-2 text-xs font-semibold text-[var(--brand)] hover:bg-[var(--brand-light)] dark:bg-[var(--surface-1)]"
+            >
+              <Upload className="h-3.5 w-3.5" />批量导入
+            </button>
+            <button
+              type="button"
+              onClick={() => setExportOpen(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)] dark:bg-[var(--surface-1)]"
+            >
+              导出全部
+            </button>
           </div>
         </div>
         <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-[var(--brand)]/10 blur-3xl" />
@@ -364,7 +303,7 @@ export default function AgentsPage() {
         </div>
       </section>
 
-      {/* Cards Grid */}
+      {/* Cards Grid + Pagination */}
       <section aria-label="智能体列表" className="space-y-3">
         <header className="flex items-center justify-between">
           <p className="text-xs text-[var(--text-muted)]">
@@ -375,96 +314,76 @@ export default function AgentsPage() {
           </div>
         </header>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {filteredList.map((agent) => (
-            <AgentCard
-              key={agent.id}
-              agent={agent}
-              onSelect={handleSelectCard}
-              onToggleStar={handleToggleStar}
-              selected={selectedIds.includes(agent.id)}
-              onToggleSelect={handleToggleSelect}
-              menuOpen={menuOpenFor === agent.id}
-              onToggleMenu={setMenuOpenFor}
-              onEdit={handleEdit}
-              onDuplicate={handleDuplicate}
-              onExportOne={handleExportOne}
-              onRequestDelete={handleRequestDelete}
-            />
-          ))}
-        </div>
-      </section>
+        {pagedList.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {pagedList.map((agent) => (
+              <AgentCard
+                key={agent.id}
+                agent={agent}
+                onSelect={handleOpenDetail}
+                onToggleStar={handleToggleStar}
+                selected={selectedIds.includes(agent.id)}
+                onToggleSelect={handleToggleSelect}
+                menuOpen={menuOpenFor === agent.id}
+                onToggleMenu={setMenuOpenFor}
+                onEdit={handleOpenDetail}
+                onDuplicate={handleDuplicate}
+                onExportOne={handleExportOne}
+                onRequestDelete={handleRequestDelete}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-1)] p-8 text-center">
+            <AlertTriangle className="mx-auto h-6 w-6 text-[var(--warning)]" />
+            <p className="mt-3 text-sm font-semibold">没有匹配的智能体</p>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">尝试切换 Tab、清空筛选,或新建一个智能体。</p>
+          </div>
+        )}
 
-      {/* Drawer */}
-      {drawerAgent && (
-        <div role="dialog" aria-modal="true" aria-label={`${drawerAgent.name} 详情`} className="fixed inset-0 z-40 flex">
-          <button type="button" aria-label="关闭 Drawer" className="flex-1 bg-black/40 backdrop-blur-sm" onClick={() => setDrawerAgent(null)} />
-          <aside className="flex h-full w-full max-w-3xl flex-col bg-[var(--surface-1)] shadow-2xl">
-            <header className="flex shrink-0 items-start justify-between border-b border-[var(--border)] px-5 py-4">
-              <div className="flex items-start gap-3">
-                <span className={`grid h-12 w-12 place-items-center rounded-xl ${toneClass[drawerAgent.tone]}`}>
-                  <Bot className="h-6 w-6" />
-                </span>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-semibold tracking-tight">{drawerAgent.name}</h2>
-                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusBadge[drawerAgent.status].className}`}>
-                      <span className={`h-1.5 w-1.5 rounded-full ${statusBadge[drawerAgent.status].dot}`} />
-                      {statusBadge[drawerAgent.status].label}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{drawerAgent.category} · {drawerAgent.owner} · {drawerAgent.version}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => { setDrawerAgent(null); handleOpenFullscreen(drawerAgent); }}
-                  className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-[11px] font-semibold hover:border-[var(--brand)]"
-                >
-                  <Maximize2 className="h-3 w-3" />沉浸式
-                </button>
-                <button
-                  type="button"
-                  aria-label="关闭"
-                  onClick={() => setDrawerAgent(null)}
-                  className="grid h-8 w-8 place-items-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text)]"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </header>
-
-            <div className="flex min-h-0 flex-1">
-              <DrawerSidebar panel={drawerPanel} setPanel={setDrawerPanel} />
-              <main className="min-w-0 flex-1 overflow-auto bg-[var(--bg-app)] p-5">
-                {drawerPanel === 'basic' && <DrawerPanelBasic draft={drawerAgent} onChange={(patch: Partial<AgentEntry>) => updateAgent.mutate({ id: drawerAgent.id, patch })} />}
-                {drawerPanel === 'prompt' && <DrawerPanelPrompt draft={drawerAgent} promptDoc={drawerPromptDoc} setPromptDoc={setDrawerPromptDoc} onChange={(patch: Partial<import('@/api/admin/agents/schema').PromptDocs>) => updateAgent.mutate({ id: drawerAgent.id, patch: { prompts: { ...drawerAgent.prompts, ...patch } } })} />}
-                {drawerPanel === 'skills' && <DrawerPanelSkills draft={drawerAgent} />}
-                {drawerPanel === 'knowledge' && <DrawerPanelKnowledge draft={drawerAgent} onChange={(refs: import('@/api/admin/agents/schema').KnowledgeRef[]) => updateAgent.mutate({ id: drawerAgent.id, patch: { knowledgeRefs: refs } })} />}
-                {drawerPanel === 'memory' && <DrawerPanelMemory draft={drawerAgent} onChange={(memoryPolicy: import('@/api/admin/agents/schema').MemoryPolicy) => updateAgent.mutate({ id: drawerAgent.id, patch: { memoryPolicy } })} />}
-                {drawerPanel === 'flow' && <DrawerPanelFlow draft={drawerAgent} onChange={(flowRefs: import('@/api/admin/agents/schema').FlowRef[]) => updateAgent.mutate({ id: drawerAgent.id, patch: { flowRefs } })} />}
-                {drawerPanel === 'versions' && <DrawerPanelVersions draft={drawerAgent} onOpenDiff={() => handleOpenDiff(drawerAgent)} />}
-                {drawerPanel === 'evaluation' && (
-                  <DrawerPanelEvaluation
-                    draft={drawerAgent}
-                    isRunning={evalRunning?.id === drawerAgent.id}
-                    progress={evalRunning?.id === drawerAgent.id ? evalRunning.progress : undefined}
-                    lastResult={lastEvalResult?.id === drawerAgent.id ? lastEvalResult.cases : undefined}
-                    onRunEval={() => handleRunEval(drawerAgent)}
-                  />
-                )}
-                {drawerPanel === 'permission' && <DrawerPanelPermission draft={drawerAgent} />}
-              </main>
+        {totalPages > 1 && (
+          <nav aria-label="分页" className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] px-4 py-2.5 text-xs">
+            <span className="text-[var(--text-muted)]">
+              第 <span className="font-semibold tabular-nums text-[var(--text)]">{pageStart}-{pageEnd}</span> 个 / 共 <span className="font-semibold tabular-nums text-[var(--text)]">{filteredList.length}</span> 个
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={safePage <= 1}
+                aria-label="上一页"
+                className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronLeft className="h-3 w-3" />上一页
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => {
+                const active = n === safePage;
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setPage(n)}
+                    aria-current={active ? 'page' : undefined}
+                    aria-label={`第 ${n} 页`}
+                    className={`grid h-7 w-7 place-items-center rounded-lg text-[11px] font-semibold transition ${active ? 'bg-[var(--brand)] text-white' : 'border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]'}`}
+                  >
+                    {n}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage >= totalPages}
+                aria-label="下一页"
+                className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                下一页<ChevronRight className="h-3 w-3" />
+              </button>
             </div>
-
-            <footer className="flex shrink-0 items-center justify-between border-t border-[var(--border)] bg-[var(--surface-1)] px-5 py-2.5 text-[11px] text-[var(--text-muted)]">
-              <span>变更后自动暂存,可在「版本」面板提交审核。</span>
-              <span>{drawerAgent.versions.length} 个版本 · 最近更新 {drawerAgent.lastUpdate}</span>
-            </footer>
-          </aside>
-        </div>
-      )}
+          </nav>
+        )}
+      </section>
 
       {/* Wizard */}
       <WizardModal
@@ -512,47 +431,8 @@ export default function AgentsPage() {
         onClose={() => setDeletePayload(null)}
         onConfirm={handleConfirmDelete}
       />
-
-      {/* Diff Dialog */}
-      <DiffDialog
-        open={diffOpen}
-        onClose={() => setDiffOpen(false)}
-        pair={diffPair}
-        baseContent={diffBase}
-        targetContent={diffTarget}
-        onChangePair={setDiffPair}
-      />
-
-      {/* Fullscreen Workspace */}
-      {fullscreenAgent && (
-        <FullscreenWorkspace
-          agent={fullscreenAgent}
-          panel={drawerPanel}
-          setPanel={setDrawerPanel}
-          onExit={() => setFullscreenAgent(null)}
-        />
-      )}
-
-      {/* Eval Progress overlay */}
-      {evalRunning && (
-        <div className="fixed bottom-6 right-6 z-40 w-72 rounded-2xl border border-[var(--brand)] bg-[var(--surface-1)] p-4 shadow-lg">
-          <div className="flex items-center gap-2 text-xs font-semibold text-[var(--brand)]">
-            <Sparkles className="h-3.5 w-3.5" />正在评测 {list.find((a) => a.id === evalRunning.id)?.name}
-          </div>
-          <EvalProgress progress={evalRunning.progress} />
-        </div>
-      )}
-
-      {/* Empty / callout */}
-      {!isLoading && filteredList.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-1)] p-8 text-center">
-          <AlertTriangle className="mx-auto h-6 w-6 text-[var(--warning)]" />
-          <p className="mt-3 text-sm font-semibold">没有匹配的智能体</p>
-          <p className="mt-1 text-xs text-[var(--text-muted)]">尝试切换 Tab、清空筛选,或新建一个智能体。</p>
-        </div>
-      )}
     </div>
   );
 }
 
-export { Star, GitBranch, TrendingUp };
+export { Star };

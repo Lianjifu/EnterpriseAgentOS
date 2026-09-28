@@ -243,7 +243,7 @@ export default function AgentsPage() {
   const countsForExport = { all: list.length, tab: filteredList.length, selected: selectedIds.length };
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-10">
       {/* Hero */}
       <section className="relative overflow-hidden rounded-3xl border border-[var(--border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-white p-6 shadow-[var(--shadow-sm)] dark:from-[var(--brand)]/10 dark:via-[var(--surface-1)] dark:to-[var(--surface-1)] sm:p-8">
         <div className="relative z-10 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
@@ -262,14 +262,14 @@ export default function AgentsPage() {
               <button
                 type="button"
                 onClick={() => { setImportOpen(true); setImportStep(1); setImportPreview([]); setImportFileName(''); }}
-                className="inline-flex items-center gap-2 rounded-xl border border-[var(--brand)] bg-white px-4 py-2 text-xs font-semibold text-[var(--brand)] hover:bg-[var(--brand-light)]"
+                className="inline-flex items-center gap-2 rounded-xl border border-[var(--brand)] bg-white px-4 py-2 text-xs font-semibold text-[var(--brand)] hover:bg-[var(--brand-light)] dark:bg-[var(--surface-1)]"
               >
                 <Upload className="h-3.5 w-3.5" />批量导入
               </button>
               <button
                 type="button"
                 onClick={() => setExportOpen(true)}
-                className="inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]"
+                className="inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)] dark:bg-[var(--surface-1)]"
               >
                 导出全部
               </button>

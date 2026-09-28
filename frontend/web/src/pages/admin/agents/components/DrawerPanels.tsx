@@ -233,7 +233,7 @@ export function DrawerPanelEvaluation({
             type="button"
             onClick={onRunEval}
             disabled={isRunning}
-            className="inline-flex items-center gap-2 rounded-xl border border-[var(--brand)] bg-[var(--brand-light)] px-3 py-2 text-xs font-semibold text-[var(--brand)] hover:bg-white disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-[var(--brand)] bg-[var(--brand-light)] px-3 py-2 text-xs font-semibold text-[var(--brand)] hover:opacity-80 disabled:opacity-50"
           >
             <Play className="h-3.5 w-3.5" />{isRunning ? '运行中...' : '运行评测'}
           </button>

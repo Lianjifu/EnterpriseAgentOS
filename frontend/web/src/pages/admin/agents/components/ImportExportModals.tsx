@@ -72,7 +72,7 @@ export function ImportDialog({
             <FileJson className="h-8 w-8 text-[var(--brand)]" />
             <p className="mt-3 text-sm font-semibold">拖放 JSON / CSV / YAML / ZIP 文件到此</p>
             <p className="mt-1 text-[11px] text-[var(--text-muted)]">或</p>
-            <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--brand)] bg-[var(--brand-light)] px-4 py-2 text-xs font-semibold text-[var(--brand)] hover:bg-white">
+            <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--brand)] bg-[var(--brand-light)] px-4 py-2 text-xs font-semibold text-[var(--brand)] hover:opacity-80">
               <Upload className="h-4 w-4" />选择本地文件
               <input
                 type="file"

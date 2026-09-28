@@ -243,7 +243,7 @@ export default function AgentsPage() {
   const countsForExport = { all: list.length, tab: filteredList.length, selected: selectedIds.length };
 
   return (
-    <div className="mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-10">
+    <div className="mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-6">
       {/* Hero */}
       <section className="relative overflow-hidden rounded-3xl border border-[var(--border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-white p-6 shadow-[var(--shadow-sm)] dark:from-[var(--brand)]/10 dark:via-[var(--surface-1)] dark:to-[var(--surface-1)] sm:p-8">
         <div className="relative z-10 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">

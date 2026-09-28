@@ -1,0 +1,21 @@
+# Frontend — package-local ignore (lives in frontend/web/).
+# Root .gitignore handles cross-cutting ignores (notably
+# frontend/packages/**/src/*.js which this file cannot reach, since
+# .gitignore only applies to its own directory and subdirectories).
+
+# Build output
+node_modules/
+dist/
+.tsbuildinfo
+.vite/
+coverage/
+.cache/
+.next/
+
+# Local config
+.env.local
+.env.*.local
+
+# OS / editor
+.DS_Store
+*.log

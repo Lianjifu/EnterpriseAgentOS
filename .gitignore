@@ -95,6 +95,11 @@ frontend/web/.env.local
 frontend/web/.env.*.local
 frontend/**/*.log
 frontend/.DS_Store
+# Compiled JS siblings of package source TS — each package's "main" points
+# to src/*.ts via vite alias, so .js siblings are stale tsc/swc artefacts.
+# Source frontend/web/.gitignore covers web/ itself; this rule reaches the
+# sibling frontend/packages/* subtree where local .gitignore can't.
+frontend/packages/**/src/*.js
 
 # EAOS dev-stack runtime (logs + pid files; scripts checked in)
 bin/eaos-stack/logs/

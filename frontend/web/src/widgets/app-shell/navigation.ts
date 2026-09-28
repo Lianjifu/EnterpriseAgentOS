@@ -75,8 +75,8 @@ export const adminNavigationSections: NavigationSection[] = [
   ] },
   { title: '平台治理', items: [
     { label: '模型配置', href: '/admin/models', icon: CloudCog, description: '配置模型服务、路由策略与健康监控' },
-    { label: '渠道管理', href: '/admin/notifications', icon: Megaphone, description: '邮件、IM、Webhook 与告警接收人' },
     { label: '额度管理', href: '/admin/quotas', icon: CircleDollarSign, description: '管理企业用量、预算与成本执行' },
+    { label: '渠道管理', href: '/admin/notifications', icon: Megaphone, description: '邮件、IM、Webhook 与告警接收人' },
   ] },
   { title: '可观测', items: [
     { label: '调用链路', href: '/admin/operations', icon: Activity, description: '会话追溯：还原智能体 / 工具 / MCP 的完整调用链与上下文' },

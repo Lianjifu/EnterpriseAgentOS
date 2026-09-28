@@ -3,21 +3,36 @@ import { lazy, Suspense } from 'react';
 import { ToastHost, Spinner } from '@de/web-ui';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { WorkspaceShell } from '@/widgets/app-shell';
-import WorkspacePlaceholder from '@/pages/WorkspacePlaceholder';
-import Home from '@/pages/Home';
-import Agents from '@/pages/Agents';
-import Copilot from '@/pages/Copilot';
+import WorkspacePlaceholder from '@/pages/shared/WorkspacePlaceholder';
+import Home from '@/pages/user/home/Home';
+import Agents from '@/pages/user/agents';
+import Copilot from '@/pages/user/copilot';
 
 const Login = lazy(() => import('./pages/Login'));
-const MyKnowledge = lazy(() => import('@/pages/MyKnowledge'));
-const MyAutomations = lazy(() => import('@/pages/MyAutomations'));
-const MyTeam = lazy(() => import('@/pages/MyTeam'));
-const MySkills = lazy(() => import('@/pages/MySkills'));
-const MyTasks = lazy(() => import('@/pages/MyTasks'));
-const HelpCenter = lazy(() => import('@/pages/HelpCenter'));
-const AccountSettings = lazy(() => import('@/pages/AccountSettings'));
-const AdminOverview = lazy(() => import('@/pages/AdminOverview'));
-const AdminAgents = lazy(() => import('@/pages/AdminAgents'));
+const MyKnowledge = lazy(() => import('@/pages/user/knowledge'));
+const MyAutomations = lazy(() => import('@/pages/user/automations'));
+const MyTeam = lazy(() => import('@/pages/user/team'));
+const MySkills = lazy(() => import('@/pages/user/skills'));
+const MyTasks = lazy(() => import('@/pages/user/tasks'));
+const HelpCenter = lazy(() => import('@/pages/user/help'));
+const AccountSettings = lazy(() => import('@/pages/user/account'));
+const AdminHelp = lazy(() => import('@/pages/admin/help'));
+const AdminSettings = lazy(() => import('@/pages/admin/settings'));
+const AdminOverview = lazy(() => import('@/pages/admin/overview'));
+const AdminAgents = lazy(() => import('@/pages/admin/agents'));
+const AdminKnowledge = lazy(() => import('@/pages/admin/knowledge'));
+const AdminMemory = lazy(() => import('@/pages/admin/memory'));
+const AdminWorkflows = lazy(() => import('@/pages/admin/workflows'));
+const AdminSkills = lazy(() => import('@/pages/admin/skills'));
+const AdminEvaluations = lazy(() => import('@/pages/admin/evaluations'));
+const AdminRegressions = lazy(() => import('@/pages/admin/regressions'));
+const AdminFeedback = lazy(() => import('@/pages/admin/feedback'));
+const AdminModels = lazy(() => import('@/pages/admin/models'));
+const AdminQuotas = lazy(() => import('@/pages/admin/quotas'));
+const AdminNotifications = lazy(() => import('@/pages/admin/notifications'));
+const AdminOperations = lazy(() => import('@/pages/admin/operations'));
+const AdminToolAudit = lazy(() => import('@/pages/admin/audit'));
+const AdminMetrics = lazy(() => import('@/pages/admin/metrics'));
 
 function PageFallback() {
   return (
@@ -75,10 +90,23 @@ export default function App() {
             <Route path="/insights" element={<Navigate to="/home" replace />} />
             <Route path="/account" element={<AccountSettings />} />
             <Route path="/help" element={<HelpCenter />} />
-            <Route path="/admin/help" element={<HelpCenter audience="admin" />} />
-            <Route path="/admin/settings" element={<AccountSettings audience="admin" />} />
+            <Route path="/admin/help" element={<AdminHelp />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/overview" element={<AdminOverview />} />
             <Route path="/admin/agents" element={<AdminAgents />} />
+            <Route path="/admin/knowledge" element={<AdminKnowledge />} />
+            <Route path="/admin/memory" element={<AdminMemory />} />
+            <Route path="/admin/workflows" element={<AdminWorkflows />} />
+            <Route path="/admin/tools" element={<AdminSkills />} />
+            <Route path="/admin/evaluations" element={<AdminEvaluations />} />
+            <Route path="/admin/regressions" element={<AdminRegressions />} />
+            <Route path="/admin/feedback" element={<AdminFeedback />} />
+            <Route path="/admin/models" element={<AdminModels />} />
+            <Route path="/admin/quotas" element={<AdminQuotas />} />
+            <Route path="/admin/notifications" element={<AdminNotifications />} />
+            <Route path="/admin/operations" element={<AdminOperations />} />
+            <Route path="/admin/tool-audit" element={<AdminToolAudit />} />
+            <Route path="/admin/metrics" element={<AdminMetrics />} />
             <Route path="/admin/*" element={<WorkspacePlaceholder />} />
           </Route>
           <Route path="/app" element={<RebuildPlaceholder />} />

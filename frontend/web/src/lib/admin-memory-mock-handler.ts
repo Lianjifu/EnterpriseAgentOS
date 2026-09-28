@@ -17,6 +17,14 @@ export function wrapMockHandlerWithAdminMemory(fallback: (path: string, opts: an
     if (path === '/api/admin/memory/l3') return withDelay(mockL3Entries);
     if (path === '/api/admin/memory/promotions') return withDelay(mockPromotions);
     if (path === '/api/admin/memory/policies') return withDelay(mockRetentionPolicies);
+    const policyDetailMatch = /^\/api\/admin\/memory\/policies\/(.+)$/.exec(path);
+    if (policyDetailMatch) {
+      const id = decodeURIComponent(policyDetailMatch[1]);
+      if (id === '__noop__') return withDelay(null);
+      const policy = mockRetentionPolicies.find((p) => p.label === id);
+      if (!policy) throw Object.assign(new Error('policy not found'), { status: 404 });
+      return withDelay(policy);
+    }
     return fallback(path, opts);
   };
 }

@@ -21,6 +21,15 @@ export function useKnowledgeBases() {
   );
 }
 
+export function useKnowledgeBase(id: string | null) {
+  return useApiQuery<Kb | null>(
+    [...qk.admin.knowledge.root, 'kb', id ?? 'none'],
+    id ? `${PATH}/kbs/${id}` : `${PATH}/kbs/__noop__`,
+    undefined,
+    { enabled: Boolean(id), staleTime: 30_000 },
+  );
+}
+
 export function useKnowledgeDocs() {
   return useApiQuery<Doc[]>(
     [...qk.admin.knowledge.root, 'docs'],

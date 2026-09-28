@@ -27,6 +27,15 @@ export function useRetentionPolicies() {
   return useApiQuery<RetentionPolicy[]>([...qk.admin.memory.policies], '/api/admin/memory/policies', undefined, { staleTime: 60_000 });
 }
 
+export function useRetentionPolicy(label: string | null) {
+  return useApiQuery<RetentionPolicy | null>(
+    [...qk.admin.memory.policies, label ?? 'none'],
+    label ? `/api/admin/memory/policies/${encodeURIComponent(label)}` : '/api/admin/memory/policies/__noop__',
+    undefined,
+    { enabled: Boolean(label), staleTime: 60_000 },
+  );
+}
+
 export function useMemoryStats(l1: L1Session[], l2: L2Fact[], l3: L3Entry[], events: PromotionEvent[]): MemoryStats {
   return {
     l1Active: l1.filter((s) => s.status !== 'expired').length,

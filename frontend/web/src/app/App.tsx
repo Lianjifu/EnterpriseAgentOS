@@ -22,9 +22,13 @@ const AdminOverview = lazy(() => import('@/pages/admin/overview'));
 const AdminAgents = lazy(() => import('@/pages/admin/agents'));
 const AdminAgentDetail = lazy(() => import('@/pages/admin/agents/AgentDetailPage'));
 const AdminKnowledge = lazy(() => import('@/pages/admin/knowledge'));
+const AdminKnowledgeKbDetail = lazy(() => import('@/pages/admin/knowledge/KbDetailPage'));
 const AdminMemory = lazy(() => import('@/pages/admin/memory'));
+const AdminMemoryPolicyDetail = lazy(() => import('@/pages/admin/memory/PolicyDetailPage'));
 const AdminWorkflows = lazy(() => import('@/pages/admin/workflows'));
+const AdminWorkflowDetail = lazy(() => import('@/pages/admin/workflows/WorkflowDetailPage'));
 const AdminSkills = lazy(() => import('@/pages/admin/skills'));
+const AdminSkillDetail = lazy(() => import('@/pages/admin/skills/SkillDetailPage'));
 const AdminEvaluations = lazy(() => import('@/pages/admin/evaluations'));
 const AdminRegressions = lazy(() => import('@/pages/admin/regressions'));
 const AdminFeedback = lazy(() => import('@/pages/admin/feedback'));
@@ -97,9 +101,13 @@ export default function App() {
             <Route path="/admin/agents" element={<AdminAgents />} />
             <Route path="/admin/agents/:id" element={<AdminAgentDetail />} />
             <Route path="/admin/knowledge" element={<AdminKnowledge />} />
+            <Route path="/admin/knowledge/kbs/:id" element={<AdminKnowledgeKbDetail />} />
             <Route path="/admin/memory" element={<AdminMemory />} />
+            <Route path="/admin/memory/policies/:id" element={<AdminMemoryPolicyDetail />} />
             <Route path="/admin/workflows" element={<AdminWorkflows />} />
+            <Route path="/admin/workflows/:id" element={<AdminWorkflowDetail />} />
             <Route path="/admin/tools" element={<AdminSkills />} />
+            <Route path="/admin/tools/:id" element={<AdminSkillDetail />} />
             <Route path="/admin/evaluations" element={<AdminEvaluations />} />
             <Route path="/admin/regressions" element={<AdminRegressions />} />
             <Route path="/admin/feedback" element={<AdminFeedback />} />

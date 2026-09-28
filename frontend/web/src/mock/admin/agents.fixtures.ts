@@ -2,7 +2,7 @@
  * 管理侧「智能体工作台」fixture — 6 个种子智能体 + 配套的 prompts/knowledgeRefs/memoryPolicy/flowRefs 派生助手。
  */
 import type {
-  AgentEntry, PromptDocs, CustomPromptDoc, KnowledgeRef, FlowRef, MemoryPolicy, FlowTrigger,
+  AgentEntry, PromptDocs, CustomPromptDoc, KnowledgeRef, FlowRef, MemoryPolicy, FlowTrigger, SkillRef,
 } from '@/api/admin/agents/schema';
 
 export const KNOWN_TONES = ['brand', 'info', 'success', 'warn', 'danger', 'purple'] as const;
@@ -31,6 +31,26 @@ export function buildPrompts(name: string, category: string, owner: string): Pro
     : '通用';
   const template = PROMPT_TEMPLATES[persona] ?? PROMPT_TEMPLATES['客服'];
   return template(name, category, owner);
+}
+
+const TOOL_TYPE_BY_NAME: Record<string, 'Skill' | 'Tool' | 'MCP'> = {
+  '订单查询': 'Tool', '退换货流程': 'Tool', '知识检索': 'Tool', '情绪识别': 'Tool',
+  '人工坐席': 'Tool', '邮件发送': 'Tool', '客户画像': 'Tool', 'CRM 查询': 'Tool',
+  '报价引擎': 'Tool', '合同条款检索': 'Tool', '日程预约': 'Tool', 'SQL 生成': 'Skill',
+  '图表渲染': 'Tool', '指标库查询': 'Tool', '数据脱敏': 'Tool', '导出 PDF': 'Tool',
+  'OCR 单据': 'Skill', '报销规则': 'Tool', '预算查询': 'Tool', '对账核对': 'Tool',
+  '审批中心': 'Tool', '流程编辑器': 'Skill', '触发器': 'Skill', '人工审批': 'Tool',
+  '通知中心': 'Tool', '审计日志': 'Tool', '图片 OCR': 'Skill', '上下文记忆': 'MCP',
+  '审批中心·升级': 'Tool', '审批中心·驳回': 'Tool', '日程预约·同步': 'Tool',
+};
+
+export function toolsFromNames(names: string[]): SkillRef[] {
+  return names.map((name, idx) => ({
+    id: `tool-${name.replace(/\s+/g, '-').toLowerCase()}-${idx}`,
+    name,
+    type: TOOL_TYPE_BY_NAME[name] ?? 'Tool',
+    enabled: true,
+  }));
 }
 
 const KNOWLEDGE_POOL: Record<string, KnowledgeRef[]> = {
@@ -126,7 +146,7 @@ const SEEDS: AgentSeed[] = [
     version: 'v3.2', lastUpdate: '2 小时前', createdAt: '2026-08-21',
     calls: 18200, successRate: 99.62, errorRate: 0.42, avgLatencyMs: 1820, rating: 4.7,
     tags: ['客服', '订单', '情绪识别', '高频'],
-    tools: ['订单查询', '退换货流程', '知识检索', '情绪识别', '人工坐席', '邮件发送'],
+    tools: toolsFromNames(['订单查询', '退换货流程', '知识检索', '情绪识别', '人工坐席', '邮件发送']),
     starred: true, visibleScope: ['公开', '部门'], dataAccess: '客户档案 · 订单系统',
     versions: [
       { version: 'v3.2', publisher: '张敏', releasedAt: '2026-09-24', current: true },
@@ -143,7 +163,7 @@ const SEEDS: AgentSeed[] = [
     version: 'v2.7', lastUpdate: '昨天', createdAt: '2026-07-15',
     calls: 14700, successRate: 99.41, errorRate: 0.55, avgLatencyMs: 1980, rating: 4.5,
     tags: ['销售', 'CRM', '合同', '报价'],
-    tools: ['客户画像', 'CRM 查询', '报价引擎', '合同条款检索', '邮件发送', '日程预约'],
+    tools: toolsFromNames(['客户画像', 'CRM 查询', '报价引擎', '合同条款检索', '邮件发送', '日程预约']),
     starred: true, visibleScope: ['部门'], dataAccess: 'CRM · 销售订单',
     versions: [
       { version: 'v2.7', publisher: '李雷', releasedAt: '2026-09-20', current: true },
@@ -160,7 +180,7 @@ const SEEDS: AgentSeed[] = [
     version: 'v2.4', lastUpdate: '3 天前', createdAt: '2026-06-30',
     calls: 9800, successRate: 98.92, errorRate: 0.74, avgLatencyMs: 2400, rating: 4.6,
     tags: ['数据', 'SQL', '可视化', 'BI'],
-    tools: ['SQL 生成', '图表渲染', '指标库查询', '数据脱敏', '导出 PDF'],
+    tools: toolsFromNames(['SQL 生成', '图表渲染', '指标库查询', '数据脱敏', '导出 PDF']),
     starred: false, visibleScope: ['部门'], dataAccess: '数据仓库 · 指标平台',
     versions: [
       { version: 'v2.4', publisher: '王芳', releasedAt: '2026-09-15', current: true },
@@ -177,7 +197,7 @@ const SEEDS: AgentSeed[] = [
     version: 'v1.8', lastUpdate: '今天 09:14', createdAt: '2026-04-12',
     calls: 6100, successRate: 99.81, errorRate: 0.21, avgLatencyMs: 1620, rating: 4.8,
     tags: ['财务', '报销', '税务', 'OCR'],
-    tools: ['OCR 单据', '报销规则', '预算查询', '对账核对', '审批中心'],
+    tools: toolsFromNames(['OCR 单据', '报销规则', '预算查询', '对账核对', '审批中心']),
     starred: false, visibleScope: ['部门'], dataAccess: 'ERP · 报销系统',
     versions: [
       { version: 'v1.8', publisher: '陈晨', releasedAt: '2026-09-12', current: true },
@@ -194,7 +214,7 @@ const SEEDS: AgentSeed[] = [
     version: 'v1.5', lastUpdate: '上周', createdAt: '2026-05-08',
     calls: 5400, successRate: 99.55, errorRate: 0.34, avgLatencyMs: 2100, rating: 4.4,
     tags: ['流程', '自动化', '审批'],
-    tools: ['流程编辑器', '触发器', '人工审批', '通知中心', '审计日志'],
+    tools: toolsFromNames(['流程编辑器', '触发器', '人工审批', '通知中心', '审计日志']),
     starred: false, visibleScope: ['公开'], dataAccess: '流程引擎',
     versions: [
       { version: 'v1.5', publisher: '李雷', releasedAt: '2026-09-08', current: true },
@@ -210,7 +230,7 @@ const SEEDS: AgentSeed[] = [
     version: 'v4.0-beta', lastUpdate: '今天 10:32', createdAt: '2026-09-26',
     calls: 320, successRate: 99.10, errorRate: 0.62, avgLatencyMs: 2050, rating: 4.6,
     tags: ['客服', '多模态', '图片识别', 'Beta'],
-    tools: ['订单查询', '图片 OCR', '上下文记忆', '情绪识别', '人工坐席'],
+    tools: toolsFromNames(['订单查询', '图片 OCR', '上下文记忆', '情绪识别', '人工坐席']),
     starred: false, visibleScope: ['部门'], dataAccess: '客户档案 · 订单系统',
     versions: [
       { version: 'v4.0-beta', publisher: '张敏', releasedAt: '2026-09-26', current: true },

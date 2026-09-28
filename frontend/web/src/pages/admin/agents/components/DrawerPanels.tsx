@@ -4,12 +4,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import {
-  AlertTriangle, Beaker, Brain, CheckCircle2, Copy, Download, Edit3, FileText,
+  AlertTriangle, ArrowRight, Beaker, Brain, CheckCircle2, Copy, Database, Download, Edit3, ExternalLink, FileText,
   FolderTree, GitBranch, Hash, History, Layers, Play, Plus, RotateCcw,
   Save, ShieldCheck, Sparkles, Tag, Workflow, X,
 } from 'lucide-react';
-import type { AgentEntry, KnowledgeRef, MemoryPolicy, FlowRef, PromptDocs, PromptKey, EvalCase, CustomPromptDoc } from '@/api/admin/agents/schema';
+import type { AgentEntry, KnowledgeRef, MemoryPolicy, FlowRef, PromptDocs, PromptKey, EvalCase, CustomPromptDoc, SkillRef } from '@/api/admin/agents/schema';
 import { KNOWN_TONES, formatCalls, buildPrompts } from '@/mock/admin/agents.fixtures';
+import { useAdminSkills } from '@/api/admin/skills/useAdminSkills';
+import { useKnowledgeBases } from '@/api/admin/knowledge/useKnowledge';
+import { useL1Sessions, useL2Facts, useL3Entries, useRetentionPolicies } from '@/api/admin/memory/useMemory';
+import { useWorkflows } from '@/api/admin/workflows/useWorkflows';
 import { EvalProgress } from './Primitives';
 import { MarkdownView } from './MarkdownView';
 import {
@@ -281,73 +285,143 @@ export function DrawerPanelVersions({ draft, onOpenDiff }: { draft: AgentEntry; 
   const defaultLeft = previous?.version ?? draft.versions[draft.versions.length - 1].version;
   const defaultRight = current?.version ?? draft.versions[0].version;
   return (
-    <div className="space-y-3">
-      {draft.versions.map((version) => (
-        <div key={version.version} className={`flex items-center gap-3 rounded-xl border p-4 ${version.current ? 'border-[var(--success)]/30 bg-[var(--success-bg)]/40' : 'border-[var(--border)]'}`}>
-          <span className={`grid h-10 w-10 place-items-center rounded-lg ${version.current ? 'bg-[var(--success-bg)] text-[var(--success)]' : 'bg-[var(--bg-elevated)] text-[var(--text-muted)]'}`}>
-            <GitBranch className="h-4 w-4" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-semibold">{version.version}</p>
-              {version.current && <span className="rounded-full bg-[var(--success-bg)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--success)]">当前</span>}
-            </div>
-            <p className="mt-0.5 text-xs text-[var(--text-muted)]">{version.publisher} · 发布于 {version.releasedAt}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => onOpenDiff?.()}
-              className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-semibold hover:border-[var(--brand)]"
-            >
-              查看 diff
-            </button>
-            {!version.current && <button type="button" className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-semibold hover:border-[var(--brand)]">回滚</button>}
-          </div>
-        </div>
-      ))}
-      {draft.versions.length > 1 && (
-        <p className="px-1 text-[11px] text-[var(--text-muted)]">共 {draft.versions.length} 个版本 · 默认对比 {defaultLeft} → {defaultRight}。</p>
-      )}
+    <div className="space-y-4">
+      <PanelHero
+        icon={<GitBranch className="h-4 w-4" />}
+        eyebrow="智能体自有"
+        title="版本历史 · Diff 对比"
+        subtitle="所有 Prompt / 模板变更都会保留为版本;回滚会立刻生效。"
+        sourceHref="/admin/agents"
+        sourceLabel="返回工作台"
+      />
+      <section className="grid gap-3 sm:grid-cols-4">
+        <PanelStat label="版本总数" value={`${draft.versions.length}`} />
+        <PanelStat label="当前版本" value={current?.version ?? '—'} tone="success" />
+        <PanelStat label="上一版本" value={previous?.version ?? '—'} />
+        <PanelStat label="最近发布" value={draft.versions[0]?.releasedAt ?? '—'} hint="按时间倒序" />
+      </section>
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
+        <header className="flex items-center justify-between">
+          <h4 className="text-sm font-semibold">历史版本</h4>
+          <p className="text-[10px] text-[var(--text-muted)]">默认对比 {defaultLeft} → {defaultRight}</p>
+        </header>
+        <ul className="mt-3 space-y-2">
+          {draft.versions.map((version) => (
+            <li key={version.version} className={`flex items-center gap-3 rounded-xl border p-4 ${version.current ? 'border-[var(--success)]/30 bg-[var(--success-bg)]/40' : 'border-[var(--border)] bg-[var(--bg-app)]'}`}>
+              <span className={`grid h-10 w-10 place-items-center rounded-lg ${version.current ? 'bg-[var(--success-bg)] text-[var(--success)]' : 'bg-[var(--bg-elevated)] text-[var(--text-muted)]'}`}>
+                <GitBranch className="h-4 w-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold">{version.version}</p>
+                  {version.current && <span className="rounded-full bg-[var(--success-bg)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--success)]">当前</span>}
+                </div>
+                <p className="mt-0.5 text-xs text-[var(--text-muted)]">{version.publisher} · 发布于 {version.releasedAt}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onOpenDiff?.()}
+                  className="rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-2.5 py-1 text-[11px] font-semibold hover:border-[var(--brand)]"
+                >
+                  查看 diff
+                </button>
+                {!version.current && <button type="button" className="rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-2.5 py-1 text-[11px] font-semibold hover:border-[var(--brand)]">回滚</button>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }
 
-export function DrawerPanelSkills({ draft }: { draft: AgentEntry }) {
-  if (draft.tools.length === 0) {
-    return (
-      <div className="rounded-2xl border border-dashed border-[var(--border)] p-6 text-center">
-        <Layers className="mx-auto h-6 w-6 text-[var(--text-muted)]" />
-        <p className="mt-3 text-sm font-semibold">暂未绑定技能</p>
-        <p className="mt-1 text-xs text-[var(--text-muted)]">在智能体编辑器中关联 Skill / Tool / MCP。</p>
-      </div>
-    );
-  }
+export function DrawerPanelSkills({ draft, onChange }: { draft: AgentEntry; onChange: (patch: Partial<AgentEntry>) => void }) {
+  const { data: skills = [] } = useAdminSkills();
+  const enabledMap = new Map(draft.tools.map((t) => [t.id, t.enabled]));
+  const myNames = new Set(draft.tools.map((t) => t.name));
+  const mySkills = skills.filter((s) => myNames.has(s.name) || s.usedByAgents?.includes(draft.name));
+  const unbound = skills.filter((s) => !myNames.has(s.name) && !s.usedByAgents?.includes(draft.name));
+  const enabledCount = draft.tools.filter((t) => t.enabled).length;
+  const countsByType = useMemo(() => {
+    const out = { Skill: 0, Tool: 0, MCP: 0 } as Record<'Skill' | 'Tool' | 'MCP', number>;
+    draft.tools.forEach((t) => { out[t.type] = (out[t.type] ?? 0) + 1; });
+    return out;
+  }, [draft.tools]);
+  const toggle = (skill: typeof skills[number]) => {
+    const exists = draft.tools.some((t) => t.id === skill.id);
+    if (exists) {
+      onChange({ tools: draft.tools.map((t) => t.id === skill.id ? { ...t, enabled: !t.enabled } : t) });
+    } else {
+      onChange({
+        tools: [
+          ...draft.tools,
+          { id: skill.id, name: skill.name, type: skill.type, enabled: true },
+        ],
+      });
+    }
+  };
   return (
-    <div>
-      <p className="text-xs text-[var(--text-muted)]">当前智能体可调用的技能能力,修改后将随下次版本发布生效。</p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {draft.tools.map((tool) => (
-          <span key={tool} className="inline-flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-xs font-medium">
-            <Layers className="h-3.5 w-3.5 text-[var(--brand)]" />
-            {tool}
-          </span>
-        ))}
-      </div>
-      <div className="mt-5 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-[var(--border)] p-4">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">Skill</p>
-          <p className="mt-2 text-base font-semibold">{Math.ceil(draft.tools.length / 2)}</p>
-        </div>
-        <div className="rounded-xl border border-[var(--border)] p-4">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">Tool</p>
-          <p className="mt-2 text-base font-semibold">{Math.floor(draft.tools.length / 2)}</p>
-        </div>
-        <div className="rounded-xl border border-[var(--border)] p-4">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">MCP</p>
-          <p className="mt-2 text-base font-semibold">{draft.tools.length >= 5 ? 2 : 1}</p>
-        </div>
-      </div>
+    <div className="space-y-4">
+      <PanelHero
+        icon={<Layers className="h-4 w-4" />}
+        eyebrow="来自技能管理"
+        title="技能 · Tool · MCP 调用范围"
+        subtitle="智能体可调用这些能力;变更后随下次版本发布生效。"
+        sourceHref="/admin/tools"
+        sourceLabel="前往技能管理"
+      />
+      <section className="grid gap-3 sm:grid-cols-4">
+        <PanelStat label="已绑定技能" value={`${draft.tools.length}`} />
+        <PanelStat label="已启用" value={`${enabledCount}`} tone="success" />
+        <PanelStat label="Skill" value={`${countsByType.Skill}`} hint="本智能体" />
+        <PanelStat label="Tool · MCP" value={`${countsByType.Tool + countsByType.MCP}`} hint="本智能体" tone="info" />
+      </section>
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
+        <header className="flex items-center justify-between">
+          <div>
+            <h4 className="text-sm font-semibold">技能列表</h4>
+            <p className="text-[11px] text-[var(--text-muted)]">来自技能管理 · 总数 {skills.length} · 本智能体已选 {draft.tools.length}</p>
+          </div>
+        </header>
+        <ul className="mt-3 space-y-2">
+          {[...mySkills, ...unbound].map((skill) => {
+            const isMine = draft.tools.some((t) => t.id === skill.id);
+            const enabled = enabledMap.get(skill.id) ?? false;
+            const kindTone = skill.type === 'Skill' ? 'brand' : skill.type === 'MCP' ? 'purple' : 'info';
+            return (
+              <li key={skill.id} className={`flex items-start gap-3 rounded-xl border p-4 transition ${enabled ? 'border-[var(--brand)] bg-[var(--brand-light)]/40' : isMine ? 'border-[var(--warning)]/30 bg-[var(--warning-bg)]/40' : 'border-[var(--border)] bg-[var(--surface-1)]'}`}>
+                <input
+                  type="checkbox"
+                  checked={enabled}
+                  onChange={() => toggle(skill)}
+                  aria-label={`启用 ${skill.name}`}
+                  className="mt-0.5 h-4 w-4 accent-[var(--brand)]"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold">{skill.name}</p>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${toneClass[kindTone]}`}>{skill.type}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${skill.status === 'published' ? 'bg-[var(--success-bg)] text-[var(--success)]' : 'bg-[var(--bg-elevated)] text-[var(--text-muted)]'}`}>
+                      {skill.status}
+                    </span>
+                    {!isMine && <span className="rounded-full bg-[var(--info-bg)] px-2 py-0.5 text-[10px] font-semibold text-[var(--info)]">未绑定</span>}
+                  </div>
+                  <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{skill.description}</p>
+                  <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">{skill.owner} · v{skill.version} · 调用 {formatCalls(skill.calls)} · 成功率 {skill.successRate.toFixed(2)}%</p>
+                </div>
+                <a
+                  href={`/admin/tools/${skill.id}`}
+                  className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-2 py-1 text-[11px] font-semibold hover:border-[var(--brand)] hover:text-[var(--brand)]"
+                  title="在技能管理查看详情"
+                >
+                  <ExternalLink className="h-3 w-3" />查看
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
     </div>
   );
 }
@@ -361,96 +435,92 @@ export function DrawerPanelEvaluation({
   lastResult?: EvalCase[] | null;
   onRunEval?: () => void;
 }) {
-  if (draft.evaluationRuns === 0 && !lastResult) {
-    return (
-      <div className="rounded-2xl border border-dashed border-[var(--border)] p-6 text-center">
-        <Beaker className="mx-auto h-6 w-6 text-[var(--text-muted)]" />
-        <p className="mt-3 text-sm font-semibold">暂未运行评测</p>
-        <p className="mt-1 text-xs text-[var(--text-muted)]">点击下方按钮运行一次基线评测,结果将纳入回归追踪。</p>
-        {onRunEval && (
-          <button
-            type="button"
-            onClick={onRunEval}
-            disabled={isRunning}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)] disabled:opacity-50"
-          >
-            <Play className="h-3.5 w-3.5" />{isRunning ? '运行中...' : '运行评测'}
-          </button>
-        )}
-      </div>
-    );
-  }
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4 rounded-2xl border border-[var(--border)] p-5">
-        <span className="grid h-12 w-12 place-items-center rounded-xl bg-[var(--warning-bg)] text-[var(--warning)]">
-          <Sparkles className="h-6 w-6" />
-        </span>
-        <div className="flex-1">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">综合评分</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">{draft.rating.toFixed(1)} <span className="text-xs font-normal text-[var(--text-muted)]">/ 5.0</span></p>
+      <PanelHero
+        icon={<Beaker className="h-4 w-4" />}
+        eyebrow="来自评测中心"
+        title="基线评测 & 回归追踪"
+        subtitle="每次提交审核会自动触发评测,结果进入回归追踪面板。"
+        sourceHref="/admin/evaluations"
+        sourceLabel="前往评测中心"
+      />
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <PanelStat label="综合评分" value={draft.rating.toFixed(1)} hint="满分 5.0" />
+        <PanelStat label="通过率" value={`${draft.evaluationPassRate.toFixed(1)}%`} tone={draft.evaluationPassRate >= 95 ? 'success' : 'warn'} />
+        <PanelStat label="失败用例" value={`${draft.evaluationFailedCases}`} tone={draft.evaluationFailedCases > 5 ? 'warn' : 'default'} />
+        <PanelStat label="响应延迟" value={`${(draft.avgLatencyMs / 1000).toFixed(2)}s`} tone="info" />
+      </section>
+      {draft.evaluationRuns === 0 && !lastResult ? (
+        <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-1)] p-6 text-center">
+          <Beaker className="mx-auto h-6 w-6 text-[var(--text-muted)]" />
+          <p className="mt-3 text-sm font-semibold">暂未运行评测</p>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">点击下方按钮运行一次基线评测,结果将纳入回归追踪。</p>
+          {onRunEval && (
+            <button
+              type="button"
+              onClick={onRunEval}
+              disabled={isRunning}
+              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)] disabled:opacity-50"
+            >
+              <Play className="h-3.5 w-3.5" />{isRunning ? '运行中...' : '运行评测'}
+            </button>
+          )}
         </div>
-        <div className="text-right">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">通过率</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">{draft.evaluationPassRate.toFixed(1)}%</p>
-        </div>
-        {onRunEval && (
-          <button
-            type="button"
-            onClick={onRunEval}
-            disabled={isRunning}
-            className="inline-flex items-center gap-2 rounded-xl border border-[var(--brand)] bg-[var(--brand-light)] px-3 py-2 text-xs font-semibold text-[var(--brand)] hover:opacity-80 disabled:opacity-50"
-          >
-            <Play className="h-3.5 w-3.5" />{isRunning ? '运行中...' : '运行评测'}
-          </button>
-        )}
-      </div>
-      {isRunning && <EvalProgress progress={progress ?? 0} />}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-xl border border-[var(--border)] p-4">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">评测批次</p>
-          <p className="mt-2 text-lg font-semibold tabular-nums">{draft.evaluationRuns}</p>
-        </div>
-        <div className="rounded-xl border border-[var(--border)] p-4">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">失败用例</p>
-          <p className="mt-2 text-lg font-semibold tabular-nums">{draft.evaluationFailedCases}</p>
-        </div>
-        <div className="rounded-xl border border-[var(--border)] p-4">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">响应延迟</p>
-          <p className="mt-2 text-lg font-semibold tabular-nums">{(draft.avgLatencyMs / 1000).toFixed(2)}s</p>
-        </div>
-        <div className="rounded-xl border border-[var(--border)] p-4">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">回归用例</p>
-          <p className="mt-2 text-lg font-semibold tabular-nums">{Math.max(draft.evaluationRuns * 12, 12)}</p>
-        </div>
-      </div>
-      {lastResult && (
-        <div className="rounded-2xl border border-[var(--border)] p-5">
-          <p className="text-xs font-semibold">本次评测 · {lastResult.length} 个用例</p>
-          <ul className="mt-3 grid gap-1 sm:grid-cols-2">
-            {lastResult.map((c) => (
-              <li key={c.id} className="flex items-center justify-between rounded-lg bg-[var(--bg-elevated)] px-3 py-1.5 text-[11px]">
-                <span className="font-medium">{c.name}</span>
-                {c.status === 'pass'
-                  ? <span className="inline-flex items-center gap-1 text-[var(--success)]">✓ {c.latency.toFixed(2)}s</span>
-                  : <span className="inline-flex items-center gap-1 text-[var(--danger)]">✗ {c.latency.toFixed(2)}s</span>}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {!lastResult && (
-        <div className="rounded-2xl border border-[var(--border)] p-5">
-          <p className="text-xs font-semibold">最近评测批次</p>
-          <ul className="mt-3 space-y-2 text-xs">
-            {[0, 1, 2].map((i) => (
-              <li key={i} className="flex items-center justify-between rounded-lg bg-[var(--bg-elevated)] px-3 py-2">
-                <span>基线评测 #{draft.evaluationRuns - i} · 通过 {Math.max(draft.evaluationPassRate - i, 60).toFixed(1)}%</span>
-                <span className="text-[var(--text-muted)]">{i === 0 ? '刚刚' : i === 1 ? '昨天' : '3 天前'}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+      ) : (
+        <>
+          <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
+            <div>
+              <p className="text-xs font-semibold">运行基线评测</p>
+              <p className="text-[11px] text-[var(--text-muted)]">本智能体共完成 {draft.evaluationRuns} 个评测批次 · {Math.max(draft.evaluationRuns * 12, 12)} 条回归用例</p>
+            </div>
+            {onRunEval && (
+              <button
+                type="button"
+                onClick={onRunEval}
+                disabled={isRunning}
+                className="inline-flex items-center gap-2 rounded-xl border border-[var(--brand)] bg-[var(--brand-light)] px-3 py-2 text-xs font-semibold text-[var(--brand)] hover:opacity-80 disabled:opacity-50"
+              >
+                <Play className="h-3.5 w-3.5" />{isRunning ? '运行中...' : '运行评测'}
+              </button>
+            )}
+          </section>
+          {isRunning && <EvalProgress progress={progress ?? 0} />}
+          {lastResult && (
+            <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5">
+              <header className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold">本次评测 · {lastResult.length} 个用例</h4>
+                <span className="text-[10px] text-[var(--text-muted)]">通过 {lastResult.filter((c) => c.status === 'pass').length} / 失败 {lastResult.filter((c) => c.status === 'fail').length}</span>
+              </header>
+              <ul className="mt-3 grid gap-1 sm:grid-cols-2">
+                {lastResult.map((c) => (
+                  <li key={c.id} className="flex items-center justify-between rounded-lg bg-[var(--bg-elevated)] px-3 py-1.5 text-[11px]">
+                    <span className="font-medium">{c.name}</span>
+                    {c.status === 'pass'
+                      ? <span className="inline-flex items-center gap-1 text-[var(--success)]"><CheckCircle2 className="h-3 w-3" />{c.latency.toFixed(2)}s</span>
+                      : <span className="inline-flex items-center gap-1 text-[var(--danger)]"><AlertTriangle className="h-3 w-3" />{c.latency.toFixed(2)}s</span>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {!lastResult && (
+            <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5">
+              <header className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold">最近评测批次</h4>
+                <a href="/admin/regressions" className="text-[10px] font-semibold text-[var(--brand)] hover:underline">在回归追踪查看 →</a>
+              </header>
+              <ul className="mt-3 space-y-2 text-xs">
+                {[0, 1, 2].map((i) => (
+                  <li key={i} className="flex items-center justify-between rounded-lg bg-[var(--bg-elevated)] px-3 py-2">
+                    <span>基线评测 #{draft.evaluationRuns - i} · 通过 {Math.max(draft.evaluationPassRate - i, 60).toFixed(1)}%</span>
+                    <span className="text-[var(--text-muted)]">{i === 0 ? '刚刚' : i === 1 ? '昨天' : '3 天前'}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </>
       )}
     </div>
   );
@@ -458,37 +528,47 @@ export function DrawerPanelEvaluation({
 
 export function DrawerPanelPermission({ draft }: { draft: AgentEntry }) {
   return (
-    <div className="space-y-5">
-      <div>
-        <p className="text-xs font-semibold">可见范围</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {draft.visibleScope.map((scope) => (
-            <span key={scope} className="inline-flex items-center gap-2 rounded-full bg-[var(--bg-elevated)] px-3 py-1.5 text-xs font-medium">
-              <ShieldCheck className="h-3.5 w-3.5 text-[var(--brand)]" />
-              {scope}
-            </span>
-          ))}
+    <div className="space-y-4">
+      <PanelHero
+        icon={<ShieldCheck className="h-4 w-4" />}
+        eyebrow="来自权限管理"
+        title="可见范围 · 数据访问 · 操作审计"
+        subtitle="智能体访问权限受组织与配额的双重约束。"
+        sourceHref="/admin/permissions"
+        sourceLabel="前往权限管理"
+      />
+      <section className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">可见范围</p>
+          <div className="mt-2 flex flex-wrap gap-1">
+            {draft.visibleScope.map((scope) => (
+              <span key={scope} className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-elevated)] px-2.5 py-1 text-[11px] font-medium">
+                <ShieldCheck className="h-3 w-3 text-[var(--brand)]" />{scope}
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-[var(--border)] p-4">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
           <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">数据访问范围</p>
           <p className="mt-2 text-sm font-medium">{draft.dataAccess}</p>
         </div>
-        <div className="rounded-xl border border-[var(--border)] p-4">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
           <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">负责人</p>
           <p className="mt-2 text-sm font-medium">{draft.owner}</p>
         </div>
-      </div>
-      <div className="rounded-2xl border border-[var(--border)] p-5">
-        <p className="text-xs font-semibold">操作审计</p>
-        <p className="mt-1 text-xs text-[var(--text-muted)]">查看该智能体的发布、权限变更与下线记录。</p>
+      </section>
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5">
+        <header className="flex items-center justify-between">
+          <h4 className="text-sm font-semibold">操作审计</h4>
+          <a href="/admin/audit" className="text-[10px] font-semibold text-[var(--brand)] hover:underline">在工具审计查看完整日志 →</a>
+        </header>
+        <p className="mt-1 text-[11px] text-[var(--text-muted)]">查看该智能体的发布、权限变更与下线记录。</p>
         <ul className="mt-3 space-y-2 text-xs">
           <li className="flex items-center justify-between rounded-lg bg-[var(--bg-elevated)] px-3 py-2"><span>{draft.owner} · 调整可见范围</span><span className="text-[var(--text-muted)]">{draft.lastUpdate}</span></li>
           <li className="flex items-center justify-between rounded-lg bg-[var(--bg-elevated)] px-3 py-2"><span>系统 · 自动回归通过</span><span className="text-[var(--text-muted)]">3 天前</span></li>
           <li className="flex items-center justify-between rounded-lg bg-[var(--bg-elevated)] px-3 py-2"><span>合规 · 内容安全扫描通过</span><span className="text-[var(--text-muted)]">上周</span></li>
         </ul>
-      </div>
+      </section>
     </div>
   );
 }
@@ -945,54 +1025,128 @@ function HeroStat({ label, value, hint, tone = 'default' }: { label: string; val
 }
 
 export function DrawerPanelKnowledge({ draft, onChange }: { draft: AgentEntry; onChange: (refs: KnowledgeRef[]) => void }) {
+  const { data: kbs = [] } = useKnowledgeBases();
+  const enabledMap = new Map(draft.knowledgeRefs.map((r) => [r.id, r.enabled]));
+  const enabledCount = draft.knowledgeRefs.filter((r) => r.enabled).length;
+  const sources = ['全部', ...Array.from(new Set(kbs.map((kb) => kb.scope)))];
+  const [sourceFilter, setSourceFilter] = useState('全部');
+  const filtered = useMemo(() => {
+    if (sourceFilter === '全部') return kbs;
+    return kbs.filter((kb) => kb.scope === sourceFilter);
+  }, [kbs, sourceFilter]);
   const toggle = (id: string) => {
-    onChange(draft.knowledgeRefs.map((ref) => ref.id === id ? { ...ref, enabled: !ref.enabled } : ref));
+    const next = draft.knowledgeRefs.find((r) => r.id === id)
+      ? draft.knowledgeRefs.map((r) => r.id === id ? { ...r, enabled: !r.enabled } : r)
+      : [...draft.knowledgeRefs, { id, name: kbs.find((kb) => kb.id === id)?.name ?? id, scope: '公开' as const, enabled: true }];
+    onChange(next);
   };
-  const enabledCount = draft.knowledgeRefs.filter((ref) => ref.enabled).length;
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4">
-        <div>
-          <p className="text-xs font-semibold">已启用 {enabledCount} / {draft.knowledgeRefs.length} 个知识库</p>
-          <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">智能体只在引用范围内检索,变更后随下次版本发布生效。</p>
-        </div>
-        <FolderTree className="h-5 w-5 text-[var(--brand)]" />
-      </div>
-      <div className="space-y-2">
-        {draft.knowledgeRefs.map((ref) => (
-          <label key={ref.id} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition ${ref.enabled ? 'border-[var(--brand)] bg-[var(--brand-light)]/40' : 'border-[var(--border)] bg-[var(--surface-1)]'}`}>
-            <input
-              type="checkbox"
-              checked={ref.enabled}
-              onChange={() => toggle(ref.id)}
-              className="mt-0.5 h-4 w-4 accent-[var(--brand)]"
-            />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold">{ref.name}</p>
-                <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[10px] text-[var(--text-muted)]">{ref.scope}</span>
-              </div>
-              <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{ref.id}</p>
-            </div>
+      <PanelHero
+        icon={<FolderTree className="h-4 w-4" />}
+        eyebrow="来自知识管理"
+        title="知识库检索范围"
+        subtitle="智能体在引用范围内检索;变更后随下次版本发布生效。"
+        sourceHref="/admin/knowledge"
+        sourceLabel="前往知识管理"
+      />
+      <section className="grid gap-3 sm:grid-cols-4">
+        <PanelStat label="已绑定知识库" value={`${draft.knowledgeRefs.length}`} />
+        <PanelStat label="已启用" value={`${enabledCount}`} tone="success" />
+        <PanelStat label="知识库总数" value={`${kbs.length}`} hint="来自知识管理" />
+        <PanelStat
+          label="来源模块"
+          value={`${draft.knowledgeRefs.length}/${kbs.length}`}
+          hint="本智能体 / 知识库目录"
+        />
+      </section>
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
+        <header className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h4 className="text-sm font-semibold">知识库列表</h4>
+            <p className="text-[11px] text-[var(--text-muted)]">数据来自 /admin/knowledge 的 知识库 (kbs) 目录</p>
+          </div>
+          <label className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-2.5 py-1 text-[11px]">
+            <span className="text-[var(--text-muted)]">范围</span>
+            <select
+              value={sourceFilter}
+              onChange={(event) => setSourceFilter(event.target.value)}
+              className="bg-transparent text-xs font-medium outline-none"
+            >
+              {sources.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
           </label>
-        ))}
-      </div>
-      <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-[var(--border)] px-4 py-2 text-xs font-semibold text-[var(--text-muted)] hover:border-[var(--brand)] hover:text-[var(--brand)]">
-        <Plus className="h-3.5 w-3.5" />从知识库目录添加
-      </button>
+        </header>
+        <ul className="mt-3 space-y-2">
+          {filtered.length === 0 ? (
+            <li className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-app)] p-4 text-center text-[11px] text-[var(--text-muted)]">该范围下暂无知识库</li>
+          ) : filtered.map((kb) => {
+            const isBound = draft.knowledgeRefs.some((r) => r.id === kb.id);
+            const enabled = enabledMap.get(kb.id) ?? false;
+            return (
+              <li key={kb.id} className={`flex items-start gap-3 rounded-xl border p-4 transition ${enabled ? 'border-[var(--brand)] bg-[var(--brand-light)]/40' : 'border-[var(--border)] bg-[var(--surface-1)]'}`}>
+                <input
+                  type="checkbox"
+                  checked={enabled}
+                  onChange={() => toggle(kb.id)}
+                  aria-label={`启用 ${kb.name}`}
+                  className="mt-0.5 h-4 w-4 accent-[var(--brand)]"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold">{kb.name}</p>
+                    <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[10px] text-[var(--text-muted)]">{kb.scope}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${kb.status === 'indexed' ? 'bg-[var(--success-bg)] text-[var(--success)]' : 'bg-[var(--bg-elevated)] text-[var(--text-muted)]'}`}>
+                      {kb.status}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{kb.description}</p>
+                  <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">负责人 {kb.owner} · {kb.docCount} 文档 · 命中率 {kb.evalHitRate}%</p>
+                </div>
+                <a
+                  href={`/admin/knowledge/kbs/${kb.id}`}
+                  className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-2 py-1 text-[11px] font-semibold hover:border-[var(--brand)] hover:text-[var(--brand)]"
+                  title="在知识管理查看详情"
+                >
+                  <ExternalLink className="h-3 w-3" />查看
+                </a>
+                {!isBound && <span className="rounded-full bg-[var(--info-bg)] px-2 py-0.5 text-[10px] font-semibold text-[var(--info)]">未绑定</span>}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
     </div>
   );
 }
 
 export function DrawerPanelMemory({ draft, onChange }: { draft: AgentEntry; onChange: (policy: MemoryPolicy) => void }) {
+  const { data: l1 = [] } = useL1Sessions();
+  const { data: l2 = [] } = useL2Facts();
+  const { data: l3 = [] } = useL3Entries();
+  const { data: policies = [] } = useRetentionPolicies();
   const policy = draft.memoryPolicy;
   const update = (patch: Partial<MemoryPolicy>) => onChange({ ...policy, ...patch });
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4">
+    <div className="space-y-4">
+      <PanelHero
+        icon={<Brain className="h-4 w-4" />}
+        eyebrow="来自记忆管理"
+        title="跨会话记忆"
+        subtitle="开启后,智能体可在指定范围内保留偏好与上下文。"
+        sourceHref="/admin/memory"
+        sourceLabel="前往记忆管理"
+      />
+      <section className="grid gap-3 sm:grid-cols-4">
+        <PanelStat label="L1 会话" value={`${l1.length}`} hint="来自记忆管理" />
+        <PanelStat label="L2 事实" value={`${l2.length}`} hint="来自记忆管理" tone="info" />
+        <PanelStat label="L3 知识" value={`${l3.length}`} hint="来自记忆管理" tone="purple" />
+        <PanelStat label="保留策略" value={`${policies.length}`} hint="源策略数" />
+      </section>
+      <section className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4">
         <div>
-          <p className="text-xs font-semibold">跨会话记忆</p>
-          <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">开启后,智能体可在指定范围内保留偏好与上下文。</p>
+          <p className="text-xs font-semibold">启用跨会话记忆</p>
+          <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">关闭后将不再保留任何上下文,影响所有引用。</p>
         </div>
         <button
           type="button"
@@ -1003,10 +1157,10 @@ export function DrawerPanelMemory({ draft, onChange }: { draft: AgentEntry; onCh
         >
           <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${policy.enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
         </button>
-      </div>
+      </section>
       {policy.enabled && (
         <>
-          <div>
+          <section>
             <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">保留时长</label>
             <div className="mt-2 grid grid-cols-4 gap-2">
               {MEMORY_RETENTION_OPTIONS.map((days) => {
@@ -1024,8 +1178,8 @@ export function DrawerPanelMemory({ draft, onChange }: { draft: AgentEntry; onCh
                 );
               })}
             </div>
-          </div>
-          <div>
+          </section>
+          <section>
             <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">可见范围</label>
             <div className="mt-2 space-y-2">
               {MEMORY_SCOPE_OPTIONS.map((opt) => {
@@ -1049,8 +1203,8 @@ export function DrawerPanelMemory({ draft, onChange }: { draft: AgentEntry; onCh
                 );
               })}
             </div>
-          </div>
-          <div className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4">
+          </section>
+          <section className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4">
             <div>
               <p className="text-xs font-semibold">自动总结</p>
               <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">每次会话结束自动生成摘要,便于下次快速续接。</p>
@@ -1064,49 +1218,155 @@ export function DrawerPanelMemory({ draft, onChange }: { draft: AgentEntry; onCh
             >
               <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${policy.autoSummarize ? 'translate-x-5' : 'translate-x-0.5'}`} />
             </button>
-          </div>
+          </section>
         </>
+      )}
+      {policies.length > 0 && (
+        <section className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-1)] p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">来源 · 记忆管理中已有 {policies.length} 条保留策略</p>
+          <ul className="mt-2 space-y-1.5">
+            {policies.slice(0, 3).map((p) => (
+              <li key={p.label} className="flex items-center justify-between rounded-lg bg-[var(--bg-elevated)] px-3 py-2 text-[11px]">
+                <span className="font-medium">{p.label} · {p.layer}</span>
+                <span className="text-[var(--text-muted)]">TTL {p.ttlMinutes}m · 命中率 {(p.hitRate * 100).toFixed(0)}%</span>
+              </li>
+            ))}
+          </ul>
+          <a
+            href="/admin/memory"
+            className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--brand)] hover:underline"
+          >
+            <ExternalLink className="h-3 w-3" />在记忆管理查看全部策略
+          </a>
+        </section>
       )}
     </div>
   );
 }
 
 export function DrawerPanelFlow({ draft, onChange }: { draft: AgentEntry; onChange: (refs: FlowRef[]) => void }) {
+  const { data: flows = [] } = useWorkflows();
+  const boundFlows = useMemo(() => flows.filter((f) => f.boundAgents?.includes(draft.id) || f.boundAgents?.includes(draft.name)), [flows, draft.id, draft.name]);
+  const enabledMap = new Map(draft.flowRefs.map((r) => [r.id, r.enabled]));
+  const enabledCount = draft.flowRefs.filter((r) => r.enabled).length;
   const toggle = (id: string) => {
-    onChange(draft.flowRefs.map((ref) => ref.id === id ? { ...ref, enabled: !ref.enabled } : ref));
+    const next = draft.flowRefs.find((r) => r.id === id)
+      ? draft.flowRefs.map((r) => r.id === id ? { ...r, enabled: !r.enabled } : r)
+      : [...draft.flowRefs, { id, name: flows.find((f) => f.id === id)?.name ?? id, trigger: flows.find((f) => f.id === id)?.trigger ?? '消息触发', enabled: true }];
+    onChange(next);
   };
-  const enabledCount = draft.flowRefs.filter((ref) => ref.enabled).length;
+  const unbound = useMemo(() => flows.filter((f) => !boundFlows.some((b) => b.id === f.id)), [flows, boundFlows]);
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4">
-        <div>
-          <p className="text-xs font-semibold">已绑定 {enabledCount} / {draft.flowRefs.length} 个流程</p>
-          <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">智能体可作为触发器、节点或被调用的步骤参与这些流程。</p>
+      <PanelHero
+        icon={<Workflow className="h-4 w-4" />}
+        eyebrow="来自流程管理"
+        title="自动化流程绑定"
+        subtitle="智能体可作为触发器、节点或被调用的步骤参与这些流程。"
+        sourceHref="/admin/workflows"
+        sourceLabel="前往流程管理"
+      />
+      <section className="grid gap-3 sm:grid-cols-4">
+        <PanelStat label="已绑定流程" value={`${draft.flowRefs.length}`} />
+        <PanelStat label="已启用" value={`${enabledCount}`} tone="success" />
+        <PanelStat label="流程总数" value={`${flows.length}`} hint="来自流程管理" />
+        <PanelStat label="未绑定" value={`${unbound.length}`} tone="info" hint="可选流程" />
+      </section>
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
+        <header className="flex items-center justify-between">
+          <h4 className="text-sm font-semibold">流程列表</h4>
+          <span className="text-[10px] text-[var(--text-muted)]">本智能体绑定 {draft.flowRefs.length} / {flows.length}</span>
+        </header>
+        <ul className="mt-3 space-y-2">
+          {[...boundFlows, ...unbound].map((flow) => {
+            const isBound = draft.flowRefs.some((r) => r.id === flow.id);
+            const enabled = enabledMap.get(flow.id) ?? false;
+            return (
+              <li key={flow.id} className={`flex items-start gap-3 rounded-xl border p-4 transition ${enabled ? 'border-[var(--brand)] bg-[var(--brand-light)]/40' : isBound ? 'border-[var(--warning)]/30 bg-[var(--warning-bg)]/40' : 'border-[var(--border)] bg-[var(--surface-1)]'}`}>
+                <input
+                  type="checkbox"
+                  checked={enabled}
+                  onChange={() => toggle(flow.id)}
+                  aria-label={`绑定 ${flow.name}`}
+                  className="mt-0.5 h-4 w-4 accent-[var(--brand)]"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold">{flow.name}</p>
+                    <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[10px] text-[var(--text-muted)]">{flow.trigger}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${flow.status === 'published' ? 'bg-[var(--success-bg)] text-[var(--success)]' : 'bg-[var(--bg-elevated)] text-[var(--text-muted)]'}`}>
+                      {flow.status}
+                    </span>
+                    {!isBound && <span className="rounded-full bg-[var(--info-bg)] px-2 py-0.5 text-[10px] font-semibold text-[var(--info)]">未绑定</span>}
+                  </div>
+                  <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{flow.description}</p>
+                  <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">{flow.owner} · 调用 {flow.callCount.toLocaleString()} · 节点 {flow.initialNodes.length}</p>
+                </div>
+                <a
+                  href={`/admin/workflows/${flow.id}`}
+                  className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-2 py-1 text-[11px] font-semibold hover:border-[var(--brand)] hover:text-[var(--brand)]"
+                  title="在流程管理查看详情"
+                >
+                  <ExternalLink className="h-3 w-3" />查看
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    </div>
+  );
+}
+
+/* ===================== 跨模块面板通用件 ===================== */
+
+function PanelHero({ icon, eyebrow, title, subtitle, sourceHref, sourceLabel }: {
+  icon: React.ReactNode;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  sourceHref: string;
+  sourceLabel: string;
+}) {
+  return (
+    <section className="rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--brand-light)] text-[var(--brand)]">
+            {icon}
+          </span>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">{eyebrow}</p>
+            <h3 className="mt-1 text-base font-semibold tracking-tight">{title}</h3>
+            <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{subtitle}</p>
+          </div>
         </div>
-        <Workflow className="h-5 w-5 text-[var(--brand)]" />
+        <a
+          href={sourceHref}
+          className="inline-flex items-center gap-1 rounded-xl border border-[var(--brand)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--brand)] hover:bg-[var(--brand-light)] dark:bg-[var(--surface-1)]"
+        >
+          {sourceLabel}
+          <ArrowRight className="h-3 w-3" />
+        </a>
       </div>
-      <div className="space-y-2">
-        {draft.flowRefs.map((ref) => (
-          <label key={ref.id} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition ${ref.enabled ? 'border-[var(--brand)] bg-[var(--brand-light)]/40' : 'border-[var(--border)] bg-[var(--surface-1)]'}`}>
-            <input
-              type="checkbox"
-              checked={ref.enabled}
-              onChange={() => toggle(ref.id)}
-              className="mt-0.5 h-4 w-4 accent-[var(--brand)]"
-            />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold">{ref.name}</p>
-                <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[10px] text-[var(--text-muted)]">{ref.trigger}</span>
-              </div>
-              <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{ref.id}</p>
-            </div>
-          </label>
-        ))}
-      </div>
-      <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-[var(--border)] px-4 py-2 text-xs font-semibold text-[var(--text-muted)] hover:border-[var(--brand)] hover:text-[var(--brand)]">
-        <Plus className="h-3.5 w-3.5" />从流程目录添加
-      </button>
+    </section>
+  );
+}
+
+function PanelStat({ label, value, hint, tone = 'default' }: { label: string; value: string; hint?: string; tone?: 'default' | 'success' | 'warn' | 'info' | 'purple' | 'muted' }) {
+  const toneClass = {
+    default: 'text-[var(--text)]',
+    success: 'text-[var(--success)]',
+    warn: 'text-[var(--warning)]',
+    info: 'text-[var(--info)]',
+    purple: 'text-[var(--purple)]',
+    muted: 'text-[var(--text-muted)]',
+  }[tone];
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2.5">
+      <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">{label}</p>
+      <p className={`mt-1 text-xl font-semibold tabular-nums ${toneClass}`}>{value}</p>
+      {hint && <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">{hint}</p>}
     </div>
   );
 }

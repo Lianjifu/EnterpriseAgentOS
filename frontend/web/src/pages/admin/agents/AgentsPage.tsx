@@ -15,7 +15,7 @@ import {
   useAgentsList, useBatchSetStatus, useCreateAgent, useDeleteAgents, useExportAgents, useImportAgents, useToggleStar, useUpdateAgent,
 } from '@/api/admin/agents';
 import {
-  buildPrompts, mockAgents, SAMPLE_IMPORT, SAMPLE_IMPORT_ZIP,
+  buildPrompts, mockAgents, SAMPLE_IMPORT, SAMPLE_IMPORT_ZIP, toolsFromNames,
 } from '@/mock/admin/agents.fixtures';
 import { AgentCard } from './components/AgentCard';
 import { BatchToolbar } from './components/DrawerSidebar';
@@ -143,7 +143,7 @@ export default function AgentsPage() {
       status: 'draft',
       version: 'v0.1',
       createdAt: today,
-      tools: wizardDraft.defaultSkills,
+      tools: toolsFromNames(wizardDraft.defaultSkills),
       visibleScope: [wizardDraft.visibleScope] as VisibleScope[],
       dataAccess: '基础数据',
       prompts: buildPrompts(wizardDraft.name, wizardDraft.category, wizardDraft.owner),

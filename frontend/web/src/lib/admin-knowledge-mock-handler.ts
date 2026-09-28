@@ -42,6 +42,14 @@ export async function adminKnowledgeMockHandler(path: string, opts: MockOpts): P
 
   // list
   if (method === 'GET' && path === '/api/admin/knowledge/kbs') return withDelay(state.kbs.slice());
+  const kbDetailMatch = path.match(/^\/api\/admin\/knowledge\/kbs\/([^/]+)$/);
+  if (method === 'GET' && kbDetailMatch) {
+    const id = kbDetailMatch[1];
+    if (id === '__noop__') return null;
+    const kb = state.kbs.find((k) => k.id === id);
+    if (!kb) throw Object.assign(new Error('kb not found'), { status: 404 });
+    return withDelay(kb);
+  }
   if (method === 'GET' && path === '/api/admin/knowledge/docs') return withDelay(state.docs.slice());
   if (method === 'GET' && path === '/api/admin/knowledge/sources') return withDelay(state.sources.slice());
   if (method === 'GET' && path === '/api/admin/knowledge/tasks') return withDelay(state.tasks.slice());

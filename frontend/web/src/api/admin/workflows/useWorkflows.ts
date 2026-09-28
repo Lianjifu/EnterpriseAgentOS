@@ -14,6 +14,15 @@ export function useWorkflows() {
   );
 }
 
+export function useWorkflow(id: string | null) {
+  return useApiQuery<Flow | null>(
+    [...qk.admin.workflows.list, id ?? 'none'],
+    id ? `/api/admin/workflows/${id}` : '/api/admin/workflows/__noop__',
+    undefined,
+    { enabled: Boolean(id), staleTime: 60_000 },
+  );
+}
+
 export function useWorkflowStats(flows: Flow[]): WorkflowStats {
   const total = flows.length;
   const published = flows.filter((f) => f.status === 'published').length;

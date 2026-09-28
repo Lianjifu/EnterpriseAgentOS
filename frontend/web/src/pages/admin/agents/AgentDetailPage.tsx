@@ -101,7 +101,7 @@ export default function AgentDetailPage() {
     switch (panel) {
       case 'basic': return <DrawerPanelBasic draft={agent} onChange={onChangeBasic} />;
       case 'prompt': return <DrawerPanelPrompt draft={agent} promptDoc={promptDoc} setPromptDoc={setPromptDoc} onChange={onChangePrompts} onChangeCustom={onChangeCustomPrompts} />;
-      case 'skills': return <DrawerPanelSkills draft={agent} />;
+      case 'skills': return <DrawerPanelSkills draft={agent} onChange={onChangeBasic} />;
       case 'knowledge': return <DrawerPanelKnowledge draft={agent} onChange={onChangeKnowledge} />;
       case 'memory': return <DrawerPanelMemory draft={agent} onChange={onChangeMemory} />;
       case 'flow': return <DrawerPanelFlow draft={agent} onChange={onChangeFlow} />;

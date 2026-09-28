@@ -79,6 +79,23 @@ export interface FlowRef {
   enabled: boolean;
 }
 
+export type SkillKind = 'Skill' | 'Tool' | 'MCP';
+
+export interface SkillRef {
+  id: string;
+  name: string;
+  type: SkillKind;
+  enabled: boolean;
+}
+
+export type SourceModule = 'skills' | 'knowledge' | 'memory' | 'workflows';
+
+export interface SourceLink {
+  module: SourceModule;
+  href: string;
+  label: string;
+}
+
 export interface EvalCase {
   id: string;
   name: string;
@@ -109,7 +126,7 @@ export interface AgentEntry {
   errorRate: number;
   avgLatencyMs: number;
   rating: number;
-  tools: string[];
+  tools: SkillRef[];
   starred: boolean;
   visibleScope: VisibleScope[];
   dataAccess: string;

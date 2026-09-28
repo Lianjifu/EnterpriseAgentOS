@@ -50,6 +50,14 @@ export interface PromptDocs {
   tools: string;
 }
 
+export interface CustomPromptDoc {
+  id: string;
+  file: string;
+  label: string;
+  description: string;
+  content: string;
+}
+
 export interface KnowledgeRef {
   id: string;
   name: string;
@@ -109,6 +117,7 @@ export interface AgentEntry {
   evaluationFailedCases: number;
   trend: number[];
   prompts: PromptDocs;
+  customPrompts: CustomPromptDoc[];
   knowledgeRefs: KnowledgeRef[];
   memoryPolicy: MemoryPolicy;
   flowRefs: FlowRef[];

@@ -87,7 +87,7 @@ export function FullscreenWorkspace({
         <main className="min-w-0 flex-1 overflow-auto bg-[var(--bg-app)] p-6">
           <div className="mx-auto max-w-3xl space-y-6">
             {panel === 'basic' && <DrawerPanelBasic draft={agent} onChange={() => undefined} />}
-            {panel === 'prompt' && <DrawerPanelPrompt draft={agent} promptDoc="prompt" setPromptDoc={() => undefined} onChange={() => undefined} />}
+            {panel === 'prompt' && <DrawerPanelPrompt draft={agent} promptDoc="prompt" setPromptDoc={() => undefined} onChange={() => undefined} onChangeCustom={() => undefined} />}
             {panel === 'skills' && <DrawerPanelSkills draft={agent} />}
             {panel === 'knowledge' && <DrawerPanelKnowledge draft={agent} onChange={() => undefined} />}
             {panel === 'memory' && <DrawerPanelMemory draft={agent} onChange={() => undefined} />}

@@ -144,6 +144,7 @@ export default function AgentsPage() {
       visibleScope: [wizardDraft.visibleScope] as VisibleScope[],
       dataAccess: '基础数据',
       prompts: buildPrompts(wizardDraft.name, wizardDraft.category, wizardDraft.owner),
+      customPrompts: [],
       knowledgeRefs: [],
       memoryPolicy: { enabled: false, retentionDays: 30, scope: 'user', autoSummarize: false },
       flowRefs: [],

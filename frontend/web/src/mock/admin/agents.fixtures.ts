@@ -2,7 +2,7 @@
  * 管理侧「智能体工作台」fixture — 6 个种子智能体 + 配套的 prompts/knowledgeRefs/memoryPolicy/flowRefs 派生助手。
  */
 import type {
-  AgentEntry, PromptDocs, KnowledgeRef, FlowRef, MemoryPolicy, FlowTrigger,
+  AgentEntry, PromptDocs, CustomPromptDoc, KnowledgeRef, FlowRef, MemoryPolicy, FlowTrigger,
 } from '@/api/admin/agents/schema';
 
 export const KNOWN_TONES = ['brand', 'info', 'success', 'warn', 'danger', 'purple'] as const;
@@ -116,7 +116,7 @@ export const DEFAULT_MEMORY_POLICY: MemoryPolicy = {
   autoSummarize: true,
 };
 
-type AgentSeed = Omit<AgentEntry, 'prompts' | 'knowledgeRefs' | 'memoryPolicy' | 'flowRefs'>;
+type AgentSeed = Omit<AgentEntry, 'prompts' | 'customPrompts' | 'knowledgeRefs' | 'memoryPolicy' | 'flowRefs'>;
 
 const SEEDS: AgentSeed[] = [
   {
@@ -209,9 +209,18 @@ const SEEDS: AgentSeed[] = [
   },
 ];
 
-export const mockAgents: AgentEntry[] = SEEDS.map((s) => ({
+export const mockAgents: AgentEntry[] = SEEDS.map((s, idx) => ({
   ...s,
   prompts: buildPrompts(s.name, s.category, s.owner),
+  customPrompts: idx === 0 ? [
+    {
+      id: 'cdoc-faq-001',
+      file: 'FAQ.md',
+      label: 'FAQ',
+      description: '常见问题与标准回复 · 客服高频问答',
+      content: `# FAQ · 高频问答\n\n## 订单类\n- **订单号格式**:1xx-2xx-3xx 共 16 位\n- **查询路径**:订单中心 → 输入订单号 → 状态/物流\n- **修改收货地址**:订单未发货前自助,已发货需客服\n\n## 退换货类\n- 7 天无理由,质量问题 15 天\n- 已使用影响二次销售的不予退货\n- 退款 1-3 工作日到账\n\n## 发票类\n- 默认电子普通发票,可在订单页切换专票\n- 抬头修改需在开票前完成`,
+    },
+  ] : [],
   knowledgeRefs: buildKnowledgeRefs(s.category),
   memoryPolicy: { ...DEFAULT_MEMORY_POLICY },
   flowRefs: buildFlowRefs(s.category),

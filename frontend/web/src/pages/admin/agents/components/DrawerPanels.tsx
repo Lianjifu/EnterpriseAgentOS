@@ -1,8 +1,9 @@
 /**
  * Drawer 9 个子面板 — basic / prompt / skills / knowledge / memory / flow / versions / evaluation / permission。
  */
-import { Beaker, Brain, Copy, FileText, FolderTree, GitBranch, Layers, Play, Plus, RotateCcw, ShieldCheck, Sparkles, Workflow } from 'lucide-react';
-import type { AgentEntry, KnowledgeRef, MemoryPolicy, FlowRef, PromptDocs, PromptKey, EvalCase } from '@/api/admin/agents/schema';
+import { useState } from 'react';
+import { Beaker, Brain, Copy, FileText, FolderTree, GitBranch, Layers, Play, Plus, RotateCcw, ShieldCheck, Sparkles, Workflow, X } from 'lucide-react';
+import type { AgentEntry, KnowledgeRef, MemoryPolicy, FlowRef, PromptDocs, PromptKey, EvalCase, CustomPromptDoc } from '@/api/admin/agents/schema';
 import { formatCalls, buildPrompts } from '@/mock/admin/agents.fixtures';
 import { EvalProgress } from './Primitives';
 import { MarkdownView } from './MarkdownView';
@@ -329,17 +330,33 @@ export function DrawerPanelPermission({ draft }: { draft: AgentEntry }) {
 }
 
 export function DrawerPanelPrompt({
-  draft, promptDoc, setPromptDoc, onChange,
+  draft, promptDoc, setPromptDoc, onChange, onChangeCustom,
 }: {
   draft: AgentEntry;
-  promptDoc: PromptKey;
-  setPromptDoc: (k: PromptKey) => void;
+  promptDoc: string;
+  setPromptDoc: (k: string) => void;
   onChange: (patch: Partial<PromptDocs>) => void;
+  onChangeCustom: (next: CustomPromptDoc[]) => void;
 }) {
-  const currentDoc = PROMPT_DOCS.find((item) => item.key === promptDoc)!;
-  const content = draft.prompts[promptDoc];
+  const customDocs = draft.customPrompts ?? [];
+  const isCustomKey = promptDoc.startsWith('custom:');
+  const isCoreKey = PROMPT_DOCS.some((d) => d.key === promptDoc);
+  const customId = isCustomKey ? promptDoc.slice('custom:'.length) : '';
+  const customDoc = isCustomKey ? customDocs.find((d) => d.id === customId) ?? null : null;
+  const coreMeta = isCoreKey ? PROMPT_DOCS.find((d) => d.key === promptDoc)! : null;
+
+  const [addOpen, setAddOpen] = useState(false);
+  const [draftFile, setDraftFile] = useState('');
+  const [draftLabel, setDraftLabel] = useState('');
+  const [draftDescription, setDraftDescription] = useState('');
+
+  const content = coreMeta ? draft.prompts[coreMeta.key] : customDoc?.content ?? '';
+  const currentLabel = coreMeta?.label ?? customDoc?.label ?? '';
+  const currentFile = coreMeta?.file ?? customDoc?.file ?? '';
+  const currentDescription = coreMeta?.description ?? customDoc?.description ?? '';
   const chars = content.length;
   const lines = content.split('\n').length;
+  const totalDocs = PROMPT_DOCS.length + customDocs.length;
 
   const handleCopy = async () => {
     try {
@@ -352,14 +369,52 @@ export function DrawerPanelPrompt({
   };
 
   const handleReset = () => {
+    if (!coreMeta) return;
     const initial = buildPrompts(draft.name, draft.category, draft.owner);
-    onChange({ [promptDoc]: initial[promptDoc] } as Partial<PromptDocs>);
+    onChange({ [coreMeta.key]: initial[coreMeta.key] } as Partial<PromptDocs>);
+  };
+
+  const handleAddCustom = () => {
+    const file = draftFile.trim();
+    const label = (draftLabel.trim() || file.replace(/\.md$/i, '')).trim();
+    if (!file) return;
+    const id = `cdoc-${Date.now().toString(36)}`;
+    const next: CustomPromptDoc = {
+      id,
+      file: file.endsWith('.md') ? file : `${file}.md`,
+      label: label || file,
+      description: draftDescription.trim() || '自定义文档',
+      content: `# ${label || file}\n\n在这里书写 Markdown 内容,支持自定义协议。`,
+    };
+    onChangeCustom([...customDocs, next]);
+    setAddOpen(false);
+    setDraftFile('');
+    setDraftLabel('');
+    setDraftDescription('');
+    setPromptDoc(`custom:${id}`);
+  };
+
+  const handleDeleteCustom = (id: string) => {
+    const next = customDocs.filter((d) => d.id !== id);
+    onChangeCustom(next);
+    if (promptDoc === `custom:${id}`) setPromptDoc('prompt');
+  };
+
+  const handleEditCore = (next: string) => {
+    if (!coreMeta) return;
+    onChange({ [coreMeta.key]: next } as Partial<PromptDocs>);
+  };
+  const handleEditCustom = (next: string) => {
+    if (!customDoc) return;
+    onChangeCustom(customDocs.map((d) => d.id === customDoc.id ? { ...d, content: next } : d));
   };
 
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4">
-        <p className="text-xs text-[var(--text-secondary)]">智能体运行时使用的 5 份核心文档,变更后随下次版本发布生效。</p>
+        <p className="text-xs text-[var(--text-secondary)]">
+          智能体运行时使用 {totalDocs} 份文档(5 份核心 + {customDocs.length} 份自定义),变更后随下次版本发布生效。
+        </p>
       </div>
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-1.5">
         {PROMPT_DOCS.map((item) => {
@@ -379,13 +434,107 @@ export function DrawerPanelPrompt({
             </button>
           );
         })}
+        {customDocs.map((item) => {
+          const active = `custom:${item.id}` === promptDoc;
+          return (
+            <div
+              key={item.id}
+              className={`group relative inline-flex items-center gap-1 rounded-lg transition ${active ? 'bg-[var(--brand-light)] text-[var(--brand)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'}`}
+            >
+              <button
+                type="button"
+                onClick={() => setPromptDoc(`custom:${item.id}`)}
+                aria-pressed={active}
+                className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 pl-3 text-xs font-semibold"
+              >
+                <FileText className="h-3.5 w-3.5" />
+                {item.file}
+              </button>
+              <button
+                type="button"
+                onClick={(event) => { event.stopPropagation(); handleDeleteCustom(item.id); }}
+                aria-label={`删除 ${item.file}`}
+                title={`删除 ${item.file}`}
+                className="mr-1 grid h-5 w-5 place-items-center rounded text-[var(--text-muted)] opacity-0 transition hover:bg-[var(--danger-bg)] hover:text-[var(--danger)] group-hover:opacity-100"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          );
+        })}
+        <button
+          type="button"
+          onClick={() => setAddOpen((v) => !v)}
+          aria-expanded={addOpen}
+          aria-label="添加自定义 Markdown 文档"
+          className="inline-flex items-center gap-1 rounded-lg border border-dashed border-[var(--border)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]"
+        >
+          <Plus className="h-3 w-3" />添加自定义文档
+        </button>
       </div>
+
+      {addOpen && (
+        <div className="rounded-2xl border border-[var(--brand)] bg-[var(--brand-light)]/40 p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--brand)]">新建自定义文档</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <label className="block">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">文件名</span>
+              <input
+                type="text"
+                value={draftFile}
+                onChange={(event) => setDraftFile(event.target.value)}
+                placeholder="FAQ.md"
+                className="mt-1 h-8 w-full rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-2 font-mono text-xs outline-none focus:border-[var(--brand)]"
+              />
+            </label>
+            <label className="block">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">标签(可选)</span>
+              <input
+                type="text"
+                value={draftLabel}
+                onChange={(event) => setDraftLabel(event.target.value)}
+                placeholder="FAQ"
+                className="mt-1 h-8 w-full rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-2 text-xs outline-none focus:border-[var(--brand)]"
+              />
+            </label>
+            <label className="block">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">说明(可选)</span>
+              <input
+                type="text"
+                value={draftDescription}
+                onChange={(event) => setDraftDescription(event.target.value)}
+                placeholder="高频问答与标准回复"
+                className="mt-1 h-8 w-full rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-2 text-xs outline-none focus:border-[var(--brand)]"
+              />
+            </label>
+          </div>
+          <div className="mt-3 flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => { setAddOpen(false); setDraftFile(''); setDraftLabel(''); setDraftDescription(''); }}
+              className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-1.5 text-[11px] font-semibold hover:border-[var(--brand)]"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              onClick={handleAddCustom}
+              disabled={!draftFile.trim()}
+              className="inline-flex items-center gap-1 rounded-lg bg-[var(--brand)] px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-[var(--brand-hover)] disabled:opacity-50"
+            >
+              <Plus className="h-3 w-3" />创建并打开
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[var(--text-muted)]">
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={handleReset}
-            className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-2.5 py-1 text-[11px] font-semibold hover:border-[var(--brand)]"
+            disabled={!coreMeta}
+            className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-2.5 py-1 text-[11px] font-semibold hover:border-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             <RotateCcw className="h-3 w-3" />重置为模板
           </button>
@@ -398,17 +547,18 @@ export function DrawerPanelPrompt({
           </button>
         </div>
       </div>
+
       <div>
-        <p className="text-[10px] text-[var(--text-muted)]">{currentDoc.description}</p>
+        <p className="text-[10px] text-[var(--text-muted)]">{currentDescription}</p>
         <div className="mt-2 grid gap-3 lg:grid-cols-2">
           <div className="flex flex-col">
             <div className="flex items-center justify-between rounded-t-xl border border-b-0 border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
               <span>Markdown 源码</span>
-              <span className="font-mono normal-case tracking-normal text-[var(--text-muted)]">{chars.toLocaleString()} 字 · {lines} 行</span>
+              <span className="font-mono normal-case tracking-normal text-[var(--text-muted)]">{currentFile} · {chars.toLocaleString()} 字 · {lines} 行</span>
             </div>
             <textarea
               value={content}
-              onChange={(event) => onChange({ [promptDoc]: event.target.value } as Partial<PromptDocs>)}
+              onChange={(event) => (coreMeta ? handleEditCore(event.target.value) : handleEditCustom(event.target.value))}
               rows={18}
               spellCheck={false}
               className="min-h-[420px] w-full flex-1 rounded-b-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] p-3 font-mono text-xs leading-6 outline-none focus:border-[var(--brand)]"
@@ -417,7 +567,7 @@ export function DrawerPanelPrompt({
           <div className="flex flex-col">
             <div className="flex items-center justify-between rounded-t-xl border border-b-0 border-[var(--border-strong)] bg-[var(--surface-1)] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
               <span>实时预览</span>
-              <span className="font-mono normal-case tracking-normal text-[var(--text-muted)]">{currentDoc.label}</span>
+              <span className="font-mono normal-case tracking-normal text-[var(--text-muted)]">{currentLabel}</span>
             </div>
             <div className="min-h-[420px] flex-1 overflow-auto rounded-b-xl border border-[var(--border-strong)] bg-[var(--surface-1)] p-4">
               <MarkdownView source={content} />

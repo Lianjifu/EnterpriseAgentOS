@@ -10,7 +10,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Bot, Maximize2, X } from 'lucide-react';
-import type { AgentEntry, DrawerPanel, EvalCase, PromptKey, PromptDocs, KnowledgeRef, MemoryPolicy, FlowRef } from '@/api/admin/agents/schema';
+import type { AgentEntry, DrawerPanel, EvalCase, PromptKey, PromptDocs, KnowledgeRef, MemoryPolicy, FlowRef, CustomPromptDoc } from '@/api/admin/agents/schema';
 import { useAgentVersions, useDiffVersions, useRunEval, useUpdateAgent } from '@/api/admin/agents';
 import { mockAgents } from '@/mock/admin/agents.fixtures';
 import { DiffDialog, type DiffPair } from './components/DiffDialog';
@@ -46,7 +46,7 @@ export default function AgentDetailPage() {
   const agent = useMemo(() => mockAgents.find((a) => a.id === id) ?? null, [id]);
 
   const [panel, setPanel] = useState<DrawerPanel>('basic');
-  const [promptDoc, setPromptDoc] = useState<PromptKey>('prompt');
+  const [promptDoc, setPromptDoc] = useState<string>('prompt');
   const [fullscreen, setFullscreen] = useState(false);
   const [evalRunning, setEvalRunning] = useState<{ progress: number } | null>(null);
   const [lastEvalResult, setLastEvalResult] = useState<EvalCase[] | null>(null);
@@ -95,13 +95,14 @@ export default function AgentDetailPage() {
   const renderPanel = () => {
     const onChangeBasic = (patch: Partial<AgentEntry>) => updateAgent.mutate({ id: agent.id, patch });
     const onChangePrompts = (patch: Partial<PromptDocs>) => updateAgent.mutate({ id: agent.id, patch: { prompts: { ...agent.prompts, ...patch } } });
+    const onChangeCustomPrompts = (next: CustomPromptDoc[]) => updateAgent.mutate({ id: agent.id, patch: { customPrompts: next } });
     const onChangeKnowledge = (refs: KnowledgeRef[]) => updateAgent.mutate({ id: agent.id, patch: { knowledgeRefs: refs } });
     const onChangeMemory = (memoryPolicy: MemoryPolicy) => updateAgent.mutate({ id: agent.id, patch: { memoryPolicy } });
     const onChangeFlow = (flowRefs: FlowRef[]) => updateAgent.mutate({ id: agent.id, patch: { flowRefs } });
 
     switch (panel) {
       case 'basic': return <DrawerPanelBasic draft={agent} onChange={onChangeBasic} />;
-      case 'prompt': return <DrawerPanelPrompt draft={agent} promptDoc={promptDoc} setPromptDoc={setPromptDoc} onChange={onChangePrompts} />;
+      case 'prompt': return <DrawerPanelPrompt draft={agent} promptDoc={promptDoc} setPromptDoc={setPromptDoc} onChange={onChangePrompts} onChangeCustom={onChangeCustomPrompts} />;
       case 'skills': return <DrawerPanelSkills draft={agent} />;
       case 'knowledge': return <DrawerPanelKnowledge draft={agent} onChange={onChangeKnowledge} />;
       case 'memory': return <DrawerPanelMemory draft={agent} onChange={onChangeMemory} />;

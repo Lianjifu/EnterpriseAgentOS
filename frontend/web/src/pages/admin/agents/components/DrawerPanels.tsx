@@ -5,6 +5,7 @@ import { Beaker, Brain, Copy, FileText, FolderTree, GitBranch, Layers, Play, Plu
 import type { AgentEntry, KnowledgeRef, MemoryPolicy, FlowRef, PromptDocs, PromptKey, EvalCase } from '@/api/admin/agents/schema';
 import { formatCalls, buildPrompts } from '@/mock/admin/agents.fixtures';
 import { EvalProgress } from './Primitives';
+import { MarkdownView } from './MarkdownView';
 import { MEMORY_RETENTION_OPTIONS, MEMORY_SCOPE_OPTIONS, PROMPT_DOCS, statusBadge } from './constants';
 
 export function DrawerPanelBasic({ draft, onChange }: { draft: AgentEntry; onChange: (patch: Partial<AgentEntry>) => void }) {
@@ -396,20 +397,33 @@ export function DrawerPanelPrompt({
             <Copy className="h-3 w-3" />复制全文
           </button>
         </div>
-        <div className="flex items-center gap-3">
-          <span>{chars.toLocaleString()} 字 · {lines} 行</span>
-          <span>· {currentDoc.label} 文件</span>
-        </div>
       </div>
       <div>
         <p className="text-[10px] text-[var(--text-muted)]">{currentDoc.description}</p>
-        <textarea
-          value={content}
-          onChange={(event) => onChange({ [promptDoc]: event.target.value } as Partial<PromptDocs>)}
-          rows={16}
-          spellCheck={false}
-          className="mt-2 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] p-3 font-mono text-xs leading-6 outline-none focus:border-[var(--brand)]"
-        />
+        <div className="mt-2 grid gap-3 lg:grid-cols-2">
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between rounded-t-xl border border-b-0 border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
+              <span>Markdown 源码</span>
+              <span className="font-mono normal-case tracking-normal text-[var(--text-muted)]">{chars.toLocaleString()} 字 · {lines} 行</span>
+            </div>
+            <textarea
+              value={content}
+              onChange={(event) => onChange({ [promptDoc]: event.target.value } as Partial<PromptDocs>)}
+              rows={18}
+              spellCheck={false}
+              className="min-h-[420px] w-full flex-1 rounded-b-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] p-3 font-mono text-xs leading-6 outline-none focus:border-[var(--brand)]"
+            />
+          </div>
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between rounded-t-xl border border-b-0 border-[var(--border-strong)] bg-[var(--surface-1)] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
+              <span>实时预览</span>
+              <span className="font-mono normal-case tracking-normal text-[var(--text-muted)]">{currentDoc.label}</span>
+            </div>
+            <div className="min-h-[420px] flex-1 overflow-auto rounded-b-xl border border-[var(--border-strong)] bg-[var(--surface-1)] p-4">
+              <MarkdownView source={content} />
+            </div>
+          </div>
+        </div>
       </div>
       <p className="text-[10px] text-[var(--text-muted)]">支持 Markdown 语法 · 保存后随下次版本发布生效。</p>
     </div>

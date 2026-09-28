@@ -116,16 +116,19 @@ export async function adminAgentsMockHandler(path: string, opts: MockOpts): Prom
 
   if (method === 'POST' && path === '/api/admin/agents') {
     const v = (opts.body ?? {}) as CreateAgentVars;
+    const today = new Date().toISOString().slice(0, 10);
     const created: AgentEntry = {
       id: v.id ?? uid('a'),
       name: v.name,
       description: v.description ?? '',
       category: v.category,
       owner: v.owner,
+      tags: v.tags ?? [],
       tone: v.tone ?? 'info',
       status: v.status ?? 'draft',
       version: v.version ?? 'v0.1',
       lastUpdate: '刚刚',
+      createdAt: today,
       calls: 0,
       successRate: 0,
       errorRate: 0,
@@ -181,6 +184,7 @@ export async function adminAgentsMockHandler(path: string, opts: MockOpts): Prom
       ? v.rows.filter((row) => row.status !== 'missing')
       : v.rows.filter((row) => row.status === 'ok');
     const tonePalette = ['brand', 'info', 'success', 'warn', 'purple'] as const;
+    const today = new Date().toISOString().slice(0, 10);
     rowsToImport.forEach((row, idx) => {
       const created: AgentEntry = {
         id: uid('a-imp'),
@@ -188,10 +192,12 @@ export async function adminAgentsMockHandler(path: string, opts: MockOpts): Prom
         description: row.source.description || '通过导入创建的智能体',
         category: row.source.category || '未分类',
         owner: row.source.owner || '未指定',
+        tags: [],
         tone: tonePalette[idx % tonePalette.length],
         status: 'draft',
         version: 'draft',
         lastUpdate: '刚刚',
+        createdAt: today,
         calls: 0,
         successRate: 0,
         errorRate: 0,

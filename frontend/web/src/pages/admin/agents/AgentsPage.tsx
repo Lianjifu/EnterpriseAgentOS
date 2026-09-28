@@ -131,15 +131,18 @@ export default function AgentsPage() {
   const handleRequestDelete = (agent: AgentEntry) => setDeletePayload({ kind: 'single', agentName: agent.name });
 
   const handleCreateAgent = () => {
+    const today = new Date().toISOString().slice(0, 10);
     createAgent.mutate({
       id: `a-${Date.now()}`,
       name: wizardDraft.name,
       description: wizardDraft.description,
       category: wizardDraft.category,
       owner: wizardDraft.owner,
+      tags: wizardDraft.tags ?? [],
       tone: 'info',
       status: 'draft',
       version: 'v0.1',
+      createdAt: today,
       tools: wizardDraft.defaultSkills,
       visibleScope: [wizardDraft.visibleScope] as VisibleScope[],
       dataAccess: '基础数据',

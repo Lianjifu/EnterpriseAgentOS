@@ -98,10 +98,12 @@ export interface AgentEntry {
   description: string;
   category: string;
   owner: string;
+  tags: string[];
   tone: Tone;
   status: Status;
   version: string;
   lastUpdate: string;
+  createdAt: string;
   calls: number;
   successRate: number;
   errorRate: number;

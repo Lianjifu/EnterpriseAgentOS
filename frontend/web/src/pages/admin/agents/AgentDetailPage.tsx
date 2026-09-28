@@ -5,11 +5,11 @@
  * 顶部返回按钮回到 /admin/agents。
  *
  * 内容复用 DrawerPanels 的 9 个子面板 + DrawerSidebar 导航,
- * 自身管理:面板切换、版本对比、沉浸式、评测进度。
+ * 自身管理:面板切换、版本对比、评测进度。
  */
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Bot, Maximize2, X } from 'lucide-react';
+import { ArrowLeft, Bot } from 'lucide-react';
 import type { AgentEntry, DrawerPanel, EvalCase, PromptKey, PromptDocs, KnowledgeRef, MemoryPolicy, FlowRef, CustomPromptDoc } from '@/api/admin/agents/schema';
 import { useAgentVersions, useDiffVersions, useRunEval, useUpdateAgent } from '@/api/admin/agents';
 import { mockAgents } from '@/mock/admin/agents.fixtures';
@@ -19,7 +19,6 @@ import {
   DrawerPanelMemory, DrawerPanelPermission, DrawerPanelPrompt, DrawerPanelSkills, DrawerPanelVersions,
 } from './components/DrawerPanels';
 import { DrawerSidebar } from './components/DrawerSidebar';
-import { FullscreenWorkspace } from './components/FullscreenWorkspace';
 import { EvalProgress } from './components/Primitives';
 import { statusBadge, toneClass } from './components/constants';
 
@@ -47,7 +46,6 @@ export default function AgentDetailPage() {
 
   const [panel, setPanel] = useState<DrawerPanel>('basic');
   const [promptDoc, setPromptDoc] = useState<string>('prompt');
-  const [fullscreen, setFullscreen] = useState(false);
   const [evalRunning, setEvalRunning] = useState<{ progress: number } | null>(null);
   const [lastEvalResult, setLastEvalResult] = useState<EvalCase[] | null>(null);
   const [diffOpen, setDiffOpen] = useState(false);
@@ -146,18 +144,10 @@ export default function AgentDetailPage() {
                   <span className={`h-1.5 w-1.5 rounded-full ${statusBadge[agent.status].dot}`} />
                   {statusBadge[agent.status].label}
                 </span>
+                <span className="rounded-md bg-[var(--bg-elevated)] px-2 py-0.5 text-[11px] font-mono text-[var(--text-muted)]">{agent.version}</span>
               </div>
-              <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{agent.category} · {agent.owner} · {agent.version}</p>
+              <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{agent.category} · {agent.owner}</p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setFullscreen(true)}
-              className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-[11px] font-semibold hover:border-[var(--brand)]"
-            >
-              <Maximize2 className="h-3 w-3" />沉浸式
-            </button>
           </div>
         </header>
       </div>
@@ -195,16 +185,6 @@ export default function AgentDetailPage() {
         targetContent={diffTarget}
         onChangePair={setDiffPair}
       />
-
-      {/* 沉浸式工作区 */}
-      {fullscreen && (
-        <FullscreenWorkspace
-          agent={agent}
-          panel={panel}
-          setPanel={setPanel}
-          onExit={() => setFullscreen(false)}
-        />
-      )}
     </div>
   );
 }

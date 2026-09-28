@@ -2,102 +2,259 @@
  * Drawer 9 个子面板 — basic / prompt / skills / knowledge / memory / flow / versions / evaluation / permission。
  */
 import { useState } from 'react';
-import { Beaker, Brain, Copy, FileText, FolderTree, GitBranch, Layers, Play, Plus, RotateCcw, ShieldCheck, Sparkles, Workflow, X } from 'lucide-react';
+import type { KeyboardEvent } from 'react';
+import { Beaker, Brain, Copy, FileText, FolderTree, GitBranch, Layers, Play, Plus, RotateCcw, ShieldCheck, Sparkles, Tag, Workflow, X } from 'lucide-react';
 import type { AgentEntry, KnowledgeRef, MemoryPolicy, FlowRef, PromptDocs, PromptKey, EvalCase, CustomPromptDoc } from '@/api/admin/agents/schema';
-import { formatCalls, buildPrompts } from '@/mock/admin/agents.fixtures';
+import { KNOWN_TONES, formatCalls, buildPrompts } from '@/mock/admin/agents.fixtures';
 import { EvalProgress } from './Primitives';
 import { MarkdownView } from './MarkdownView';
-import { MEMORY_RETENTION_OPTIONS, MEMORY_SCOPE_OPTIONS, PROMPT_DOCS, statusBadge } from './constants';
+import { MEMORY_RETENTION_OPTIONS, MEMORY_SCOPE_OPTIONS, PROMPT_DOCS, statusBadge, toneClass } from './constants';
 
 export function DrawerPanelBasic({ draft, onChange }: { draft: AgentEntry; onChange: (patch: Partial<AgentEntry>) => void }) {
   const update = (patch: Partial<AgentEntry>) => onChange(patch);
+  const [tagDraft, setTagDraft] = useState('');
+  const badge = statusBadge[draft.status];
+  const tags = draft.tags ?? [];
+
+  const handleAddTag = () => {
+    const t = tagDraft.trim();
+    if (!t || tags.includes(t)) return;
+    update({ tags: [...tags, t] });
+    setTagDraft('');
+  };
+
+  const handleRemoveTag = (t: string) => {
+    update({ tags: tags.filter((x) => x !== t) });
+  };
+
+  const handleTagKey = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' || event.key === ',') {
+      event.preventDefault();
+      handleAddTag();
+    } else if (event.key === 'Backspace' && tagDraft === '' && tags.length > 0) {
+      update({ tags: tags.slice(0, -1) });
+    }
+  };
+
   return (
-    <div className="space-y-5">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">名称</label>
-          <input
-            type="text"
-            value={draft.name}
-            onChange={(event) => update({ name: event.target.value })}
-            className="mt-1.5 h-10 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm outline-none focus:border-[var(--brand)]"
-          />
+    <div className="space-y-6">
+      {/* 基础身份 */}
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5">
+        <header className="mb-4 flex items-center justify-between">
+          <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">基础身份</h3>
+          <span className="text-[10px] font-mono text-[var(--text-muted)]">ID · {draft.id}</span>
+        </header>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">名称</span>
+            <input
+              type="text"
+              value={draft.name}
+              onChange={(event) => update({ name: event.target.value })}
+              className="mt-1.5 h-10 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm outline-none focus:border-[var(--brand)]"
+            />
+          </label>
+          <label className="block">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">场景分类</span>
+            <input
+              type="text"
+              value={draft.category}
+              onChange={(event) => update({ category: event.target.value })}
+              className="mt-1.5 h-10 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm outline-none focus:border-[var(--brand)]"
+            />
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">描述</span>
+            <textarea
+              value={draft.description}
+              onChange={(event) => update({ description: event.target.value })}
+              rows={3}
+              className="mt-1.5 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 py-2 text-sm outline-none focus:border-[var(--brand)]"
+            />
+          </label>
+          <label className="block">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">负责人</span>
+            <input
+              type="text"
+              value={draft.owner}
+              onChange={(event) => update({ owner: event.target.value })}
+              className="mt-1.5 h-10 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm outline-none focus:border-[var(--brand)]"
+            />
+          </label>
+          <label className="block">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">主题色</span>
+            <div className="mt-1.5 flex flex-wrap gap-2">
+              {KNOWN_TONES.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => update({ tone: t })}
+                  aria-pressed={draft.tone === t}
+                  aria-label={`主题色 ${t}`}
+                  className={`grid h-9 w-9 place-items-center rounded-lg border transition ${draft.tone === t ? 'border-[var(--brand)] ring-2 ring-[var(--brand)]/30' : 'border-[var(--border)] hover:border-[var(--brand)]'}`}
+                >
+                  <span className={`h-5 w-5 rounded-full ${toneClass[t]}`} />
+                </button>
+              ))}
+            </div>
+          </label>
         </div>
-        <div>
-          <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">场景分类</label>
-          <input
-            type="text"
-            value={draft.category}
-            onChange={(event) => update({ category: event.target.value })}
-            className="mt-1.5 h-10 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm outline-none focus:border-[var(--brand)]"
-          />
-        </div>
-      </div>
-      <div>
-        <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">描述</label>
-        <textarea
-          value={draft.description}
-          onChange={(event) => update({ description: event.target.value })}
-          rows={3}
-          className="mt-1.5 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 py-2 text-sm outline-none focus:border-[var(--brand)]"
-        />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">负责人</label>
-          <input
-            type="text"
-            value={draft.owner}
-            onChange={(event) => update({ owner: event.target.value })}
-            className="mt-1.5 h-10 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm outline-none focus:border-[var(--brand)]"
-          />
-        </div>
-        <div>
-          <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">版本号</label>
-          <input
-            type="text"
-            value={draft.version}
-            onChange={(event) => update({ version: event.target.value })}
-            className="mt-1.5 h-10 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm font-mono outline-none focus:border-[var(--brand)]"
-          />
-        </div>
-      </div>
-      <div>
-        <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">可见范围</label>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {(['公开', '部门', '个人'] as const).map((scope) => {
-            const active = draft.visibleScope.includes(scope);
-            return (
+      </section>
+
+      {/* 标签 */}
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5">
+        <header className="mb-4 flex items-center justify-between">
+          <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">标签</h3>
+          <span className="text-[10px] text-[var(--text-muted)]">{tags.length} 个</span>
+        </header>
+        <div className="flex flex-wrap items-center gap-2">
+          {tags.map((t) => (
+            <span key={t} className="inline-flex items-center gap-1 rounded-full bg-[var(--brand-light)] px-2.5 py-1 text-[11px] font-semibold text-[var(--brand)]">
+              <Tag className="h-3 w-3" />{t}
               <button
-                key={scope}
                 type="button"
-                onClick={() => update({
-                  visibleScope: active
-                    ? draft.visibleScope.filter((s) => s !== scope)
-                    : [...draft.visibleScope, scope],
-                })}
-                aria-pressed={active}
-                className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition ${active ? 'border-[var(--brand)] bg-[var(--brand-light)] text-[var(--brand)]' : 'border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]'}`}
+                onClick={() => handleRemoveTag(t)}
+                aria-label={`移除标签 ${t}`}
+                className="ml-0.5 grid h-3.5 w-3.5 place-items-center rounded-full text-[var(--brand)] hover:bg-[var(--brand)] hover:text-white"
               >
-                {scope}
+                <X className="h-2.5 w-2.5" />
               </button>
-            );
-          })}
+            </span>
+          ))}
+          <input
+            type="text"
+            value={tagDraft}
+            onChange={(event) => setTagDraft(event.target.value)}
+            onKeyDown={handleTagKey}
+            onBlur={handleAddTag}
+            placeholder={tags.length === 0 ? '输入标签后按回车' : '+ 添加'}
+            aria-label="添加标签"
+            className="h-7 min-w-[140px] flex-1 rounded-full border border-dashed border-[var(--border)] bg-transparent px-3 text-[11px] outline-none focus:border-[var(--brand)] focus:bg-[var(--bg-elevated)]"
+          />
         </div>
-      </div>
-      <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">当前状态</p>
-        <div className="mt-3 flex flex-wrap items-center gap-4 text-xs">
-          <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 font-semibold ${statusBadge[draft.status].className}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${statusBadge[draft.status].dot}`} aria-hidden="true" />
-            {statusBadge[draft.status].label}
-          </span>
-          <span className="text-[var(--text-muted)]">· 最后更新 {draft.lastUpdate}</span>
-          <span className="text-[var(--text-muted)]">· 调用 {formatCalls(draft.calls)}</span>
-          <span className="text-[var(--text-muted)]">· 评分 {draft.rating > 0 ? draft.rating.toFixed(1) : '—'}</span>
+        <p className="mt-2 text-[10px] text-[var(--text-muted)]">回车或逗号确认 · Backspace 删除上一个</p>
+      </section>
+
+      {/* 版本与状态 */}
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5">
+        <header className="mb-4 flex items-center justify-between">
+          <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">版本与状态</h3>
+          <span className="text-[10px] text-[var(--text-muted)]">最近更新 · {draft.lastUpdate}</span>
+        </header>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">版本号</span>
+            <input
+              type="text"
+              value={draft.version}
+              onChange={(event) => update({ version: event.target.value })}
+              className="mt-1.5 h-10 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm font-mono outline-none focus:border-[var(--brand)]"
+            />
+          </label>
+          <div>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">当前状态</span>
+            <div className="mt-1.5 flex h-10 items-center gap-2 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-xs">
+              <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-semibold ${badge.className}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${badge.dot}`} aria-hidden="true" />
+                {badge.label}
+              </span>
+              <span className="text-[var(--text-muted)]">· 由发布流程控制,不能在编辑器直接修改。</span>
+            </div>
+          </div>
         </div>
-        <p className="mt-2 text-[10px] text-[var(--text-muted)]">状态由发布流程控制,不可在编辑器直接修改。</p>
-      </div>
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <KPI label="总调用" value={formatCalls(draft.calls)} />
+          <KPI label="成功率" value={`${draft.successRate.toFixed(2)}%`} tone="success" />
+          <KPI label="错误率" value={`${draft.errorRate.toFixed(2)}%`} tone={draft.errorRate > 1 ? 'danger' : 'muted'} />
+          <KPI label="平均延迟" value={`${(draft.avgLatencyMs / 1000).toFixed(2)}s`} />
+          <KPI label="评分" value={draft.rating > 0 ? draft.rating.toFixed(1) : '—'} tone="warn" />
+        </div>
+        {draft.trend.length > 0 && (
+          <div className="mt-4">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">最近 12 期调用趋势</p>
+            <TrendBars values={draft.trend} />
+          </div>
+        )}
+      </section>
+
+      {/* 可见性与访问 */}
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5">
+        <header className="mb-4">
+          <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">可见性与数据访问</h3>
+          <p className="mt-1 text-[11px] text-[var(--text-muted)]">详细权限配置请前往「权限」面板。</p>
+        </header>
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">可见范围</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {(['公开', '部门', '个人'] as const).map((scope) => {
+              const active = draft.visibleScope.includes(scope);
+              return (
+                <button
+                  key={scope}
+                  type="button"
+                  onClick={() => update({
+                    visibleScope: active
+                      ? draft.visibleScope.filter((s) => s !== scope)
+                      : [...draft.visibleScope, scope],
+                  })}
+                  aria-pressed={active}
+                  className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition ${active ? 'border-[var(--brand)] bg-[var(--brand-light)] text-[var(--brand)]' : 'border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]'}`}
+                >
+                  {scope}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <label className="mt-4 block">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">数据访问范围</span>
+          <input
+            type="text"
+            value={draft.dataAccess}
+            onChange={(event) => update({ dataAccess: event.target.value })}
+            placeholder="例如:客户档案 · 订单系统"
+            className="mt-1.5 h-10 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm outline-none focus:border-[var(--brand)]"
+          />
+        </label>
+      </section>
+    </div>
+  );
+}
+
+function KPI({ label, value, tone }: { label: string; value: string; tone?: 'success' | 'danger' | 'warn' | 'muted' }) {
+  const toneClass = tone === 'success'
+    ? 'text-[var(--success)]'
+    : tone === 'danger'
+      ? 'text-[var(--danger)]'
+      : tone === 'warn'
+        ? 'text-[var(--warning)]'
+        : tone === 'muted'
+          ? 'text-[var(--text-muted)]'
+          : 'text-[var(--text)]';
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2.5">
+      <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--text-muted)]">{label}</p>
+      <p className={`mt-1 text-base font-semibold tabular-nums ${toneClass}`}>{value}</p>
+    </div>
+  );
+}
+
+function TrendBars({ values }: { values: number[] }) {
+  const max = Math.max(...values, 1);
+  return (
+    <div className="mt-2 flex h-16 items-end gap-1">
+      {values.map((v, idx) => {
+        const h = Math.max(4, Math.round((v / max) * 56));
+        return (
+          <div
+            key={idx}
+            className="flex-1 rounded-t bg-gradient-to-t from-[var(--brand)]/30 to-[var(--brand)]"
+            style={{ height: `${h}px` }}
+            title={`第 ${idx + 1} 期 · ${v.toLocaleString()}`}
+            aria-label={`第 ${idx + 1} 期 ${v.toLocaleString()}`}
+          />
+        );
+      })}
     </div>
   );
 }

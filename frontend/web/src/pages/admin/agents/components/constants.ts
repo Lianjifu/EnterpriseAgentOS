@@ -2,12 +2,12 @@
  * 管理侧「智能体工作台」常量 — Tab/状态徽章/排序/导出字段/向导/导入格式/drawer nav/Prompt 文档/记忆/流程触发器。
  */
 import {
-  Activity, AlertTriangle, Beaker, BookOpen, Bot, Brain, ChevronDown, ChevronLeft, ChevronRight, CheckCircle2, CheckSquare, Clock, Copy, Download, Edit3, FileJson, FileSpreadsheet, FileText, FolderTree, GitBranch, History, Info, Layers, Maximize2, MessageSquareText, MoreVertical, Play, Plus, RotateCcw, Save, Search, ShieldCheck, Sparkles, Square, Star, Timer, Trash2, TrendingUp, Upload, Workflow, X,
+  Activity, AlertTriangle, Beaker, BookOpen, Bot, Brain, ChevronDown, ChevronLeft, ChevronRight, CheckCircle2, CheckSquare, Clock, Copy, Download, Edit3, FileJson, FileSpreadsheet, FileText, FolderTree, GitBranch, History, Info, Layers, MessageSquareText, MoreVertical, Play, Plus, RotateCcw, Save, Search, ShieldCheck, Sparkles, Square, Star, Tag, Timer, Trash2, TrendingUp, Upload, Workflow, X,
 } from 'lucide-react';
 import type { Tone, Status, TabId, SortKey, DrawerPanel, PromptKey, ExportField, ExportFormat, ExportScope, MemoryRetention, MemoryScope, FlowTrigger, ImportExtension, VisibleScope, WizardDraft, DeletePayload } from '@/api/admin/agents/schema';
 
 export {
-  Activity, AlertTriangle, Beaker, BookOpen, Bot, Brain, ChevronDown, ChevronLeft, ChevronRight, CheckCircle2, CheckSquare, Clock, Copy, Download, Edit3, FileJson, FileSpreadsheet, FileText, FolderTree, GitBranch, History, Info, Layers, Maximize2, MessageSquareText, MoreVertical, Play, Plus, RotateCcw, Save, Search, ShieldCheck, Sparkles, Square, Star, Timer, Trash2, TrendingUp, Upload, Workflow, X,
+  Activity, AlertTriangle, Beaker, BookOpen, Bot, Brain, ChevronDown, ChevronLeft, ChevronRight, CheckCircle2, CheckSquare, Clock, Copy, Download, Edit3, FileJson, FileSpreadsheet, FileText, FolderTree, GitBranch, History, Info, Layers, MessageSquareText, MoreVertical, Play, Plus, RotateCcw, Save, Search, ShieldCheck, Sparkles, Square, Star, Tag, Timer, Trash2, TrendingUp, Upload, Workflow, X,
 };
 
 export const TABS: Array<{ id: TabId; label: string }> = [

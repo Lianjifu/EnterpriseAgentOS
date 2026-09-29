@@ -42,7 +42,6 @@ export default function MemoryPage() {
   const [tab, setTab] = useState<MemoryTabId>('overview');
   const [range, setRange] = useState<MemoryRange>('7d');
   const [refreshing, setRefreshing] = useState(false);
-  const [lastRefresh, setLastRefresh] = useState('刚刚');
 
   const [l1Query, setL1Query] = useState('');
   const [l1StatusFilter, setL1StatusFilter] = useState<'all' | L1Session['status']>('all');
@@ -171,7 +170,7 @@ export default function MemoryPage() {
     setL2Query(''); setL2Category('all'); setL2UserFilter('all');
     setL3Query(''); setL3TeamFilter('all'); setL3StatusFilter('all');
     setSelectedL2Ids([]);
-    window.setTimeout(() => { setRefreshing(false); setLastRefresh('刚刚'); }, 600);
+    window.setTimeout(() => { setRefreshing(false); }, 600);
   };
 
   const openL1 = (s: L1Session) => navigate(`/admin/memory/l1/${encodeURIComponent(s.id)}`);
@@ -190,8 +189,7 @@ export default function MemoryPage() {
             <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">把企业记忆资产管起来。</h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">按会话上下文、用户长期偏好、团队共享知识三层组织,各有独立的保留策略与命中率。</p>
           </div>
-          <p className="text-[11px] text-[var(--text-muted)]">最后刷新 · {lastRefresh}</p>
-        </div>
+          </div>
       </section>
 
       <section aria-label="子模块导航" className="flex flex-wrap items-center justify-between gap-3">

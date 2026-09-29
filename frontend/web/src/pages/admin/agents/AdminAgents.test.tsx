@@ -105,9 +105,11 @@ describe('AdminAgents', () => {
     // 路由切换到独立页面,带返回按钮
     expect(screen.getByRole('link', { name: /返回智能体管理/ })).toBeTruthy();
     expect(screen.getByRole('heading', { level: 1, name: '新建智能体' })).toBeTruthy();
-    // 4 步向导页头
-    expect(screen.getByText('基本信息')).toBeTruthy();
-    expect(screen.getByText('确认创建')).toBeTruthy();
+    // 4 步向导页头(左侧 stepper + 右侧 H2 各出现一次,用 getAllByText)
+    expect(screen.getAllByText('基本信息').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('确认创建').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('模板选择').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('快速配置').length).toBeGreaterThanOrEqual(1);
     // Step 1: 名称必填
     const name = screen.getByPlaceholderText(/差旅助手/);
     fireEvent.change(name, { target: { value: '测试智能体' } });

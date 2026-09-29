@@ -1,28 +1,40 @@
 /**
  * 4 步新建智能体向导(页面体) — 由 AgentCreatePage 包裹使用。
  *
- * 历史上曾是 CenterModal 弹窗;现已迁到独立页面 /admin/agents/new,
- * 移除了 onClose/open/footer;返回按钮由页面提供。
+ * 历史上曾是 CenterModal 弹窗;现已迁到独立页面 /admin/agents/new。
+ * step 由父页面受控(垂直 stepper 共享同一 state),本组件只负责渲染
+ * 当前 step 的表单 + 上一步/下一步/创建按钮。
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckCircle2, ChevronLeft, ChevronRight, Info, Plus, Square, CheckSquare } from 'lucide-react';
 import type { WizardDraft } from '@/api/admin/agents/schema';
 import { SCENES, WIZARD_TEMPLATES, WIZARD_ICONS, WIZARD_MODELS, WIZARD_SKILLS, INITIAL_WIZARD_DRAFT } from './constants';
 import { toneClass } from './constants';
-import { StepIndicator } from './Primitives';
 
 export type WizardStep = 1 | 2 | 3 | 4;
-const STEP_LABELS = ['基本信息', '模板选择', '快速配置', '确认创建'] as const;
 
 export function WizardBody({
   initialDraft,
   onSubmit,
+  controlledStep,
+  onStepChange,
 }: {
   initialDraft?: WizardDraft;
   onSubmit: (draft: WizardDraft) => void;
+  controlledStep?: WizardStep;
+  onStepChange?: (next: WizardStep) => void;
 }) {
-  const [step, setStep] = useState<WizardStep>(1);
+  const [internalStep, setInternalStep] = useState<WizardStep>(1);
+  const step = controlledStep ?? internalStep;
+  const setStep = (next: WizardStep) => {
+    if (onStepChange) onStepChange(next);
+    if (controlledStep === undefined) setInternalStep(next);
+  };
   const [draft, setDraft] = useState<WizardDraft>(initialDraft ?? INITIAL_WIZARD_DRAFT);
+
+  useEffect(() => {
+    if (controlledStep !== undefined) setInternalStep(controlledStep);
+  }, [controlledStep]);
 
   const canNext =
     step === 1 ? draft.name.trim().length > 0
@@ -33,8 +45,6 @@ export function WizardBody({
 
   return (
     <div className="space-y-6">
-      <StepIndicator current={step} total={4} labels={[...STEP_LABELS]} />
-
       {step === 1 && (
         <div className="space-y-4">
           <div>
@@ -216,18 +226,18 @@ export function WizardBody({
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border)] pt-4">
         {step > 1 ? (
-          <button type="button" onClick={() => setStep((step - 1) as WizardStep)} className="inline-flex items-center gap-1 rounded-xl border border-[var(--border)] px-4 py-2 text-xs font-semibold hover:border-[var(--brand)]">
+          <button type="button" onClick={() => setStep((step - 1) as WizardStep)} className="inline-flex items-center gap-1 rounded-xl border border-[var(--border)] px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]">
             <ChevronLeft className="h-3.5 w-3.5" />上一步
           </button>
         ) : (
           <span />
         )}
         {isLast ? (
-          <button type="button" onClick={() => onSubmit(draft)} disabled={!canNext} className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)] disabled:opacity-50">
+          <button type="button" onClick={() => onSubmit(draft)} disabled={!canNext} className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white shadow-[var(--shadow-sm)] hover:bg-[var(--brand-hover)] disabled:cursor-not-allowed disabled:opacity-50">
             <Plus className="h-3.5 w-3.5" />创建并进入编辑器
           </button>
         ) : (
-          <button type="button" onClick={() => setStep((step + 1) as WizardStep)} disabled={!canNext} className="inline-flex items-center gap-1 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)] disabled:opacity-50">
+          <button type="button" onClick={() => setStep((step + 1) as WizardStep)} disabled={!canNext} className="inline-flex items-center gap-1 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white shadow-[var(--shadow-sm)] hover:bg-[var(--brand-hover)] disabled:cursor-not-allowed disabled:opacity-50">
             下一步<ChevronRight className="h-3.5 w-3.5" />
           </button>
         )}

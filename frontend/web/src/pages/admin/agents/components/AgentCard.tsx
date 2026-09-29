@@ -27,26 +27,24 @@ export function AgentCard({
   const badge = statusBadge[agent.status];
   const Icon = Bot;
   const isInactive = agent.calls === 0;
+  const handleCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onSelect(agent);
+    }
+  };
   return (
     <div
-      className={`group relative flex flex-col gap-4 rounded-2xl border bg-[var(--surface-1)] p-5 text-left transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)] ${
+      role="button"
+      tabIndex={0}
+      onClick={() => onSelect(agent)}
+      onKeyDown={handleCardKeyDown}
+      aria-label={`查看 ${agent.name} 详情`}
+      className={`group relative flex cursor-pointer flex-col gap-4 rounded-2xl border bg-[var(--surface-1)] p-5 text-left transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] ${
         selected ? 'border-[var(--brand)] shadow-[var(--shadow-sm)]' : 'border-[var(--border)] hover:border-[var(--brand)]'
       }`}
     >
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => onSelect(agent)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            onSelect(agent);
-          }
-        }}
-        aria-label={`查看 ${agent.name} 详情`}
-        className="absolute inset-0 z-0 cursor-pointer rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
-      />
-      <div className="relative z-10 flex items-start justify-between">
+      <div className="flex items-start justify-between">
         <button
           type="button"
           onClick={(event) => {
@@ -111,7 +109,7 @@ export function AgentCard({
           </div>
         </div>
       </div>
-      <div className="relative z-10 flex items-start gap-3">
+      <div className="flex items-start gap-3">
         <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${toneClass[agent.tone]}`}>
           <Icon className="h-6 w-6" />
         </span>
@@ -120,8 +118,8 @@ export function AgentCard({
           <h4 className="mt-1.5 text-base font-semibold tracking-tight text-[var(--text)]">{agent.name}</h4>
         </div>
       </div>
-      <p className="relative z-10 line-clamp-2 text-xs leading-5 text-[var(--text-muted)]">{agent.description}</p>
-      <div className="relative z-10 mt-auto flex flex-wrap items-center gap-3 border-t border-[var(--border)] pt-3 text-[11px]">
+      <p className="line-clamp-2 text-xs leading-5 text-[var(--text-muted)]">{agent.description}</p>
+      <div className="mt-auto flex flex-wrap items-center gap-3 border-t border-[var(--border)] pt-3 text-[11px]">
         <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-semibold ${badge.className}`}>
           <span className={`h-1.5 w-1.5 rounded-full ${badge.dot}`} aria-hidden="true" />
           {badge.label} · {agent.version}
@@ -137,9 +135,9 @@ export function AgentCard({
         )}
       </div>
       {isInactive ? (
-        <div className="relative z-10 text-[11px] text-[var(--text-muted)]">{agent.lastUpdate} · 等待评估</div>
+        <div className="text-[11px] text-[var(--text-muted)]">{agent.lastUpdate} · 等待评估</div>
       ) : (
-        <div className="relative z-10 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--text-muted)]">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--text-muted)]">
           <span className="inline-flex items-center gap-1"><Sparkles className="h-3 w-3" />评分 {agent.rating.toFixed(1)}</span>
           <span className="inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" />错误 {agent.errorRate.toFixed(2)}%</span>
           <span className="inline-flex items-center gap-1"><Timer className="h-3 w-3" />延迟 {(agent.avgLatencyMs / 1000).toFixed(1)}s</span>

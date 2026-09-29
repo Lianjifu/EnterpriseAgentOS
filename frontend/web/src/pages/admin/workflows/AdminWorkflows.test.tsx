@@ -32,19 +32,27 @@ function renderPage() {
 }
 
 describe('AdminWorkflows', () => {
-  it('渲染 hero + 5 状态 tab + 默认 全部', () => {
+  it('渲染 hero + 5 状态 tab + 搜索 + 新建工作流 同行', () => {
     renderPage();
     expect(screen.getByText(/把可复用的工作流设计出来/)).toBeTruthy();
-    expect(screen.getByText('工作流列表')).toBeTruthy();
     const nav = screen.getByLabelText('子模块导航');
     ['全部', '草稿', '已发布', '已下线'].forEach((label) => {
       expect(within(nav).getByRole('button', { name: new RegExp(label) })).toBeTruthy();
     });
+    expect(within(nav).getByRole('button', { name: /新建工作流/ })).toBeTruthy();
+    expect(within(nav).getByPlaceholderText(/搜索工作流名/)).toBeTruthy();
   });
 
   it('默认 tab 是 全部 + 渲染 FlowCard', () => {
     renderPage();
-    expect(screen.getByText('工作流列表')).toBeTruthy();
+    expect(screen.getAllByText(/销售周报自动整理/).length).toBeGreaterThan(0);
+  });
+
+  it('子模块导航 「+ 新建工作流」按钮 → /admin/workflows/new', () => {
+    renderPage();
+    const nav = screen.getByLabelText('子模块导航');
+    within(nav).getByRole('button', { name: /新建工作流/ }).click();
+    expect(navigateMock).toHaveBeenCalledWith('/admin/workflows/new');
   });
 
   it('FlowCard 查看按钮 → /admin/workflows/:id', () => {
@@ -81,11 +89,5 @@ describe('AdminWorkflows', () => {
     expect(screen.getAllByRole('menuitem', { name: /智能体/ }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('menuitem', { name: /条件/ }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('menuitem', { name: /结束/ }).length).toBeGreaterThan(0);
-  });
-
-  it('OverviewTab 新建工作流按钮 → /admin/workflows/new', () => {
-    renderPage();
-    screen.getByRole('button', { name: /新建工作流/ }).click();
-    expect(navigateMock).toHaveBeenCalledWith('/admin/workflows/new');
   });
 });

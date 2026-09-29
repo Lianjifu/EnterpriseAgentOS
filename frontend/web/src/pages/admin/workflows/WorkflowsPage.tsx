@@ -11,7 +11,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Boxes } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { NoticeBanner } from '@/components/feedback/NoticeBanner';
 import { useWorkflows } from '@/api/admin/workflows';
 import type { Flow, FlowNodeData, NodeKind, WorkflowTabId } from '@/api/admin/workflows/schema';
@@ -39,8 +39,6 @@ export default function WorkflowsPage() {
   useEffect(() => {
     setFlows(remoteFlows);
   }, [remoteFlows]);
-
-  const publishedCount = useMemo(() => flows.filter((f) => f.status === 'published').length, [flows]);
 
   const visibleFlows = useMemo(() => {
     const base = tab === 'all' ? flows : flows.filter((f) => f.status === tab);
@@ -123,9 +121,6 @@ export default function WorkflowsPage() {
               用画布把触发器、工具调用、条件分支、结束节点串成可执行的工作流;可发布为工具,被任意智能体按需调用。
             </p>
           </div>
-          <div className="flex items-center gap-1.5 self-end text-[10px] text-[var(--text-muted)]">
-            <Boxes className="h-3 w-3" />{flows.length} 个工作流 · 已发布 {publishedCount}
-          </div>
         </div>
       </section>
 
@@ -135,7 +130,7 @@ export default function WorkflowsPage() {
         </NoticeBanner>
       )}
 
-      <section aria-label="子模块导航" className="flex items-center gap-2 overflow-x-auto pb-1">
+      <section aria-label="子模块导航" className="flex flex-wrap items-center justify-between gap-3">
         <div className="inline-flex items-center gap-1 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-1">
           {TABS.map((t) => {
             const count = countForTab(t.id, flows);
@@ -156,19 +151,35 @@ export default function WorkflowsPage() {
             );
           })}
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative w-full sm:w-64">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="搜索工作流名 / 团队 / 场景"
+              className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-1)] pl-10 pr-3 text-sm outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--brand)]"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={goCreate}
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]"
+          >
+            <Plus className="h-4 w-4" />
+            新建工作流
+          </button>
+        </div>
       </section>
 
       <OverviewTab
         flows={visibleFlows}
-        search={search}
-        setSearch={setSearch}
         statusTab={tab}
         onView={goView}
         onEdit={goEdit}
         onCopy={copyFlow}
         onPublish={openPublish}
         onRetire={retireFlow}
-        onCreate={goCreate}
         onAddNode={addNodeToFlow}
       />
 

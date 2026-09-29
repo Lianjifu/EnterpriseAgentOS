@@ -51,14 +51,14 @@ export const mockL3Entries: L3Entry[] = [
 ];
 
 export const mockPromotions: PromotionEvent[] = [
-  { id: 'p-1', layer: 'l1→l2', label: '张文佳 · 答复风格: 喜欢精简答复', at: '今天 15:48', operator: '系统自动提炼' },
-  { id: 'p-2', layer: 'l2→l3', label: '客服团队 · 价格折扣规则发布', at: '今天 15:30', operator: '管理员' },
-  { id: 'p-3', layer: 'l1→l2', label: '王晓阳 · 关注指标: 日活/留存/转化漏斗', at: '今天 15:12', operator: '系统自动提炼' },
-  { id: 'p-4', layer: 'l1→l2', label: '陈雨晴 · 代码风格: 函数式优先', at: '今天 14:48', operator: '系统自动提炼' },
-  { id: 'p-5', layer: 'l2→l3', label: '研发团队 · API 设计规范发布', at: '今天 14:30', operator: '管理员' },
-  { id: 'p-6', layer: 'l1→l2', label: '赵泽宇 · 语言禁用: 中文优先', at: '今天 14:18', operator: '系统自动提炼' },
-  { id: 'p-7', layer: 'l1→l2', label: '李楠 · 调研方法: 先公开数据后访谈', at: '今天 13:40', operator: '系统自动提炼' },
-  { id: 'p-8', layer: 'l2→l3', label: '产品团队 · 业务术语对照表发布', at: '今天 11:20', operator: '管理员' },
+  { id: 'p-1', layer: 'l1→l2', label: '张文佳 · 答复风格: 喜欢精简答复', at: '今天 15:48', operator: '系统自动提炼', targetId: 'f-1' },
+  { id: 'p-2', layer: 'l2→l3', label: '客服团队 · 价格折扣规则发布', at: '今天 15:30', operator: '管理员', targetId: 'k-2' },
+  { id: 'p-3', layer: 'l1→l2', label: '王晓阳 · 关注指标: 日活/留存/转化漏斗', at: '今天 15:12', operator: '系统自动提炼', targetId: 'f-5' },
+  { id: 'p-4', layer: 'l1→l2', label: '陈雨晴 · 代码风格: 函数式优先', at: '今天 14:48', operator: '系统自动提炼', targetId: 'f-7' },
+  { id: 'p-5', layer: 'l2→l3', label: '研发团队 · API 设计规范发布', at: '今天 14:30', operator: '管理员', targetId: 'k-3' },
+  { id: 'p-6', layer: 'l1→l2', label: '赵泽宇 · 语言禁用: 中文优先', at: '今天 14:18', operator: '系统自动提炼', targetId: 'f-14' },
+  { id: 'p-7', layer: 'l1→l2', label: '李楠 · 调研方法: 先公开数据后访谈', at: '今天 13:40', operator: '系统自动提炼', targetId: 'f-12' },
+  { id: 'p-8', layer: 'l2→l3', label: '产品团队 · 业务术语对照表发布', at: '今天 11:20', operator: '管理员', targetId: 'k-1' },
 ];
 
 export const mockRetentionPolicies: RetentionPolicy[] = [

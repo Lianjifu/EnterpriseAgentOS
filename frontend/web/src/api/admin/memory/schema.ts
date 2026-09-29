@@ -37,6 +37,8 @@ export interface L3Entry {
 export interface PromotionEvent {
   id: string; layer: 'l1→l2' | 'l2→l3';
   label: string; at: string; operator: string;
+  /** 晋升结果实体 id(l1→l2 → L2 fact id,l2→l3 → L3 entry id) */
+  targetId: string;
 }
 
 export interface RetentionPolicy {

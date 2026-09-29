@@ -127,9 +127,12 @@ export default function SkillDetailPage() {
         </Field>
         <Field icon={<Activity className="h-3.5 w-3.5" />} label="调用趋势">
           <div className="flex h-8 items-end gap-0.5">
-            {skill.trend.map((v, i) => (
-              <span key={i} className="w-2 rounded-sm bg-[var(--brand)]" style={{ height: `${Math.max(4, v * 28)}px` }} />
-            ))}
+            {(() => {
+              const max = Math.max(1, ...skill.trend);
+              return skill.trend.map((v, i) => (
+                <span key={i} className="w-2 rounded-sm bg-[var(--brand)]" style={{ height: `${Math.max(4, (v / max) * 32)}px` }} />
+              ));
+            })()}
           </div>
         </Field>
         <Field icon={<AlertTriangle className="h-3.5 w-3.5" />} label="风险级别">

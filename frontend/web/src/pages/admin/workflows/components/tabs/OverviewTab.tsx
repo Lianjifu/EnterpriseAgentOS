@@ -9,9 +9,13 @@
  * - 编辑 → onEdit(id)
  * - + 添加节点 → onAddNode(flow, kind)(列表侧快速添加)
  */
+import { useEffect, useMemo, useState } from 'react';
 import { Plus, Search, Workflow } from 'lucide-react';
 import type { Flow, NodeKind, WorkflowTabId } from '@/api/admin/workflows/schema';
 import { FlowCard } from '../FlowCard';
+import { PaginationBar } from '@/pages/admin/memory/components/PaginationBar';
+
+const PAGE_SIZE = 8;
 
 interface OverviewTabProps {
   flows: Flow[];
@@ -31,6 +35,18 @@ export function OverviewTab({
   flows, search, setSearch, statusTab,
   onView, onEdit, onCopy, onPublish, onRetire, onCreate, onAddNode,
 }: OverviewTabProps) {
+  const [page, setPage] = useState(1);
+
+  // 搜索 / status 切换时重置 page 1
+  useEffect(() => { setPage(1); }, [search, statusTab]);
+
+  const total = flows.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = total === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const pageEnd = Math.min(total, safePage * PAGE_SIZE);
+  const pagedFlows = useMemo(() => flows.slice(pageStart - 1, pageEnd), [flows, pageStart, pageEnd]);
+
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5">
@@ -66,7 +82,7 @@ export function OverviewTab({
         </div>
 
         <div className="mt-5 grid gap-4 lg:grid-cols-2">
-          {flows.map((flow) => (
+          {pagedFlows.map((flow) => (
             <FlowCard
               key={flow.id}
               flow={flow}
@@ -79,7 +95,7 @@ export function OverviewTab({
             />
           ))}
         </div>
-        {flows.length === 0 && (
+        {total === 0 && (
           <div className="mt-5 rounded-2xl border border-dashed border-[var(--border-strong)] bg-[var(--surface-1)] p-12 text-center">
             <Search className="mx-auto h-6 w-6 text-[var(--text-muted)]" />
             <p className="mt-3 text-sm font-semibold">{emptyTitleForTab(statusTab)}</p>
@@ -87,6 +103,15 @@ export function OverviewTab({
           </div>
         )}
       </section>
+
+      <PaginationBar
+        page={safePage}
+        totalPages={totalPages}
+        total={total}
+        pageStart={pageStart}
+        pageEnd={pageEnd}
+        onPageChange={setPage}
+      />
     </div>
   );
 }

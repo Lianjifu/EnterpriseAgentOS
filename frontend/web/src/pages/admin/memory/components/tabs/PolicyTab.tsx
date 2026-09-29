@@ -25,6 +25,27 @@ export function PolicyTab({ policies, range, onExport }: {
 
   return (
     <section className="space-y-4">
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h3 className="text-base font-semibold">评测指标 · 三层汇总</h3>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">{RANGE_LABEL[range]} · 命中率 / MRR / 召回率 / 平均晋升耗时</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {(['l1', 'l2', 'l3'] as MemoryLayer[]).map((layer) => (
+              <button key={layer} type="button" onClick={() => onExport(layer)} className="inline-flex items-center gap-2 rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-semibold hover:border-[var(--brand)]">
+                <FileDown className="h-4 w-4" />导出 {layer.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-4">
+          <Kpi label="命中率" value={`${(totals.hitRate * 100).toFixed(1)}%`} trend={`+${((totals.hitRate - 0.88) * 100).toFixed(1)}%`} />
+          <Kpi label="MRR" value={totals.mrr.toFixed(2)} trend="+0.02" />
+          <Kpi label="召回率" value={totals.recall.toFixed(2)} trend="+0.01" />
+          <Kpi label="平均晋升耗时" value={`${totals.promoteHours.toFixed(1)} h`} trend="-0.6 h" />
+        </div>
+      </div>
       <div className="grid gap-4 md:grid-cols-3">
         {policies.map((p) => {
           const meta = LAYER_META[p.layer];
@@ -73,27 +94,6 @@ export function PolicyTab({ policies, range, onExport }: {
             </div>
           );
         })}
-      </div>
-      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h3 className="text-base font-semibold">评测指标 · 三层汇总</h3>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">{RANGE_LABEL[range]} · 命中率 / MRR / 召回率 / 平均晋升耗时</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {(['l1', 'l2', 'l3'] as MemoryLayer[]).map((layer) => (
-              <button key={layer} type="button" onClick={() => onExport(layer)} className="inline-flex items-center gap-2 rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-semibold hover:border-[var(--brand)]">
-                <FileDown className="h-4 w-4" />导出 {layer.toUpperCase()}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-4">
-          <Kpi label="命中率" value={`${(totals.hitRate * 100).toFixed(1)}%`} trend={`+${((totals.hitRate - 0.88) * 100).toFixed(1)}%`} />
-          <Kpi label="MRR" value={totals.mrr.toFixed(2)} trend="+0.02" />
-          <Kpi label="召回率" value={totals.recall.toFixed(2)} trend="+0.01" />
-          <Kpi label="平均晋升耗时" value={`${totals.promoteHours.toFixed(1)} h`} trend="-0.6 h" />
-        </div>
       </div>
     </section>
   );

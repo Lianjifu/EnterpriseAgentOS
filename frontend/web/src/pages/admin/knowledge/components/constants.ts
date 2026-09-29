@@ -5,10 +5,10 @@ import type { TabId, Range, DocType, SourceType } from '@/api/admin/knowledge/sc
 
 export const TABS: { id: TabId; label: string }[] = [
   { id: 'kb', label: '知识库' },
-  { id: 'docs', label: '文档' },
-  { id: 'sources', label: '数据源' },
-  { id: 'tasks', label: '任务' },
-  { id: 'eval', label: '评测' },
+  { id: 'docs', label: '文档目录' },
+  { id: 'sources', label: '数据源接入' },
+  { id: 'tasks', label: '任务队列' },
+  { id: 'eval', label: '评测中心' },
 ];
 
 export const RANGES: { id: Range; label: string }[] = [

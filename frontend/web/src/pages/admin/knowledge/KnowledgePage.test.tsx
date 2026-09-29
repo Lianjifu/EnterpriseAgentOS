@@ -60,7 +60,7 @@ describe('AdminKnowledge', () => {
   it('renders hero and five sub-tabs', () => {
     renderPage();
     expect(screen.getByText('把企业知识资产管起来。')).toBeTruthy();
-    const tabs = ['知识库', '文档', '数据源', '任务', '评测'];
+    const tabs = ['知识库', '文档目录', '数据源接入', '任务队列', '评测中心'];
     for (const t of tabs) {
       expect(screen.getAllByText(t).length).toBeGreaterThan(0);
     }

@@ -15,7 +15,7 @@ interface FeedbackCardProps {
   fb: Feedback;
   selected: boolean;
   onToggleSelect: (id: string) => void;
-  onSelect: (fb: Feedback) => void;
+  onSelect: (id: string) => void;
   onQuickTriage: (fb: Feedback) => void;
   onQuickResolve: (fb: Feedback) => void;
 }
@@ -27,7 +27,7 @@ export function FeedbackCard({ fb, selected, onToggleSelect, onSelect, onQuickTr
   const prio = PRIORITY_BADGE[fb.priority];
   return (
     <article className={`group relative rounded-2xl border bg-[var(--surface-1)] p-5 transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)] ${selected ? 'border-[var(--brand)] shadow-[var(--shadow-sm)]' : 'border-[var(--border)] hover:border-[var(--brand)]'}`}>
-      <div role="button" tabIndex={0} onClick={() => onSelect(fb)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(fb); } }} aria-label={`查看 ${fb.user} 反馈详情`} className="absolute inset-0 z-0 cursor-pointer rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]" />
+      <div role="button" tabIndex={0} onClick={() => onSelect(fb.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(fb.id); } }} aria-label={`查看 ${fb.user} 反馈详情`} className="absolute inset-0 z-0 cursor-pointer rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]" />
       <div className="relative z-10 flex items-start gap-2">
         <button type="button" onClick={(e) => { e.stopPropagation(); onToggleSelect(fb.id); }} aria-label={selected ? `取消选择反馈 ${fb.id}` : `选择反馈 ${fb.id}`} aria-pressed={selected} className={`grid h-9 w-9 place-items-center rounded-lg transition ${selected ? 'bg-[var(--brand-light)] text-[var(--brand)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)]'}`}>
           {selected ? <CheckCircle2 className="h-4 w-4" /> : <Square className="h-4 w-4" />}
@@ -66,7 +66,7 @@ export function FeedbackCard({ fb, selected, onToggleSelect, onSelect, onQuickTr
                 <CheckCircle2 className="h-3 w-3" />标记已解决
               </button>
             )}
-            <button type="button" onClick={(e) => { e.stopPropagation(); onSelect(fb); }} className="ml-auto inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1 text-[10px] font-semibold hover:border-[var(--brand)]">
+            <button type="button" onClick={(e) => { e.stopPropagation(); onSelect(fb.id); }} className="ml-auto inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1 text-[10px] font-semibold hover:border-[var(--brand)]">
               <MessageSquare className="h-3 w-3" />查看 / 回复
             </button>
           </div>

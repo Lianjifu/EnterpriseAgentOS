@@ -31,7 +31,7 @@ interface OverviewTabProps {
   setPriorityFilter: (s: 'all' | Feedback['priority']) => void;
   selectedIds: string[];
   setSelectedIds: (ids: string[]) => void;
-  onSelect: (fb: Feedback) => void;
+  onSelect: (id: string) => void;
   onToggleSelect: (id: string) => void;
   onQuickTriage: (fb: Feedback) => void;
   onQuickResolve: (fb: Feedback) => void;
@@ -178,7 +178,7 @@ interface ListTabProps {
   search: string;
   setSearch: (s: string) => void;
   selectedIds: string[];
-  onSelect: (fb: Feedback) => void;
+  onSelect: (id: string) => void;
   onToggleSelect: (id: string) => void;
   onQuickTriage: (fb: Feedback) => void;
   onQuickResolve: (fb: Feedback) => void;

@@ -40,6 +40,9 @@ const AdminRegressions = lazy(() => import('@/pages/admin/regressions'));
 const AdminRegressionDetail = lazy(() => import('@/pages/admin/regressions/RegressionDetailPage'));
 const AdminRegressionCreate = lazy(() => import('@/pages/admin/regressions/RegressionCreatePage'));
 const AdminFeedback = lazy(() => import('@/pages/admin/feedback'));
+const AdminFeedbackDetail = lazy(() => import('@/pages/admin/feedback/FeedbackDetailPage'));
+const AdminFeedbackCreate = lazy(() => import('@/pages/admin/feedback/FeedbackCreatePage'));
+const AdminFeedbackRuleCreate = lazy(() => import('@/pages/admin/feedback/FeedbackRuleCreatePage'));
 const AdminModels = lazy(() => import('@/pages/admin/models'));
 const AdminQuotas = lazy(() => import('@/pages/admin/quotas'));
 const AdminNotifications = lazy(() => import('@/pages/admin/notifications'));
@@ -127,6 +130,9 @@ export default function App() {
             <Route path="/admin/regressions/new" element={<AdminRegressionCreate />} />
             <Route path="/admin/regressions/:id" element={<AdminRegressionDetail />} />
             <Route path="/admin/feedback" element={<AdminFeedback />} />
+            <Route path="/admin/feedback/new" element={<AdminFeedbackCreate />} />
+            <Route path="/admin/feedback/rules/new" element={<AdminFeedbackRuleCreate />} />
+            <Route path="/admin/feedback/:id" element={<AdminFeedbackDetail />} />
             <Route path="/admin/models" element={<AdminModels />} />
             <Route path="/admin/quotas" element={<AdminQuotas />} />
             <Route path="/admin/notifications" element={<AdminNotifications />} />

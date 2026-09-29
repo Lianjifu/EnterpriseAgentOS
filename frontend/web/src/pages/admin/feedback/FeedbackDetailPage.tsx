@@ -1,27 +1,38 @@
 /**
- * AdminFeedback — 反馈详情侧拉。
- * 3 个 panel: 反馈详情 / 回复处理 / 处理历史。
+ * Admin 反馈详情 — 独立页面 /admin/feedback/:id
+ *
+ * 把 FeedbackDetailDrawer 的 3 个 panel + header + footer 提到页面形态。
+ * 单条 fb 从 useFeedbackList() list 中派生;本地编辑缓冲(草稿)。
+ * 「为此反馈创建工单」改为 navigate('/admin/feedback/new?fromFeedback=' + id)。
  */
-import { BookOpen, Clock, MessageSquare, Save, Send, Smile, ThumbsDown, ThumbsUp, User, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import {
+  BookOpen, Clock, MessageSquare, Save, Send, Smile, ThumbsDown, ThumbsUp, User, X,
+} from 'lucide-react';
 import type { DrawerPanel, Feedback, FeedbackPriority, FeedbackStatus } from '@/api/admin/feedback/schema';
-import { SideDrawer } from '@/components/feedback/SideDrawer';
-import { DRAWER_NAV_ITEMS, PRIORITY_BADGE, SENTIMENT_META, STATUS_BADGE, TYPE_LABEL } from './constants';
-import { StarRow } from './Primitives';
+import { useFeedbackList } from '@/api/admin/feedback';
+import { DRAWER_NAV_ITEMS, PRIORITY_BADGE, SENTIMENT_META, STATUS_BADGE, TYPE_LABEL } from './components/constants';
+import { StarRow } from './components/Primitives';
 
-const navIconMap: Record<string, typeof BookOpen> = {
-  BookOpen, Send, Clock,
-};
-const sentimentIconMap: Record<string, typeof ThumbsUp> = {
-  ThumbsUp, ThumbsDown, Smile,
-};
+const navIconMap: Record<string, typeof BookOpen> = { BookOpen, Send, Clock };
+const sentimentIconMap: Record<string, typeof ThumbsUp> = { ThumbsUp, ThumbsDown, Smile };
 
-interface DrawerPanelDetailProps {
-  fb: Feedback;
-  onChange: (patch: Partial<Feedback>) => void;
+function NotFound() {
+  return (
+    <div className="mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-10">
+      <Link to="/admin/feedback" className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--brand)]">
+        <span aria-hidden="true">←</span>返回用户反馈
+      </Link>
+      <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-1)] p-8 text-center">
+        <p className="text-sm font-semibold">反馈不存在或已被删除</p>
+        <p className="mt-1 text-xs text-[var(--text-muted)]">请返回列表重新选择。</p>
+      </div>
+    </div>
+  );
 }
 
-function DrawerPanelDetail({ fb, onChange }: DrawerPanelDetailProps) {
+function DrawerPanelDetail({ fb, onChange }: { fb: Feedback; onChange: (patch: Partial<Feedback>) => void }) {
   const update = (patch: Partial<Feedback>) => onChange(patch);
   return (
     <div className="space-y-5">
@@ -145,14 +156,9 @@ function DrawerPanelHistory({ fb }: { fb: Feedback }) {
   );
 }
 
-interface DrawerSidebarProps {
-  panel: DrawerPanel;
-  setPanel: (p: DrawerPanel) => void;
-}
-
-function DrawerSidebar({ panel, setPanel }: DrawerSidebarProps) {
+function DrawerSidebar({ panel, setPanel }: { panel: DrawerPanel; setPanel: (p: DrawerPanel) => void }) {
   return (
-    <nav aria-label="反馈工作区" className="hidden w-[200px] shrink-0 flex-col gap-1 border-r border-[var(--border)] bg-[var(--bg-elevated)] p-4 sm:flex">
+    <nav aria-label="反馈工作区" className="hidden w-[200px] shrink-0 flex-col gap-1 rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4 sm:flex">
       <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">工作区</p>
       {DRAWER_NAV_ITEMS.map((item) => {
         const Icon = navIconMap[item.icon] ?? BookOpen;
@@ -168,53 +174,76 @@ function DrawerSidebar({ panel, setPanel }: DrawerSidebarProps) {
   );
 }
 
-interface FeedbackDetailDrawerProps {
-  fb: Feedback | null;
-  onClose: () => void;
-  onChange: (patch: Partial<Feedback>) => void;
-  onSave: () => void;
-  onCreateTicket: () => void;
-}
-
-export function FeedbackDetailDrawer({ fb, onClose, onChange, onSave, onCreateTicket }: FeedbackDetailDrawerProps) {
+export default function FeedbackDetailPage() {
+  const { id = '' } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const feedbacksQuery = useFeedbackList();
+  const feedbacks = feedbacksQuery.data ?? [];
+  const original = useMemo(() => feedbacks.find((f) => f.id === id), [feedbacks, id]);
+  const [draft, setDraft] = useState<Feedback | null>(null);
   const [panel, setPanel] = useState<DrawerPanel>('detail');
-  useEffect(() => { setPanel('detail'); }, [fb?.id]);
-  if (!fb) return null;
-  const sen = SENTIMENT_META[fb.sentiment];
+
+  useEffect(() => {
+    setDraft(original ?? null);
+    setPanel('detail');
+  }, [original?.id]);
+
+  if (!original || !draft) return <NotFound />;
+
+  const sen = SENTIMENT_META[draft.sentiment];
   const SenIcon = sentimentIconMap[sen.icon] ?? Smile;
-  const badge = STATUS_BADGE[fb.status];
+  const badge = STATUS_BADGE[draft.status];
+
+  const update = (patch: Partial<Feedback>) => setDraft({ ...draft, ...patch });
+  const handleSave = () => navigate('/admin/feedback');
+  const handleCreateTicket = () => navigate(`/admin/feedback/new?fromFeedback=${draft.id}`);
+
   return (
-    <SideDrawer open={fb !== null} onClose={onClose} ariaLabel={`反馈 ${fb.id}`} panelClassName="max-w-3xl" closeLabel="关闭反馈详情" eyebrow={<div className="flex items-center gap-2"><span className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--brand-light)] text-[var(--brand)]"><MessageSquare className="h-4 w-4" /></span><p className="text-[11px] font-semibold tracking-[0.2em] text-[var(--brand)]">用户反馈</p></div>}>
-      <div className="mt-8">
-        <h3 className="text-2xl font-semibold">{fb.topic}</h3>
-        <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">{fb.comment}</p>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold ${sen.tone}`}><SenIcon className="h-3 w-3" />{sen.label}</span>
-          <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-1 text-[11px] font-medium">{TYPE_LABEL[fb.type]}</span>
-          <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-1 text-[11px] font-medium">智能体:{fb.agent}</span>
-          <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-semibold ${badge.className}`}><span className={`h-1.5 w-1.5 rounded-full ${badge.dot}`} aria-hidden="true" />{badge.label}</span>
-          <StarRow rating={fb.rating} />
+    <div className="mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-10">
+      <Link to="/admin/feedback" className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--brand)]">
+        <span aria-hidden="true">←</span>返回用户反馈
+      </Link>
+
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">用户反馈 · {TYPE_LABEL[draft.type]}</p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight">{draft.topic}</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-muted)]">{draft.comment}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold ${sen.tone}`}><SenIcon className="h-3 w-3" />{sen.label}</span>
+            <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-1 text-[11px] font-medium">智能体:{draft.agent}</span>
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-semibold ${badge.className}`}><span className={`h-1.5 w-1.5 rounded-full ${badge.dot}`} aria-hidden="true" />{badge.label}</span>
+            <StarRow rating={draft.rating} />
+          </div>
         </div>
-      </div>
-      <div className="mt-8 flex flex-col sm:flex-row">
-        <DrawerSidebar panel={panel} setPanel={setPanel} />
-        <div className="flex-1 space-y-5 sm:pl-6">
-          {panel === 'detail' && <DrawerPanelDetail fb={fb} onChange={onChange} />}
-          {panel === 'reply' && <DrawerPanelReply fb={fb} />}
-          {panel === 'history' && <DrawerPanelHistory fb={fb} />}
+        <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[var(--brand-light)] text-[var(--brand)]">
+          <MessageSquare className="h-5 w-5" />
+        </span>
+      </header>
+
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5 sm:p-6">
+        <div className="flex flex-col gap-5 sm:flex-row">
+          <DrawerSidebar panel={panel} setPanel={setPanel} />
+          <div className="flex-1 space-y-5">
+            {panel === 'detail' && <DrawerPanelDetail fb={draft} onChange={update} />}
+            {panel === 'reply' && <DrawerPanelReply fb={draft} />}
+            {panel === 'history' && <DrawerPanelHistory fb={draft} />}
+          </div>
         </div>
-      </div>
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-5">
-        <button type="button" onClick={onCreateTicket} className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
-          <Send className="h-3.5 w-3.5" />为此反馈创建工单
-        </button>
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2 text-xs font-semibold">关闭</button>
-          <button type="button" onClick={onSave} className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
-            <Save className="h-3.5 w-3.5" />保存修改
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-5">
+          <button type="button" onClick={handleCreateTicket} className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
+            <Send className="h-3.5 w-3.5" />为此反馈创建工单
           </button>
+          <div className="flex items-center gap-2">
+            <Link to="/admin/feedback" className="rounded-lg border border-[var(--border)] px-4 py-2 text-xs font-semibold">关闭</Link>
+            <button type="button" onClick={handleSave} className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
+              <Save className="h-3.5 w-3.5" />保存修改
+            </button>
+          </div>
         </div>
-      </div>
-    </SideDrawer>
+      </section>
+
+      <p className="text-center text-xs text-[var(--text-muted)]">本页为前端演示数据,生产环境将接入 EOS 用户反馈中台。</p>
+    </div>
   );
 }

@@ -1,18 +1,20 @@
 /**
  * AdminFeedback — orchestrator。
  * 反馈 / 工单 / 主题 / 规则 走 useApiQuery 拉取;写操作(创建 / 编辑 / 删除 / 批量 / 导入导出 / 规则启用停用)走本地乐观更新。
+ * 详情页 + 新建工单 / 新建规则改为独立路由(/admin/feedback/:id · /admin/feedback/new · /admin/feedback/rules/new)。
  */
 import { Download, MessageSquare, Plus, Upload } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { NoticeBanner } from '@/components/feedback/NoticeBanner';
 import { useFeedbackList, useFeedbackRules, useFeedbackTickets, useFeedbackTopics } from '@/api/admin/feedback';
 import type { ExchangeFormat, Feedback, FeedbackPriority, FeedbackSentiment, FeedbackStatus, RoutingRule, TabId, Ticket } from '@/api/admin/feedback/schema';
 import { uid } from './components/constants';
-import { CreateRuleModal, CreateTicketModal, DeleteFeedbackModal, ExportFeedbackModal, ImportFeedbackModal } from './components/Modals';
-import { FeedbackDetailDrawer } from './components/FeedbackDetailDrawer';
+import { DeleteFeedbackModal, ExportFeedbackModal, ImportFeedbackModal } from './components/Modals';
 import { ListTab, OverviewTab, RuleTab, TicketTab, TopicTab } from './components/tabs/Tabs';
 
 export default function FeedbackPage() {
+  const navigate = useNavigate();
   const remoteList = useFeedbackList();
   const remoteTickets = useFeedbackTickets();
   const remoteTopics = useFeedbackTopics();
@@ -32,10 +34,7 @@ export default function FeedbackPage() {
   const [sentimentFilter, setSentimentFilter] = useState<'all' | FeedbackSentiment>('all');
   const [priorityFilter, setPriorityFilter] = useState<'all' | FeedbackPriority>('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [detail, setDetail] = useState<Feedback | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Feedback | null>(null);
-  const [createTicketOpen, setCreateTicketOpen] = useState(false);
-  const [createRuleOpen, setCreateRuleOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [notice, setNotice] = useState('');
@@ -72,17 +71,7 @@ export default function FeedbackPage() {
 
   const toggleSelect = (id: string) => setSelectedIds((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
 
-  const updateFeedback = (id: string, patch: Partial<Feedback>) => {
-    setFeedback((current) => current.map((f) => f.id === id ? { ...f, ...patch } : f));
-    if (detail && detail.id === id) setDetail({ ...detail, ...patch });
-  };
-
-  const handleSaveDetail = () => {
-    if (!detail) return;
-    setFeedback((current) => current.map((f) => f.id === detail.id ? { ...detail } : f));
-    setNotice(`已保存反馈「${detail.id}」的修改。`);
-    setDetail(null);
-  };
+  const handleSelectFeedback = (id: string) => navigate('/admin/feedback/' + id);
 
   const handleDelete = (fb: Feedback) => {
     setFeedback((current) => current.filter((f) => f.id !== fb.id));
@@ -114,19 +103,6 @@ export default function FeedbackPage() {
     setFeedback((current) => current.filter((f) => !selectedIds.includes(f.id)));
     setNotice(`已批量删除 ${selectedIds.length} 条。`);
     setSelectedIds([]);
-  };
-
-  const handleCreateTicket = (ticket: Ticket) => {
-    setTickets((current) => [ticket, ...current]);
-    setNotice(`已创建工单「${ticket.title}」。`);
-    setCreateTicketOpen(false);
-    setTab('ticket');
-  };
-
-  const handleCreateRule = (rule: RoutingRule) => {
-    setRules((current) => [rule, ...current]);
-    setNotice(`已创建规则「${rule.name}」。`);
-    setCreateRuleOpen(false);
   };
 
   const handleImport = (count: number) => {
@@ -176,26 +152,6 @@ export default function FeedbackPage() {
     if (r) setNotice(`已删除规则「${r.name}」`);
   };
 
-  const handleCreateTicketFromDetail = () => {
-    if (!detail) return;
-    const newTicket: Ticket = {
-      id: uid('tk'),
-      title: `${detail.topic} 反馈工单`,
-      feedbackIds: [detail.id],
-      owner: '张敏',
-      priority: detail.priority,
-      status: 'triaged',
-      topic: detail.topic,
-      description: detail.comment,
-      createdAt: '今天',
-      dueAt: '本周内',
-    };
-    setTickets((current) => [newTicket, ...current]);
-    setNotice(`已为反馈「${detail.id}」创建工单「${newTicket.title}」`);
-    setDetail(null);
-    setTab('ticket');
-  };
-
   const positivePct = counts.total > 0 ? (counts.positive / counts.total) * 100 : 0;
   const negativePct = counts.total > 0 ? (counts.negative / counts.total) * 100 : 0;
 
@@ -219,7 +175,7 @@ export default function FeedbackPage() {
               <button type="button" onClick={() => setExportOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--brand)] hover:text-[var(--brand)]">
                 <Download className="h-3.5 w-3.5" />导出
               </button>
-              <button type="button" onClick={() => setCreateTicketOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 text-xs font-semibold text-white transition hover:bg-[var(--brand-hover)]">
+              <button type="button" onClick={() => navigate('/admin/feedback/new')} className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 text-xs font-semibold text-white transition hover:bg-[var(--brand-hover)]">
                 <Plus className="h-4 w-4" />新建工单
               </button>
             </div>
@@ -270,7 +226,7 @@ export default function FeedbackPage() {
           setPriorityFilter={setPriorityFilter}
           selectedIds={selectedIds}
           setSelectedIds={setSelectedIds}
-          onSelect={setDetail}
+          onSelect={handleSelectFeedback}
           onToggleSelect={toggleSelect}
           onQuickTriage={handleQuickTriage}
           onQuickResolve={handleQuickResolve}
@@ -286,32 +242,22 @@ export default function FeedbackPage() {
           search={search}
           setSearch={setSearch}
           selectedIds={selectedIds}
-          onSelect={setDetail}
+          onSelect={handleSelectFeedback}
           onToggleSelect={toggleSelect}
           onQuickTriage={handleQuickTriage}
           onQuickResolve={handleQuickResolve}
         />
       )}
       {tab === 'ticket' && (
-        <TicketTab tickets={tickets} onCreate={() => setCreateTicketOpen(true)} />
+        <TicketTab tickets={tickets} onCreate={() => navigate('/admin/feedback/new')} />
       )}
       {tab === 'topic' && (
         <TopicTab topics={topics} onJumpToTickets={() => setTab('ticket')} />
       )}
       {tab === 'rule' && (
-        <RuleTab rules={rules} onCreate={() => setCreateRuleOpen(true)} onToggle={handleRuleToggle} onDelete={handleRuleDelete} />
+        <RuleTab rules={rules} onCreate={() => navigate('/admin/feedback/rules/new')} onToggle={handleRuleToggle} onDelete={handleRuleDelete} />
       )}
 
-      <FeedbackDetailDrawer
-        fb={detail}
-        onClose={() => setDetail(null)}
-        onChange={(patch) => detail && updateFeedback(detail.id, patch)}
-        onSave={handleSaveDetail}
-        onCreateTicket={handleCreateTicketFromDetail}
-      />
-
-      <CreateTicketModal open={createTicketOpen} onClose={() => setCreateTicketOpen(false)} onCreate={handleCreateTicket} />
-      <CreateRuleModal open={createRuleOpen} onClose={() => setCreateRuleOpen(false)} onCreate={handleCreateRule} />
       <DeleteFeedbackModal open={deleteTarget !== null} onClose={() => setDeleteTarget(null)} onConfirm={() => deleteTarget && handleDelete(deleteTarget)} fb={deleteTarget} />
       <ImportFeedbackModal open={importOpen} onClose={() => setImportOpen(false)} onImport={handleImport} />
       <ExportFeedbackModal open={exportOpen} onClose={() => setExportOpen(false)} onExport={handleExport} total={feedback.length} selectedCount={selectedIds.length} />

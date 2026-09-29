@@ -36,17 +36,17 @@ export function L3Tab({
   return (
     <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
       <div className="flex flex-col gap-3 border-b border-[var(--border)] px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-1 items-center gap-2">
           <input
             value={query}
             onChange={(e) => onQuery(e.target.value)}
             placeholder="搜索标题 / 摘要 / 类别"
-            className="h-10 w-full min-w-[200px] rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 text-sm outline-none focus:border-[var(--brand)] sm:max-w-[300px]"
+            className="h-10 min-w-[200px] flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 text-sm outline-none focus:border-[var(--brand)] sm:max-w-[300px]"
           />
           <button
             type="button"
             onClick={onCreate}
-            className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-3 py-2 text-xs font-semibold text-white hover:opacity-90"
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[var(--brand)] px-3 py-2 text-xs font-semibold text-white hover:opacity-90"
           >
             <Plus className="h-4 w-4" />新建知识
           </button>

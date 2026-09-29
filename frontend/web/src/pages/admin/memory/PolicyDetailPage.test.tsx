@@ -32,7 +32,7 @@ describe('PolicyDetailPage', () => {
     (useRetentionPolicy as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       data: {
         layer: 'l2',
-        label: 'L2 长期记忆',
+        label: '长期记忆',
         description: '用户偏好与事实',
         ttlMinutes: 129600,
         maxItems: 200,
@@ -43,10 +43,10 @@ describe('PolicyDetailPage', () => {
       isLoading: false,
     });
 
-    renderAt('L2%20%E9%95%BF%E6%9C%9F%E8%AE%B0%E5%BF%86');
+    renderAt('%E9%95%BF%E6%9C%9F%E8%AE%B0%E5%BF%86');
 
     await waitFor(() => {
-      expect(screen.getByText('L2 长期记忆')).toBeTruthy();
+      expect(screen.getByText('长期记忆')).toBeTruthy();
     });
     expect(screen.getByText(/用户偏好与事实/)).toBeTruthy();
     expect(screen.getByText('88%')).toBeTruthy();

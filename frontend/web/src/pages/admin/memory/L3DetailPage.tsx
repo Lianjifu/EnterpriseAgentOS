@@ -28,7 +28,7 @@ export default function L3DetailPage() {
   if (!entry) {
     return (
       <DetailShell backTo="/admin/memory" backLabel="返回记忆管理">
-        <DetailNotFound subject="L3 团队知识不存在或已被下线" />
+        <DetailNotFound subject="团队知识不存在或已被下线" />
       </DetailShell>
     );
   }
@@ -38,7 +38,7 @@ export default function L3DetailPage() {
   return (
     <DetailShell backTo="/admin/memory" backLabel="返回记忆管理">
       <DetailHeader
-        eyebrow={`L3 知识记忆 · ${entry.team}`}
+        eyebrow={`知识记忆 · ${entry.team}`}
         title={entry.title}
         icon={Icon}
         iconClass="bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"

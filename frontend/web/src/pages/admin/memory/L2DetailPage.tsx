@@ -28,7 +28,7 @@ export default function L2DetailPage() {
   if (!fact) {
     return (
       <DetailShell backTo="/admin/memory" backLabel="返回记忆管理">
-        <DetailNotFound subject="L2 长期事实不存在或已被删除" />
+        <DetailNotFound subject="长期事实不存在或已被删除" />
       </DetailShell>
     );
   }
@@ -41,7 +41,7 @@ export default function L2DetailPage() {
   return (
     <DetailShell backTo="/admin/memory" backLabel="返回记忆管理">
       <DetailHeader
-        eyebrow="L2 长期记忆 · 事实"
+        eyebrow="长期记忆 · 事实"
         title={fact.key}
         icon={Icon}
         iconClass="bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300"

@@ -238,9 +238,9 @@ export default function MemoryPage() {
           const isActive = tab === id;
           const labelMap: Record<MemoryTabId, { label: string; icon: typeof Zap }> = {
             overview: { label: '三层总览', icon: BookOpen },
-            l1: { label: 'L1 短期记忆', icon: Zap },
-            l2: { label: 'L2 长期记忆', icon: Brain },
-            l3: { label: 'L3 知识记忆', icon: BookOpen },
+            l1: { label: '短期记忆', icon: Zap },
+            l2: { label: '长期记忆', icon: Brain },
+            l3: { label: '知识记忆', icon: BookOpen },
             policy: { label: '保留策略与评测', icon: Brain },
           };
           const entry = labelMap[id];

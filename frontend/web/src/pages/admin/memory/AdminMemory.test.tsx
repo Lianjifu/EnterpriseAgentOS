@@ -35,7 +35,7 @@ describe('AdminMemory', () => {
   it('切换到 L1 tab 显示会话表格', async () => {
     renderPage();
     const nav = screen.getByLabelText('子模块导航');
-    within(nav).getByRole('button', { name: /L1 短期记忆/ }).click();
+    within(nav).getByRole('button', { name: /短期记忆/ }).click();
     await waitFor(() => {
       expect(screen.getByText('全部 flush')).toBeTruthy();
     });
@@ -45,7 +45,7 @@ describe('AdminMemory', () => {
   it('切换到 L2 tab 显示事实卡片', async () => {
     renderPage();
     const nav = screen.getByLabelText('子模块导航');
-    within(nav).getByRole('button', { name: /L2 长期记忆/ }).click();
+    within(nav).getByRole('button', { name: /长期记忆/ }).click();
     await waitFor(() => {
       expect(screen.getByText('答复风格')).toBeTruthy();
     });
@@ -54,7 +54,7 @@ describe('AdminMemory', () => {
   it('切换到 L3 tab 显示知识卡片', async () => {
     renderPage();
     const nav = screen.getByLabelText('子模块导航');
-    within(nav).getByRole('button', { name: /L3 知识记忆/ }).click();
+    within(nav).getByRole('button', { name: /知识记忆/ }).click();
     await waitFor(() => {
       expect(screen.getByText('业务术语对照表')).toBeTruthy();
     });

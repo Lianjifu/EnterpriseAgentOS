@@ -32,7 +32,7 @@ export default function L1DetailPage() {
   if (!session) {
     return (
       <DetailShell backTo="/admin/memory" backLabel="返回记忆管理">
-        <DetailNotFound subject="L1 会话不存在或已被清空" />
+        <DetailNotFound subject="短期会话不存在或已被清空" />
       </DetailShell>
     );
   }
@@ -43,7 +43,7 @@ export default function L1DetailPage() {
   return (
     <DetailShell backTo="/admin/memory" backLabel="返回记忆管理">
       <DetailHeader
-        eyebrow={`L1 短期记忆 · 会话 sess-${session.id.split('-')[1]?.padStart(3, '0') ?? '000'}`}
+        eyebrow={`短期记忆 · 会话 sess-${session.id.split('-')[1]?.padStart(3, '0') ?? '000'}`}
         title={`${session.userName} ↔ ${session.agentName}`}
         icon={Icon}
         iconClass={`${meta.tone === 'info' ? 'bg-sky-50 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300' : ''}`}

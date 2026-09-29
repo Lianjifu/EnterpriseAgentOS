@@ -62,7 +62,7 @@ export const mockPromotions: PromotionEvent[] = [
 ];
 
 export const mockRetentionPolicies: RetentionPolicy[] = [
-  { layer: 'l1', label: 'L1 短期记忆', description: '会话上下文窗口', ttlMinutes: 60, maxItems: 50, storageMb: 8, eviction: 'fifo', hitRate: 0.94 },
-  { layer: 'l2', label: 'L2 长期记忆', description: '用户偏好与事实', ttlMinutes: 60 * 24 * 90, maxItems: 200, storageMb: 32, eviction: 'lru', hitRate: 0.88 },
-  { layer: 'l3', label: 'L3 知识记忆', description: '团队级共享知识', ttlMinutes: 60 * 24 * 365, maxItems: 500, storageMb: 128, eviction: 'lru', hitRate: 0.92 },
+  { layer: 'l1', label: '短期记忆', description: '会话上下文窗口', ttlMinutes: 60, maxItems: 50, storageMb: 8, eviction: 'fifo', hitRate: 0.94 },
+  { layer: 'l2', label: '长期记忆', description: '用户偏好与事实', ttlMinutes: 60 * 24 * 90, maxItems: 200, storageMb: 32, eviction: 'lru', hitRate: 0.88 },
+  { layer: 'l3', label: '知识记忆', description: '团队级共享知识', ttlMinutes: 60 * 24 * 365, maxItems: 500, storageMb: 128, eviction: 'lru', hitRate: 0.92 },
 ];

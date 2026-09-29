@@ -50,6 +50,6 @@ describe('L3DetailPage', () => {
   it('renders not-found when entry is missing', () => {
     (useL3Entry as unknown as ReturnType<typeof vi.fn>).mockReturnValue({ data: null, isLoading: false });
     renderAt('nonexistent');
-    expect(screen.getByText(/L3 团队知识不存在/)).toBeTruthy();
+    expect(screen.getByText(/团队知识不存在/)).toBeTruthy();
   });
 });

@@ -49,6 +49,6 @@ describe('L1DetailPage', () => {
   it('renders not-found when session is missing', () => {
     (useL1Session as unknown as ReturnType<typeof vi.fn>).mockReturnValue({ data: null, isLoading: false });
     renderAt('nonexistent');
-    expect(screen.getByText(/L1 会话不存在或已被清空/)).toBeTruthy();
+    expect(screen.getByText(/短期会话不存在或已被清空/)).toBeTruthy();
   });
 });

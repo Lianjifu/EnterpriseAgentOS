@@ -52,6 +52,6 @@ describe('L2DetailPage', () => {
   it('renders not-found when fact is missing', () => {
     (useL2Fact as unknown as ReturnType<typeof vi.fn>).mockReturnValue({ data: null, isLoading: false });
     renderAt('nonexistent');
-    expect(screen.getByText(/L2 长期事实不存在/)).toBeTruthy();
+    expect(screen.getByText(/长期事实不存在/)).toBeTruthy();
   });
 });

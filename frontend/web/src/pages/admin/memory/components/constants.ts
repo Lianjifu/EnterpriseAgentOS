@@ -8,9 +8,9 @@ import type {
 
 export const TABS: Array<{ id: MemoryTabId; label: string; icon: LucideIcon }> = [
   { id: 'overview', label: '三层总览', icon: Layers },
-  { id: 'l1', label: 'L1 短期记忆', icon: Zap },
-  { id: 'l2', label: 'L2 长期记忆', icon: Brain },
-  { id: 'l3', label: 'L3 知识记忆', icon: BookOpen },
+  { id: 'l1', label: '短期记忆', icon: Zap },
+  { id: 'l2', label: '长期记忆', icon: Brain },
+  { id: 'l3', label: '知识记忆', icon: BookOpen },
   { id: 'policy', label: '保留策略与评测', icon: Settings },
 ];
 
@@ -40,9 +40,9 @@ export const L3_STATUS_BADGE: Record<L3Status, { label: string; className: strin
 };
 
 export const LAYER_META: Record<MemoryLayer, { label: string; tone: Tone; icon: LucideIcon; tagline: string }> = {
-  l1: { label: 'L1 短期记忆', tone: 'info', icon: Zap, tagline: '当前会话上下文,会话结束 TTL 到期后清理' },
-  l2: { label: 'L2 长期记忆', tone: 'purple', icon: Brain, tagline: '跨会话保留的用户偏好与事实' },
-  l3: { label: 'L3 知识记忆', tone: 'brand', icon: BookOpen, tagline: '团队级共享知识,所有智能体可检索' },
+  l1: { label: '短期记忆', tone: 'info', icon: Zap, tagline: '当前会话上下文,会话结束 TTL 到期后清理' },
+  l2: { label: '长期记忆', tone: 'purple', icon: Brain, tagline: '跨会话保留的用户偏好与事实' },
+  l3: { label: '知识记忆', tone: 'brand', icon: BookOpen, tagline: '团队级共享知识,所有智能体可检索' },
 };
 
 export const toneClass: Record<Tone, string> = {

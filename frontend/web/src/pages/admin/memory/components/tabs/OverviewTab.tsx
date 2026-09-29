@@ -3,9 +3,13 @@
  *
  * 顶部趋势区携带 TimeRangeDropdown,控制 3 个 TrendCard 的数据范围;
  * 卡片右侧展示「最后刷新 · {lastRefresh}」。
+ *
+ * 布局:左 3fr(趋势 + 待办 + 策略快访)· 右 2fr(晋升事件 feed)。
+ * 原右栏顶部 3 KpiMini 已删 —— 当前值在左 TrendCard 大字号展示过,
+ * KpiMini 形成冗余;右栏空间让给 PromotionFeed,显示更多事件条目。
  */
 import { Link } from 'react-router-dom';
-import { BookOpen, Brain, ChevronRight, Clock, Zap } from 'lucide-react';
+import { BookOpen, Brain, ChevronRight, Clock } from 'lucide-react';
 import type {
   L2Fact, L3Entry, MemoryRange, MemoryTrend, PromotionEvent, RetentionPolicy,
 } from '@/api/admin/memory/schema';
@@ -47,7 +51,7 @@ export function OverviewTab({
 
   return (
     <section className="space-y-4">
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="space-y-4">
           <div>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -239,32 +243,9 @@ export function OverviewTab({
         </div>
 
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-2">
-            <KpiMini icon={Zap} label="短期 · 活跃" value={(trend.l1Active[trend.l1Active.length - 1] ?? 0).toLocaleString()} tone="info" />
-            <KpiMini icon={Brain} label="长期 · 命中" value={(trend.l2Hits[trend.l2Hits.length - 1] ?? 0).toLocaleString()} tone="purple" />
-            <KpiMini icon={BookOpen} label="知识 · 命中" value={(trend.l3Hits[trend.l3Hits.length - 1] ?? 0).toLocaleString()} tone="brand" />
-          </div>
-          <PromotionFeed events={promotions} />
+          <PromotionFeed events={promotions} limit={10} />
         </div>
       </div>
     </section>
-  );
-}
-
-function KpiMini({ icon: Icon, label, value, tone }: { icon: typeof Zap; label: string; value: string; tone: 'info' | 'purple' | 'brand' }) {
-  const cls =
-    tone === 'info'
-      ? 'bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300'
-      : tone === 'purple'
-      ? 'bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300'
-      : 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300';
-  return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-3">
-      <span className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${cls}`}>
-        <Icon className="h-3 w-3" />
-      </span>
-      <p className="mt-2 text-base font-semibold tabular-nums">{value}</p>
-      <p className="text-[10px] text-[var(--text-muted)]">{label} · 当前</p>
-    </div>
   );
 }

@@ -1,5 +1,8 @@
 /**
  * KbCreatePage 测试 — 路由 /admin/knowledge/kbs/new
+ *
+ * 验证:返回链接、Hero 标题、左侧 sticky 纵向 stepper、右侧实时预览面板、
+ * 底部「下一步/上一步」按钮态、创建按钮存在。
  */
 import { describe, expect, it, afterEach } from 'vitest';
 import { cleanup, screen } from '@testing-library/react';
@@ -26,10 +29,19 @@ function renderAt() {
 describe('AdminKnowledgeKbCreate', () => {
   afterEach(() => cleanup());
 
-  it('renders the create kb page header and step 1', () => {
+  it('renders header, sticky stepper, live preview, and create button', () => {
     renderAt();
     expect(screen.getByRole('heading', { level: 1, name: '新建知识库' })).toBeTruthy();
     expect(screen.getByRole('link', { name: /返回知识管理/ })).toBeTruthy();
-    expect(screen.getByText('基础信息')).toBeTruthy();
+    // 「基础信息」既出现在左侧 stepper, 也出现在右侧 workspace header
+    expect(screen.getAllByText('基础信息').length).toBeGreaterThan(0);
+    // 「数据源」出现在左侧 stepper 第 2 步; 「检索设置」出现在左侧 stepper 第 3 步
+    expect(screen.getAllByText('数据源').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('检索设置').length).toBeGreaterThan(0);
+    expect(screen.getByText('实时预览')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /创建知识库/ })).toBeTruthy();
+    // step 1 底部应有「下一步」, 不应有「上一步」
+    expect(screen.getAllByRole('button', { name: /下一步/ }).length).toBeGreaterThan(0);
+    expect(screen.queryAllByRole('button', { name: /上一步/ }).length).toBe(0);
   });
 });

@@ -101,12 +101,12 @@ describe('AdminKnowledge', () => {
     expect(screen.getByRole('heading', { level: 1, name: '产品手册 v3.pdf' })).toBeTruthy();
   });
 
-  it('navigates to create kb page (4 steps)', () => {
+  it('navigates to create kb page (3 steps)', () => {
     renderApp('/admin/knowledge');
     fireEvent.click(screen.getAllByRole('button', { name: /新建知识库/ })[0]);
     expect(screen.getByRole('link', { name: /返回知识管理/ })).toBeTruthy();
     expect(screen.getByRole('heading', { level: 1, name: '新建知识库' })).toBeTruthy();
-    expect(screen.getByText('基础信息')).toBeTruthy();
+    expect(screen.getAllByText('基础信息').length).toBeGreaterThan(0);
   });
 
   it('navigates to create source page', () => {

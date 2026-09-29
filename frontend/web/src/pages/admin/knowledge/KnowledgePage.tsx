@@ -239,13 +239,15 @@ export default function KnowledgePage() {
         <>
           <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5 sm:p-7">
             <div className="flex flex-wrap items-end justify-between gap-3">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-1 items-center gap-2">
                 <input
                   className="w-56 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-sm focus:border-[var(--brand)] focus:outline-none"
                   placeholder="搜索名称 / 标签…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
+              </div>
+              <div className="flex items-center gap-2">
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
@@ -257,8 +259,6 @@ export default function KnowledgePage() {
                   <option value="paused">已暂停</option>
                   <option value="failed">失败</option>
                 </select>
-              </div>
-              <div className="flex items-center gap-2">
                 <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border)] px-2.5 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]">
                   <Filter className="h-3.5 w-3.5" />
                   筛选

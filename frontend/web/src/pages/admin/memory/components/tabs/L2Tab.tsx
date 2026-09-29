@@ -53,14 +53,14 @@ export function L2Tab({
         </div>
       )}
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
-        <div className="flex flex-col gap-3 border-b border-[var(--border)] px-5 py-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="flex flex-1 flex-wrap items-center gap-2">
-            <input
-              value={query}
-              onChange={(e) => onQuery(e.target.value)}
-              placeholder="搜索 key / value"
-              className="h-10 w-full min-w-[200px] flex-1 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 text-sm outline-none focus:border-[var(--brand)] sm:max-w-[300px]"
-            />
+        <div className="flex flex-col gap-3 border-b border-[var(--border)] px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+          <input
+            value={query}
+            onChange={(e) => onQuery(e.target.value)}
+            placeholder="搜索 key / value"
+            className="h-10 w-full min-w-[200px] rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 text-sm outline-none focus:border-[var(--brand)] sm:max-w-[300px]"
+          />
+          <div className="flex flex-wrap items-center gap-2">
             <select
               value={category}
               onChange={(e) => onCategory(e.target.value as 'all' | L2Category)}
@@ -82,7 +82,6 @@ export function L2Tab({
               ))}
             </select>
           </div>
-          <p className="text-[11px] text-[var(--text-muted)]">{facts.length} 条事实 · 过滤后</p>
         </div>
         <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
           {facts.map((f) => (

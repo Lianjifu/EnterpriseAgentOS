@@ -145,17 +145,38 @@ export default function KbDetailPage() {
         )}
       </DetailSection>
 
-      <DetailSection title={`被以下 Agent 引用 (${boundAgents.length})`} icon={Users}>
-        {boundAgents.length === 0 ? (
-          <p className="text-xs text-[var(--text-muted)]">暂无 Agent 引用</p>
+      <DetailSection title={`评测用例命中 (${matchedEvalCases.length})`} icon={TrendingUp}>
+        {matchedEvalCases.length === 0 ? (
+          <p className="text-xs text-[var(--text-muted)]">该知识库暂无评测引用</p>
         ) : (
-          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {boundAgents.map((a) => (
-              <li key={a.id} className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--bg-app)] px-3 py-2 text-xs">
-                <span className="font-medium">{a.name}</span>
-                <a href={`/admin/agents/${a.id}`} className="text-[var(--brand)] hover:underline">查看 →</a>
-              </li>
-            ))}
+          <ul className="flex flex-col gap-2">
+            {matchedEvalCases.map((e) => {
+              const badge = EVAL_STATUS_BADGE[e.status];
+              const isFail = e.status === 'fail';
+              const expectedId = e.expectedKb === id ? '本库' : e.expectedKb;
+              const actualId = e.actualKb === id ? '本库' : e.actualKb;
+              return (
+                <li
+                  key={e.id}
+                  className={`rounded-xl border bg-[var(--bg-app)] p-3 ${isFail ? 'border-l-4 border-l-rose-500 border-[var(--border)]' : 'border-[var(--border)]'}`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="truncate text-sm font-semibold">{e.name}</p>
+                    <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.className}`}>{badge.label}</span>
+                  </div>
+                  <p className="mt-1 line-clamp-1 text-[11px] text-[var(--text-muted)]">{e.query}</p>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
+                    <span>预期 · <span className="font-medium text-[var(--text-secondary)]">{expectedId}</span></span>
+                    <span>·</span>
+                    <span>实际 · <span className="font-medium text-[var(--text-secondary)]">{actualId}</span></span>
+                    <span>·</span>
+                    <span>MRR {(e.mrr * 100).toFixed(0)}%</span>
+                    <span>·</span>
+                    <span>{e.latency.toFixed(2)}s</span>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </DetailSection>
@@ -194,38 +215,17 @@ export default function KbDetailPage() {
         )}
       </DetailSection>
 
-      <DetailSection title={`评测用例命中 (${matchedEvalCases.length})`} icon={TrendingUp}>
-        {matchedEvalCases.length === 0 ? (
-          <p className="text-xs text-[var(--text-muted)]">该知识库暂无评测引用</p>
+      <DetailSection title={`被以下 Agent 引用 (${boundAgents.length})`} icon={Users}>
+        {boundAgents.length === 0 ? (
+          <p className="text-xs text-[var(--text-muted)]">暂无 Agent 引用</p>
         ) : (
-          <ul className="flex flex-col gap-2">
-            {matchedEvalCases.map((e) => {
-              const badge = EVAL_STATUS_BADGE[e.status];
-              const isFail = e.status === 'fail';
-              const expectedId = e.expectedKb === id ? '本库' : e.expectedKb;
-              const actualId = e.actualKb === id ? '本库' : e.actualKb;
-              return (
-                <li
-                  key={e.id}
-                  className={`rounded-xl border bg-[var(--bg-app)] p-3 ${isFail ? 'border-l-4 border-l-rose-500 border-[var(--border)]' : 'border-[var(--border)]'}`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="truncate text-sm font-semibold">{e.name}</p>
-                    <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.className}`}>{badge.label}</span>
-                  </div>
-                  <p className="mt-1 line-clamp-1 text-[11px] text-[var(--text-muted)]">{e.query}</p>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-                    <span>预期 · <span className="font-medium text-[var(--text-secondary)]">{expectedId}</span></span>
-                    <span>·</span>
-                    <span>实际 · <span className="font-medium text-[var(--text-secondary)]">{actualId}</span></span>
-                    <span>·</span>
-                    <span>MRR {(e.mrr * 100).toFixed(0)}%</span>
-                    <span>·</span>
-                    <span>{e.latency.toFixed(2)}s</span>
-                  </div>
-                </li>
-              );
-            })}
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {boundAgents.map((a) => (
+              <li key={a.id} className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--bg-app)] px-3 py-2 text-xs">
+                <span className="font-medium">{a.name}</span>
+                <a href={`/admin/agents/${a.id}`} className="text-[var(--brand)] hover:underline">查看 →</a>
+              </li>
+            ))}
           </ul>
         )}
       </DetailSection>

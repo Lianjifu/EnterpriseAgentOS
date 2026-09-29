@@ -16,6 +16,17 @@ export interface FlowNodeData {
   subtitle: string;
   kind: NodeKind;
   config: Record<string, string>;
+  /** Dify 风格 input 变量 — 显示在节点卡片左侧 */
+  inputs?: VarField[];
+  /** Dify 风格 output 变量 — 显示在节点卡片右侧,可被下游 value_selector 引用 */
+  outputs?: VarField[];
+}
+
+export interface VarField {
+  name: string;
+  type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'file';
+  required?: boolean;
+  description?: string;
 }
 
 export interface FlowVersion {
@@ -51,6 +62,23 @@ export interface NodeTemplate {
   tone: Tone;
   description: string;
   defaults: Record<string, string>;
+}
+
+export interface NodeTypeChild {
+  id: string;
+  label: string;
+  subtitle: string;
+  defaults?: Record<string, string>;
+  /** Dify 风格 — 创建节点时携带的 input 变量(显示在节点卡片左侧) */
+  inputs?: VarField[];
+  /** Dify 风格 — 创建节点时携带的 output 变量(显示在节点卡片右侧) */
+  outputs?: VarField[];
+}
+
+export interface NodeTypeGroup {
+  kind: NodeKind;
+  label: string;
+  children: NodeTypeChild[];
 }
 
 export interface TemplateChoice {

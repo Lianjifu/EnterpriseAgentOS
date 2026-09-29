@@ -65,16 +65,25 @@ describe('WorkflowDetailPage', () => {
     renderAt('wf-weekly');
 
     await waitFor(() => {
-      expect(screen.getByText('周报自动生成')).toBeTruthy();
+      expect(screen.getByRole('heading', { name: '周报自动生成' })).toBeTruthy();
     });
     expect(screen.getByText(/每周五自动汇总并发送/)).toBeTruthy();
 
-    // 元信息面板默认收起,点击 元信息 按钮展开后再断言
-    const toggleBtn = screen.getByRole('button', { name: /元信息/ });
-    toggleBtn.click();
-    await waitFor(() => {
-      expect(screen.getByText(/被以下 Agent 引用/)).toBeTruthy();
-    });
+    // 节点类型树(左侧 aside)必须渲染 5 大组
+    expect(screen.getByText('开始节点')).toBeTruthy();
+    expect(screen.getByText('工具调用')).toBeTruthy();
+    expect(screen.getByText('智能体调用')).toBeTruthy();
+    expect(screen.getByText('控制流')).toBeTruthy();
+    expect(screen.getByText('结束节点')).toBeTruthy();
+
+    // 开始节点组默认展开,显示 4 个子项(子项名与 trigger chip 可能重名,用 getAllByText)
+    expect(screen.getAllByText('用户消息触发').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('定时触发').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('事件触发').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('手动触发').length).toBeGreaterThan(0);
+
+    // 返回按钮存在(aria-label)
+    expect(screen.getByLabelText('返回工作流管理')).toBeTruthy();
   });
 
   it('renders not-found when workflow is missing', () => {

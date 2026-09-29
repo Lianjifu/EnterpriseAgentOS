@@ -6,8 +6,8 @@ import {
   Play, Plug, Webhook,
 } from 'lucide-react';
 import type {
-  FlowStatus, NodeKind, NodeTemplate, NodeTypeTabId, TemplateChoice,
-  TriggerType, WorkflowTabId,
+  FlowStatus, NodeKind, NodeTemplate, NodeTypeGroup, NodeTypeTabId, TemplateChoice,
+  TriggerType, VarField, WorkflowTabId,
 } from '@/api/admin/workflows/schema';
 
 export const TABS: Array<{ id: WorkflowTabId; label: string }> = [
@@ -56,6 +56,150 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
   { kind: 'agent', label: '智能体调用', subtitle: '委托给智能体', tone: 'success', description: '委托一个智能体执行子任务,可指定 model / prompt。', defaults: { agent: 'sales-coach', prompt: '请根据 {topic} 给出建议' } },
   { kind: 'condition', label: '条件分支', subtitle: 'IF / Switch', tone: 'warn', description: '根据表达式分流到不同分支,支持 IF / Switch / 循环。', defaults: { mode: 'if', op: '==' } },
   { kind: 'end', label: '结束节点', subtitle: '返回 / 通知 / 写库', tone: 'purple', description: '工作流出口:返回结果、发送通知或写入数据库。', defaults: { action: 'return', target: 'caller' } },
+];
+
+export const NODE_TYPE_TREE: NodeTypeGroup[] = [
+  {
+    kind: 'trigger',
+    label: '开始节点',
+    children: [
+      {
+        id: 'start-msg', label: '用户消息触发', subtitle: '用户发消息时启动,输入含 query',
+        defaults: { trigger: '消息触发' },
+        inputs: [{ name: 'query', type: 'string', required: true, description: '用户原始消息' }],
+        outputs: [{ name: 'query', type: 'string', description: '透传给下游' }, { name: 'user_id', type: 'string', description: '发消息的用户' }],
+      },
+      {
+        id: 'start-cron', label: '定时触发', subtitle: '按 cron 计划启动',
+        defaults: { trigger: '定时触发', cron: '0 9 * * 1' },
+        outputs: [{ name: 'fired_at', type: 'string', description: '触发时间' }, { name: 'cron', type: 'string', description: 'cron 表达式' }],
+      },
+      {
+        id: 'start-event', label: '事件触发', subtitle: '外部 webhook 事件',
+        defaults: { trigger: '事件触发' },
+        inputs: [{ name: 'payload', type: 'object', required: true, description: 'webhook body' }],
+        outputs: [{ name: 'event_type', type: 'string' }, { name: 'payload', type: 'object' }],
+      },
+      {
+        id: 'start-manual', label: '手动触发', subtitle: '管理员手动启动,需传参',
+        defaults: { trigger: '手动触发' },
+        inputs: [{ name: 'params', type: 'object', required: false, description: '调用方传入参数' }],
+        outputs: [{ name: 'params', type: 'object' }],
+      },
+    ],
+  },
+  {
+    kind: 'tool',
+    label: '工具调用',
+    children: [
+      {
+        id: 'tool-kb', label: '知识库检索', subtitle: '从 KB 检索片段',
+        defaults: { tool: 'knowledge_search', input: '{query}' },
+        inputs: [{ name: 'query', type: 'string', required: true }],
+        outputs: [{ name: 'chunks', type: 'array', description: '命中的片段' }, { name: 'score', type: 'number' }],
+      },
+      {
+        id: 'tool-http', label: 'HTTP 请求', subtitle: '调外部 API',
+        defaults: { tool: 'http_request', method: 'POST', url: 'https://api.example.com' },
+        inputs: [{ name: 'body', type: 'object', required: false }, { name: 'headers', type: 'object', required: false }],
+        outputs: [{ name: 'status', type: 'number' }, { name: 'data', type: 'object' }],
+      },
+      {
+        id: 'tool-db', label: '数据库查询', subtitle: '查 Postgres / MySQL',
+        defaults: { tool: 'db_query', sql: 'SELECT * FROM ...' },
+        inputs: [{ name: 'sql', type: 'string', required: true }, { name: 'params', type: 'array', required: false }],
+        outputs: [{ name: 'rows', type: 'array' }],
+      },
+      {
+        id: 'tool-email', label: '发送邮件', subtitle: 'SMTP 发邮件',
+        defaults: { tool: 'send_email', to: '{user.email}' },
+        inputs: [{ name: 'to', type: 'string', required: true }, { name: 'subject', type: 'string', required: true }, { name: 'body', type: 'string', required: true }],
+        outputs: [{ name: 'message_id', type: 'string' }],
+      },
+    ],
+  },
+  {
+    kind: 'agent',
+    label: '智能体调用',
+    children: [
+      {
+        id: 'agent-sales-coach', label: '销售教练', subtitle: 'sales-coach · 顾问式',
+        defaults: { agent: 'sales-coach' },
+        inputs: [{ name: 'topic', type: 'string', required: true }],
+        outputs: [{ name: 'advice', type: 'string', description: '建议文本' }, { name: 'confidence', type: 'number' }],
+      },
+      {
+        id: 'agent-support', label: '客服助手', subtitle: 'support-bot · 工单分流',
+        defaults: { agent: 'support-bot' },
+        inputs: [{ name: 'message', type: 'string', required: true }],
+        outputs: [{ name: 'category', type: 'string' }, { name: 'reply', type: 'string' }],
+      },
+      {
+        id: 'agent-researcher', label: '研究员', subtitle: 'researcher · 深度阅读',
+        defaults: { agent: 'researcher' },
+        inputs: [{ name: 'question', type: 'string', required: true }],
+        outputs: [{ name: 'report', type: 'string' }, { name: 'sources', type: 'array' }],
+      },
+      {
+        id: 'agent-writer', label: '文案写手', subtitle: 'writer · 营销文案',
+        defaults: { agent: 'writer' },
+        inputs: [{ name: 'topic', type: 'string', required: true }, { name: 'tone', type: 'string', required: false }],
+        outputs: [{ name: 'copy', type: 'string' }],
+      },
+      {
+        id: 'agent-custom', label: '+ 新建智能体', subtitle: '跳到智能体管理',
+        defaults: { agent: '__new__' },
+      },
+    ],
+  },
+  {
+    kind: 'condition',
+    label: '控制流',
+    children: [
+      {
+        id: 'cond-if', label: 'IF 表达式', subtitle: 'true / false 双分支',
+        defaults: { mode: 'if', op: '==' },
+        inputs: [{ name: 'value', type: 'string', required: true }, { name: 'op', type: 'string' }, { name: 'compare', type: 'string' }],
+        outputs: [{ name: 'branch_true', type: 'object', description: 'true 分支出口' }, { name: 'branch_false', type: 'object', description: 'false 分支出口' }],
+      },
+      {
+        id: 'cond-switch', label: 'Switch 多路', subtitle: '按枚举分派',
+        defaults: { mode: 'switch' },
+        inputs: [{ name: 'value', type: 'string', required: true }],
+        outputs: [{ name: 'branch', type: 'string', description: '命中的分支 id' }],
+      },
+      {
+        id: 'cond-loop', label: '循环遍历', subtitle: '对数组逐项处理',
+        defaults: { mode: 'loop' },
+        inputs: [{ name: 'items', type: 'array', required: true }],
+        outputs: [{ name: 'item', type: 'object', description: '当前项' }, { name: 'index', type: 'number' }, { name: 'done', type: 'object', description: '循环结束出口' }],
+      },
+    ],
+  },
+  {
+    kind: 'end',
+    label: '结束节点',
+    children: [
+      {
+        id: 'end-return', label: '返回结果', subtitle: '把结果回传给调用方',
+        defaults: { action: 'return', target: 'caller' },
+        inputs: [{ name: 'result', type: 'object', required: true, description: '工作流输出' }],
+        outputs: [],
+      },
+      {
+        id: 'end-notify', label: '发送通知', subtitle: '邮件 / 站内 / IM',
+        defaults: { action: 'notify', target: 'caller' },
+        inputs: [{ name: 'to', type: 'string', required: true }, { name: 'message', type: 'string', required: true }],
+        outputs: [{ name: 'message_id', type: 'string' }],
+      },
+      {
+        id: 'end-writeback', label: '写库', subtitle: '把结果写回 DB',
+        defaults: { action: 'writeback', target: 'caller' },
+        inputs: [{ name: 'table', type: 'string', required: true }, { name: 'row', type: 'object', required: true }],
+        outputs: [{ name: 'row_id', type: 'string' }],
+      },
+    ],
+  },
 ];
 
 export const TEMPLATE_CHOICES: TemplateChoice[] = [

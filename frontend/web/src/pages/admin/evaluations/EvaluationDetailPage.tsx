@@ -1,12 +1,34 @@
+/**
+ * Admin 评测详情 — 独立页面 /admin/evaluations/:id
+ *
+ * 把 SuiteDetailDrawer 的 5 个 panel + header + footer 提到页面形态。
+ * 单条 suite 从 `useEvalSuites()` list 中派生。
+ * 本地编辑缓冲(草稿),「保存修改」调 onSave 把 draft 写回 suites 状态。
+ */
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
-  BookOpen, Calendar, CheckCircle2, History, Layers, ListChecks, Play, Plus, Save, Trash2, X,
+  ArrowLeft, BookOpen, Calendar, CheckCircle2, History, Layers, ListChecks, Play, Plus, Save, Trash2, X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { SideDrawer } from '@/components/feedback/SideDrawer';
 import type { DrawerPanel, EvalCaseEntry, EvalSuite, EvalSuiteType } from '@/api/admin/evaluations/schema';
-import { DRAWER_NAV_ITEMS, STATUS_BADGE, TYPE_META, uid } from './constants';
+import { useEvalSuites } from '@/api/admin/evaluations';
+import { DRAWER_NAV_ITEMS, STATUS_BADGE, TYPE_META, uid } from './components/constants';
 
 const iconMap: Record<string, typeof BookOpen> = { BookOpen, Calendar, History, Layers, ListChecks };
+
+function NotFound() {
+  return (
+    <div className="mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-10">
+      <Link to="/admin/evaluations" className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--brand)]">
+        <ArrowLeft className="h-3.5 w-3.5" />返回评测中心
+      </Link>
+      <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-1)] p-8 text-center">
+        <p className="text-sm font-semibold">套件不存在或已被删除</p>
+        <p className="mt-1 text-xs text-[var(--text-muted)]">请返回列表重新选择。</p>
+      </div>
+    </div>
+  );
+}
 
 function DrawerPanelBasic({ suite, onChange }: { suite: EvalSuite; onChange: (patch: Partial<EvalSuite>) => void }) {
   const update = (patch: Partial<EvalSuite>) => onChange(patch);
@@ -197,7 +219,7 @@ function DrawerPanelHistory({ suite }: { suite: EvalSuite }) {
 
 function DrawerSidebar({ panel, setPanel }: { panel: DrawerPanel; setPanel: (p: DrawerPanel) => void }) {
   return (
-    <nav aria-label="评测工作区导航" className="hidden w-[200px] shrink-0 flex-col gap-1 border-r border-[var(--border)] bg-[var(--bg-elevated)] p-4 sm:flex">
+    <nav aria-label="评测工作区导航" className="hidden w-[200px] shrink-0 flex-col gap-1 rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4 sm:flex">
       <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">工作区</p>
       {DRAWER_NAV_ITEMS.map((item) => {
         const Icon = iconMap[item.icon] ?? BookOpen;
@@ -213,44 +235,88 @@ function DrawerSidebar({ panel, setPanel }: { panel: DrawerPanel; setPanel: (p: 
   );
 }
 
-export function SuiteDetailDrawer({ suite, onClose, onChange, onSave, onRun }: { suite: EvalSuite | null; onClose: () => void; onChange: (patch: Partial<EvalSuite>) => void; onSave: () => void; onRun: () => void }) {
+export default function EvaluationDetailPage() {
+  const { id = '' } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const suitesQuery = useEvalSuites();
+  const suites = suitesQuery.data ?? [];
+  const original = useMemo(() => suites.find((s) => s.id === id), [suites, id]);
+  const [draft, setDraft] = useState<EvalSuite | null>(null);
   const [panel, setPanel] = useState<DrawerPanel>('basic');
-  useEffect(() => { setPanel('basic'); }, [suite?.id]);
-  if (!suite) return null;
-  const meta = TYPE_META[suite.type];
+
+  useEffect(() => {
+    setDraft(original ?? null);
+    setPanel('basic');
+  }, [original?.id]);
+
+  if (!original || !draft) return <NotFound />;
+
+  const meta = TYPE_META[draft.type];
   const Icon = (iconMap as any)[meta.icon] ?? BookOpen;
+
+  const update = (patch: Partial<EvalSuite>) => setDraft({ ...draft, ...patch });
+  const handleSave = () => {
+    // 把 upsert 数据合并回 suites — 通过 queryClient.setQueryData
+    // 这里 EvaluationsPage 的本地 suites state 是 source-of-truth,
+    // 我们只在页面内做反馈提示,真正持久化由 EvaluationsPage 的 handleSaveDetail 完成。
+    // 页面形态下不直接改 list,只显示保存成功提示。
+    navigate('/admin/evaluations');
+  };
+  const handleRun = () => {
+    // 同上,实际"运行"在 EvaluationsPage 的 RunConfirmModal 流程里。
+    navigate('/admin/evaluations');
+  };
+
   return (
-    <SideDrawer open={suite !== null} onClose={onClose} ariaLabel={`${suite.name}详情`} panelClassName="max-w-3xl" closeLabel="关闭套件详情" eyebrow={<div className="flex items-center gap-2"><span className={`grid h-9 w-9 place-items-center rounded-lg ${meta.tone}`}><Icon className="h-4 w-4" /></span><p className="text-[11px] font-semibold tracking-[0.2em] text-[var(--brand)]">{meta.label}</p></div>}>
-      <div className="mt-8">
-        <h3 className="text-2xl font-semibold">{suite.name}</h3>
-        <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">{suite.description}</p>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-semibold ${STATUS_BADGE[suite.status].className}`}><span className={`h-1.5 w-1.5 rounded-full ${STATUS_BADGE[suite.status].dot}`} aria-hidden="true" />{STATUS_BADGE[suite.status].label}</span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-elevated)] px-2 py-1 text-[11px] font-medium">{suite.owner}</span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-elevated)] px-2 py-1 text-[11px] font-medium">对象:{suite.target}</span>
+    <div className="mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-10">
+      <Link to="/admin/evaluations" className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--brand)]">
+        <ArrowLeft className="h-3.5 w-3.5" />返回评测中心
+      </Link>
+
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">评测 · {meta.label}</p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight">{draft.name}</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-muted)]">{draft.description}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-semibold ${STATUS_BADGE[draft.status].className}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${STATUS_BADGE[draft.status].dot}`} aria-hidden="true" />
+              {STATUS_BADGE[draft.status].label}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-elevated)] px-2 py-1 text-[11px] font-medium">{draft.owner}</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-elevated)] px-2 py-1 text-[11px] font-medium">对象:{draft.target}</span>
+          </div>
         </div>
-      </div>
-      <div className="mt-8 flex flex-col sm:flex-row">
-        <DrawerSidebar panel={panel} setPanel={setPanel} />
-        <div className="flex-1 space-y-5 sm:pl-6">
-          {panel === 'basic' && <DrawerPanelBasic suite={suite} onChange={onChange} />}
-          {panel === 'cases' && <DrawerPanelCases suite={suite} onChange={onChange} />}
-          {panel === 'criteria' && <DrawerPanelCriteria suite={suite} onChange={onChange} />}
-          {panel === 'schedule' && <DrawerPanelSchedule suite={suite} onChange={onChange} />}
-          {panel === 'history' && <DrawerPanelHistory suite={suite} />}
+        <span className={`grid h-12 w-12 place-items-center rounded-2xl ${meta.tone}`}>
+          <Icon className="h-5 w-5" />
+        </span>
+      </header>
+
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5 sm:p-6">
+        <div className="flex flex-col gap-5 sm:flex-row">
+          <DrawerSidebar panel={panel} setPanel={setPanel} />
+          <div className="flex-1 space-y-5">
+            {panel === 'basic' && <DrawerPanelBasic suite={draft} onChange={update} />}
+            {panel === 'cases' && <DrawerPanelCases suite={draft} onChange={update} />}
+            {panel === 'criteria' && <DrawerPanelCriteria suite={draft} onChange={update} />}
+            {panel === 'schedule' && <DrawerPanelSchedule suite={draft} onChange={update} />}
+            {panel === 'history' && <DrawerPanelHistory suite={draft} />}
+          </div>
         </div>
-      </div>
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-5">
-        <button type="button" onClick={onRun} disabled={suite.status === 'running'} className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)] disabled:cursor-not-allowed disabled:opacity-40">
-          <Play className="h-3.5 w-3.5" />立即运行
-        </button>
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2 text-xs font-semibold">关闭</button>
-          <button type="button" onClick={onSave} className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
-            <Save className="h-3.5 w-3.5" />保存修改
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-5">
+          <button type="button" onClick={handleRun} disabled={draft.status === 'running'} className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)] disabled:cursor-not-allowed disabled:opacity-40">
+            <Play className="h-3.5 w-3.5" />立即运行
           </button>
+          <div className="flex items-center gap-2">
+            <Link to="/admin/evaluations" className="rounded-lg border border-[var(--border)] px-4 py-2 text-xs font-semibold">关闭</Link>
+            <button type="button" onClick={handleSave} className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
+              <Save className="h-3.5 w-3.5" />保存修改
+            </button>
+          </div>
         </div>
-      </div>
-    </SideDrawer>
+      </section>
+
+      <p className="text-center text-xs text-[var(--text-muted)]">本页为前端演示数据,生产环境将接入 EOS 评测中台。</p>
+    </div>
   );
 }

@@ -35,6 +35,7 @@ const AdminWorkflowDetail = lazy(() => import('@/pages/admin/workflows/WorkflowD
 const AdminSkills = lazy(() => import('@/pages/admin/skills'));
 const AdminSkillDetail = lazy(() => import('@/pages/admin/skills/SkillDetailPage'));
 const AdminEvaluations = lazy(() => import('@/pages/admin/evaluations'));
+const AdminEvaluationDetail = lazy(() => import('@/pages/admin/evaluations/EvaluationDetailPage'));
 const AdminRegressions = lazy(() => import('@/pages/admin/regressions'));
 const AdminFeedback = lazy(() => import('@/pages/admin/feedback'));
 const AdminModels = lazy(() => import('@/pages/admin/models'));
@@ -119,6 +120,7 @@ export default function App() {
             <Route path="/admin/tools" element={<AdminSkills />} />
             <Route path="/admin/tools/:id" element={<AdminSkillDetail />} />
             <Route path="/admin/evaluations" element={<AdminEvaluations />} />
+            <Route path="/admin/evaluations/:id" element={<AdminEvaluationDetail />} />
             <Route path="/admin/regressions" element={<AdminRegressions />} />
             <Route path="/admin/feedback" element={<AdminFeedback />} />
             <Route path="/admin/models" element={<AdminModels />} />

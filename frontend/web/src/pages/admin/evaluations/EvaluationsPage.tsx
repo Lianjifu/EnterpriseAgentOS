@@ -4,17 +4,18 @@
  */
 import { Beaker, Download, Plus, Upload } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { NoticeBanner } from '@/components/feedback/NoticeBanner';
 import { useEvalResults, useEvalSuites, useEvalSuiteStats } from '@/api/admin/evaluations';
 import type { CaseTemplate, EvalResult, EvalSuite, EvalStatus, EvalSuiteType, ExchangeFormat, TabId } from '@/api/admin/evaluations/schema';
 import { mockCaseTemplates } from '@/mock/admin/evaluations.fixtures';
 import { BatchToolbar } from './components/BatchToolbar';
-import { SuiteDetailDrawer } from './components/SuiteDetailDrawer';
 import { TABS, uid } from './components/constants';
 import { CreateSuiteWizard, DeleteSuiteModal, ExportSuiteModal, ImportSuiteModal, RunConfirmModal } from './components/Modals';
 import { CaseTab, OverviewTab, ResultTab, SuiteListTab, TemplateTab } from './components/tabs/Tabs';
 
 export default function EvaluationsPage() {
+  const navigate = useNavigate();
   const remoteSuites = useEvalSuites();
   const remoteResults = useEvalResults();
   const suitesData = remoteSuites.data ?? [];
@@ -27,7 +28,6 @@ export default function EvaluationsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | EvalStatus>('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [detail, setDetail] = useState<EvalSuite | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [runTarget, setRunTarget] = useState<EvalSuite | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<EvalSuite | null>(null);
@@ -59,23 +59,10 @@ export default function EvaluationsPage() {
   const toggleSelect = (id: string) => setSelectedIds((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
   const toggleStar = (id: string) => setSuites((current) => current.map((s) => s.id === id ? { ...s, starred: !s.starred } : s));
 
-  const updateSuite = (id: string, patch: Partial<EvalSuite>) => {
-    setSuites((current) => current.map((s) => s.id === id ? { ...s, ...patch } : s));
-    if (detail && detail.id === id) setDetail({ ...detail, ...patch });
-  };
-
-  const handleSaveDetail = () => {
-    if (!detail) return;
-    setSuites((current) => current.map((s) => s.id === detail.id ? { ...detail } : s));
-    setNotice(`已保存「${detail.name}」的修改。`);
-    setDetail(null);
-  };
-
   const handleRun = (suite: EvalSuite) => {
     setSuites((current) => current.map((s) => s.id === suite.id ? { ...s, status: 'running', lastRunAt: '运行中' } : s));
     setNotice(`已加入运行队列:${suite.name}`);
     setRunTarget(null);
-    if (detail && detail.id === suite.id) setDetail(null);
   };
 
   const handleDuplicate = (suite: EvalSuite) => {
@@ -240,7 +227,7 @@ export default function EvaluationsPage() {
           setTypeFilter={setTypeFilter}
           statusFilter={statusFilter}
           setStatusFilter={setStatusFilter}
-          onSelect={setDetail}
+          onSelect={(s) => navigate('/admin/evaluations/' + s.id)}
           onToggleStar={toggleStar}
           onToggleSelect={toggleSelect}
           onRun={(s) => setRunTarget(s)}
@@ -256,7 +243,7 @@ export default function EvaluationsPage() {
           selectedIds={selectedIds}
           openMenuId={openMenuId}
           setOpenMenuId={setOpenMenuId}
-          onSelect={setDetail}
+          onSelect={(s) => navigate('/admin/evaluations/' + s.id)}
           onToggleStar={toggleStar}
           onToggleSelect={toggleSelect}
           onRun={(s) => setRunTarget(s)}
@@ -272,14 +259,6 @@ export default function EvaluationsPage() {
           onAddTemplate={handleAddTemplate}
         />
       )}
-
-      <SuiteDetailDrawer
-        suite={detail}
-        onClose={() => setDetail(null)}
-        onChange={(patch) => detail && updateSuite(detail.id, patch)}
-        onSave={handleSaveDetail}
-        onRun={() => detail && setRunTarget(detail)}
-      />
 
       <CreateSuiteWizard
         open={createOpen}

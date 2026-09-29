@@ -37,6 +37,8 @@ const AdminSkillDetail = lazy(() => import('@/pages/admin/skills/SkillDetailPage
 const AdminEvaluations = lazy(() => import('@/pages/admin/evaluations'));
 const AdminEvaluationDetail = lazy(() => import('@/pages/admin/evaluations/EvaluationDetailPage'));
 const AdminRegressions = lazy(() => import('@/pages/admin/regressions'));
+const AdminRegressionDetail = lazy(() => import('@/pages/admin/regressions/RegressionDetailPage'));
+const AdminRegressionCreate = lazy(() => import('@/pages/admin/regressions/RegressionCreatePage'));
 const AdminFeedback = lazy(() => import('@/pages/admin/feedback'));
 const AdminModels = lazy(() => import('@/pages/admin/models'));
 const AdminQuotas = lazy(() => import('@/pages/admin/quotas'));
@@ -122,6 +124,8 @@ export default function App() {
             <Route path="/admin/evaluations" element={<AdminEvaluations />} />
             <Route path="/admin/evaluations/:id" element={<AdminEvaluationDetail />} />
             <Route path="/admin/regressions" element={<AdminRegressions />} />
+            <Route path="/admin/regressions/new" element={<AdminRegressionCreate />} />
+            <Route path="/admin/regressions/:id" element={<AdminRegressionDetail />} />
             <Route path="/admin/feedback" element={<AdminFeedback />} />
             <Route path="/admin/models" element={<AdminModels />} />
             <Route path="/admin/quotas" element={<AdminQuotas />} />

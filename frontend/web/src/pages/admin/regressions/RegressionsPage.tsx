@@ -4,15 +4,16 @@
  */
 import { Download, GitBranch, Plus, Upload } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { NoticeBanner } from '@/components/feedback/NoticeBanner';
 import { useRegressionAlerts, useRegressionTimeline, useRegressionTracks } from '@/api/admin/regressions';
 import type { AlertRule, ExchangeFormat, RegressionRisk, RegressionTrack, TabId } from '@/api/admin/regressions/schema';
 import { TABS, uid } from './components/constants';
-import { AlertEditModal, CreateTrackModal, DeleteTrackModal, ExportTrackModal, ImportTrackModal } from './components/Modals';
-import { TrackDetailDrawer } from './components/TrackDetailDrawer';
+import { AlertEditModal, DeleteTrackModal, ExportTrackModal, ImportTrackModal } from './components/Modals';
 import { AlertTab, BaselineTab, OverviewTab, RiskTab, TimelineTab } from './components/tabs/Tabs';
 
 export default function RegressionsPage() {
+  const navigate = useNavigate();
   const remoteTracks = useRegressionTracks();
   const remoteAlerts = useRegressionAlerts();
   const remoteTimeline = useRegressionTimeline();
@@ -28,8 +29,6 @@ export default function RegressionsPage() {
   const [riskFilter, setRiskFilter] = useState<'all' | RegressionRisk>('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [detail, setDetail] = useState<RegressionTrack | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<RegressionTrack | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -68,14 +67,6 @@ export default function RegressionsPage() {
 
   const updateTrack = (id: string, patch: Partial<RegressionTrack>) => {
     setTracks((current) => current.map((t) => t.id === id ? { ...t, ...patch } : t));
-    if (detail && detail.id === id) setDetail({ ...detail, ...patch });
-  };
-
-  const handleSaveDetail = () => {
-    if (!detail) return;
-    setTracks((current) => current.map((t) => t.id === detail.id ? { ...detail } : t));
-    setNotice(`已保存「${detail.name}」的修改。`);
-    setDetail(null);
   };
 
   const handleDuplicate = (track: RegressionTrack) => {
@@ -121,7 +112,6 @@ export default function RegressionsPage() {
   const handleCreate = (track: RegressionTrack) => {
     setTracks((current) => [track, ...current]);
     setNotice(`已创建回归追踪「${track.name}」。`);
-    setCreateOpen(false);
     setTab('overview');
   };
 
@@ -201,7 +191,7 @@ export default function RegressionsPage() {
               <button type="button" onClick={() => setExportOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--brand)] hover:text-[var(--brand)]">
                 <Download className="h-3.5 w-3.5" />导出
               </button>
-              <button type="button" onClick={() => setCreateOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 text-xs font-semibold text-white transition hover:bg-[var(--brand-hover)]">
+              <button type="button" onClick={() => navigate('/admin/regressions/new')} className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 text-xs font-semibold text-white transition hover:bg-[var(--brand-hover)]">
                 <Plus className="h-4 w-4" />新建追踪
               </button>
             </div>
@@ -244,7 +234,7 @@ export default function RegressionsPage() {
           setStatusFilter={setStatusFilter}
           riskFilter={riskFilter}
           setRiskFilter={setRiskFilter}
-          onSelect={setDetail}
+          onSelect={(t) => navigate('/admin/regressions/' + t.id)}
           onToggleStar={toggleStar}
           onToggleSelect={toggleSelect}
           onRun={() => undefined}
@@ -267,19 +257,6 @@ export default function RegressionsPage() {
         />
       )}
 
-      <TrackDetailDrawer
-        track={detail}
-        onClose={() => setDetail(null)}
-        onChange={(patch) => detail && updateTrack(detail.id, patch)}
-        onSave={handleSaveDetail}
-        onRun={() => detail && (() => {
-          setTracks((current) => current.map((t) => t.id === detail.id ? { ...t, lastCheckedAt: '刚刚' } : t));
-          setNotice(`已立即重跑回归:${detail.name}`);
-          setDetail(null);
-        })()}
-      />
-
-      <CreateTrackModal open={createOpen} onClose={() => setCreateOpen(false)} onCreate={handleCreate} />
       <DeleteTrackModal open={deleteTarget !== null} onClose={() => setDeleteTarget(null)} onConfirm={() => deleteTarget && handleDelete(deleteTarget)} track={deleteTarget} />
       <ImportTrackModal open={importOpen} onClose={() => setImportOpen(false)} onImport={handleImport} />
       <ExportTrackModal open={exportOpen} onClose={() => setExportOpen(false)} onExport={handleExport} total={tracks.length} selectedCount={selectedIds.length} />

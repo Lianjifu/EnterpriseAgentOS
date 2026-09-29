@@ -1,142 +1,17 @@
 /**
  * AdminRegressions — 模态框集合。
- * CreateTrackModal (3 step) / ImportTrackModal / ExportTrackModal / DeleteTrackModal / AlertEditModal。
+ * ImportTrackModal / ExportTrackModal / DeleteTrackModal / AlertEditModal。
  */
-import { BellRing, Download, FileCode, FileJson, Mail, MessageSquare, Plus, Trash2, Upload, Webhook } from 'lucide-react';
+import { BellRing, Download, FileCode, FileJson, Mail, MessageSquare, Trash2, Upload, Webhook } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { CenterModal } from '@/components/feedback/CenterModal';
 import type { AlertChannel, AlertRule, ExchangeFormat, RegressionTrack } from '@/api/admin/regressions/schema';
-import { CHANNEL_META, uid } from './constants';
+import { CHANNEL_META } from './constants';
 import { StepIndicator } from './Primitives';
 
 const channelIconMap: Record<string, typeof Mail> = {
   Mail, MessageSquare, Webhook,
 };
-
-interface CreateTrackModalProps {
-  open: boolean;
-  onClose: () => void;
-  onCreate: (track: RegressionTrack) => void;
-}
-
-export function CreateTrackModal({ open, onClose, onCreate }: CreateTrackModalProps) {
-  const [step, setStep] = useState(1);
-  const [name, setName] = useState('');
-  const [agent, setAgent] = useState('');
-  const [owner, setOwner] = useState('张敏');
-  const [baseline, setBaseline] = useState('v1.0');
-  const [current, setCurrent] = useState('v1.1');
-  const [schedule, setSchedule] = useState('每次发布后');
-  const [notes, setNotes] = useState('');
-  useEffect(() => {
-    if (open) {
-      setStep(1);
-      setName('');
-      setAgent('');
-      setOwner('张敏');
-      setBaseline('v1.0');
-      setCurrent('v1.1');
-      setSchedule('每次发布后');
-      setNotes('');
-    }
-  }, [open]);
-  const canNext = name.trim().length > 0 && agent.trim().length > 0;
-  const handleCreate = () => {
-    const track: RegressionTrack = {
-      id: uid('track'),
-      name: name.trim(),
-      agent: agent.trim(),
-      owner,
-      status: 'stable',
-      risk: 'low',
-      baselineVersion: baseline,
-      currentVersion: current,
-      passRateDelta: 0, latencyDelta: 0, costDelta: 0, scoreDelta: 0,
-      baseline: { passRate: 95, avgScore: 4.4, latencyMs: 1200, cost: 10 },
-      current: { passRate: 95, avgScore: 4.4, latencyMs: 1200, cost: 10 },
-      passRateTrend: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      latencyTrend: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      costTrend: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      lastCheckedAt: '未运行',
-      cases: 0, starred: false, schedule, tags: [],
-      notes: notes.trim() || '新创建的回归追踪',
-      history: [],
-      casesList: [],
-    };
-    onCreate(track);
-  };
-  return (
-    <CenterModal
-      open={open}
-      onClose={onClose}
-      ariaLabel="新建回归追踪"
-      panelClassName="max-w-2xl"
-      title={<span className="flex items-center gap-2"><Plus className="h-5 w-5 text-[var(--brand)]" />新建回归追踪</span>}
-      description={step === 1 ? '追踪基本信息与对象' : step === 2 ? '选择基线版本与调度' : '确认后将以「稳定」状态加入列表'}
-      footer={
-        <>
-          {step > 1 && <button type="button" onClick={() => setStep((s) => Math.max(1, s - 1))} className="rounded-xl border border-[var(--border)] px-4 py-2 text-xs font-semibold">上一步</button>}
-          {step < 3 && <button type="button" onClick={() => setStep((s) => s + 1)} disabled={step === 1 && !canNext} className="rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">下一步</button>}
-          {step === 3 && <button type="button" onClick={handleCreate} className="rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white">创建追踪</button>}
-        </>
-      }
-    >
-      <div className="mt-4 mb-5"><StepIndicator current={step} total={3} labels={['基本信息', '基线与调度', '确认']} /></div>
-      {step === 1 && (
-        <div className="space-y-4">
-          <div>
-            <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">追踪名称</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="例如:客户沟通助手回归追踪" className="mt-1.5 h-10 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm outline-none focus:border-[var(--brand)]" />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">追踪对象</label>
-              <input type="text" value={agent} onChange={(e) => setAgent(e.target.value)} placeholder="例如:客户沟通助手" className="mt-1.5 h-10 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm outline-none focus:border-[var(--brand)]" />
-            </div>
-            <div>
-              <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">负责人</label>
-              <input type="text" value={owner} onChange={(e) => setOwner(e.target.value)} className="mt-1.5 h-10 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm outline-none focus:border-[var(--brand)]" />
-            </div>
-          </div>
-          <div>
-            <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">说明</label>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="mt-1.5 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 py-2 text-sm outline-none focus:border-[var(--brand)]" />
-          </div>
-        </div>
-      )}
-      {step === 2 && (
-        <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">基线版本</label>
-              <input type="text" value={baseline} onChange={(e) => setBaseline(e.target.value)} placeholder="v1.0" className="mt-1.5 h-10 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm outline-none focus:border-[var(--brand)]" />
-            </div>
-            <div>
-              <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">当前版本</label>
-              <input type="text" value={current} onChange={(e) => setCurrent(e.target.value)} placeholder="v1.1" className="mt-1.5 h-10 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm outline-none focus:border-[var(--brand)]" />
-            </div>
-          </div>
-          <div>
-            <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">调度</label>
-            <input type="text" value={schedule} onChange={(e) => setSchedule(e.target.value)} placeholder="每次发布后 / 每日 23:00" className="mt-1.5 h-10 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm outline-none focus:border-[var(--brand)]" />
-          </div>
-        </div>
-      )}
-      {step === 3 && (
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-5 text-xs">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">确认信息</p>
-          <ul className="mt-3 space-y-1">
-            <li>· 名称:<span className="font-semibold">{name}</span></li>
-            <li>· 对象:<span className="font-semibold">{agent}</span></li>
-            <li>· 负责人:{owner}</li>
-            <li>· 基线:{baseline} · 当前:{current}</li>
-            <li>· 调度:{schedule}</li>
-          </ul>
-        </div>
-      )}
-    </CenterModal>
-  );
-}
 
 interface ImportTrackModalProps {
   open: boolean;

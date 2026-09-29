@@ -1,30 +1,37 @@
 /**
- * AdminRegressions — 追踪详情侧拉。
- * 4 个 panel: 基本信息 / 基线对比 / 回归用例 / 变更历史。
+ * Admin 回归追踪详情 — 独立页面 /admin/regressions/:id
+ *
+ * 把 TrackDetailDrawer 的 4 个 panel + header + footer 提到页面形态。
+ * 单条 track 从 useRegressionTracks() list 中派生;本地编辑缓冲(草稿)。
  */
-import { History, LineChart, ListChecks, RefreshCw, Save, Settings, ShieldAlert, ShieldCheck } from 'lucide-react';
-import { AlertTriangle, ShieldQuestion } from 'lucide-react';
-import { GitBranch, X } from 'lucide-react';
-import { CheckCircle2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import {
+  History, LineChart, ListChecks, RefreshCw, Save, Settings, ShieldAlert, ShieldCheck, GitBranch, X, AlertTriangle, ShieldQuestion, CheckCircle2,
+} from 'lucide-react';
 import type { DrawerPanel, RegressionRisk, RegressionTrack } from '@/api/admin/regressions/schema';
-import { SideDrawer } from '@/components/feedback/SideDrawer';
-import { DRAWER_NAV_ITEMS, RISK_BADGE, STATUS_BADGE } from './constants';
-import { Delta, Sparkline } from './Primitives';
+import { useRegressionTracks } from '@/api/admin/regressions';
+import { DRAWER_NAV_ITEMS, RISK_BADGE, STATUS_BADGE } from './components/constants';
+import { Delta, Sparkline } from './components/Primitives';
 
-const navIconMap: Record<string, typeof History> = {
-  History, LineChart, ListChecks, Settings,
-};
-const riskIconMap: Record<string, typeof ShieldCheck> = {
-  ShieldCheck, ShieldQuestion, AlertTriangle, ShieldAlert,
-};
+const navIconMap: Record<string, typeof History> = { History, LineChart, ListChecks, Settings };
+const riskIconMap: Record<string, typeof ShieldCheck> = { ShieldCheck, ShieldQuestion, AlertTriangle, ShieldAlert };
 
-interface DrawerPanelBasicProps {
-  track: RegressionTrack;
-  onChange: (patch: Partial<RegressionTrack>) => void;
+function NotFound() {
+  return (
+    <div className="mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-10">
+      <Link to="/admin/regressions" className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--brand)]">
+        <span aria-hidden="true">←</span>返回回归追踪
+      </Link>
+      <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-1)] p-8 text-center">
+        <p className="text-sm font-semibold">追踪不存在或已被删除</p>
+        <p className="mt-1 text-xs text-[var(--text-muted)]">请返回列表重新选择。</p>
+      </div>
+    </div>
+  );
 }
 
-function DrawerPanelBasic({ track, onChange }: DrawerPanelBasicProps) {
+function DrawerPanelBasic({ track, onChange }: { track: RegressionTrack; onChange: (patch: Partial<RegressionTrack>) => void }) {
   const update = (patch: Partial<RegressionTrack>) => onChange(patch);
   return (
     <div className="space-y-5">
@@ -157,7 +164,7 @@ function DrawerPanelHistory({ track }: { track: RegressionTrack }) {
 
 function DrawerSidebar({ panel, setPanel }: { panel: DrawerPanel; setPanel: (p: DrawerPanel) => void }) {
   return (
-    <nav aria-label="回归追踪工作区" className="hidden w-[200px] shrink-0 flex-col gap-1 border-r border-[var(--border)] bg-[var(--bg-elevated)] p-4 sm:flex">
+    <nav aria-label="回归追踪工作区" className="hidden w-[200px] shrink-0 flex-col gap-1 rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4 sm:flex">
       <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">工作区</p>
       {DRAWER_NAV_ITEMS.map((item) => {
         const Icon = navIconMap[item.icon] ?? History;
@@ -173,54 +180,77 @@ function DrawerSidebar({ panel, setPanel }: { panel: DrawerPanel; setPanel: (p: 
   );
 }
 
-interface TrackDetailDrawerProps {
-  track: RegressionTrack | null;
-  onClose: () => void;
-  onChange: (patch: Partial<RegressionTrack>) => void;
-  onSave: () => void;
-  onRun: () => void;
-}
-
-export function TrackDetailDrawer({ track, onClose, onChange, onSave, onRun }: TrackDetailDrawerProps) {
+export default function RegressionDetailPage() {
+  const { id = '' } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const tracksQuery = useRegressionTracks();
+  const tracks = tracksQuery.data ?? [];
+  const original = useMemo(() => tracks.find((t) => t.id === id), [tracks, id]);
+  const [draft, setDraft] = useState<RegressionTrack | null>(null);
   const [panel, setPanel] = useState<DrawerPanel>('basic');
-  useEffect(() => { setPanel('basic'); }, [track?.id]);
-  if (!track) return null;
-  const badge = STATUS_BADGE[track.status];
-  const risk = RISK_BADGE[track.risk];
+
+  useEffect(() => {
+    setDraft(original ?? null);
+    setPanel('basic');
+  }, [original?.id]);
+
+  if (!original || !draft) return <NotFound />;
+
+  const badge = STATUS_BADGE[draft.status];
+  const risk = RISK_BADGE[draft.risk];
   const RiskIcon = riskIconMap[risk.icon] ?? ShieldCheck;
+
+  const update = (patch: Partial<RegressionTrack>) => setDraft({ ...draft, ...patch });
+  const handleSave = () => navigate('/admin/regressions');
+  const handleRun = () => navigate('/admin/regressions');
+
   return (
-    <SideDrawer open={track !== null} onClose={onClose} ariaLabel={`${track.name}详情`} panelClassName="max-w-3xl" closeLabel="关闭追踪详情" eyebrow={<div className="flex items-center gap-2"><span className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--brand-light)] text-[var(--brand)]"><GitBranch className="h-4 w-4" /></span><p className="text-[11px] font-semibold tracking-[0.2em] text-[var(--brand)]">回归追踪</p></div>}>
-      <div className="mt-8">
-        <h3 className="text-2xl font-semibold">{track.name}</h3>
-        <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">{track.notes}</p>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-semibold ${badge.className}`}><span className={`h-1.5 w-1.5 rounded-full ${badge.dot}`} aria-hidden="true" />{badge.label}</span>
-          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold ${risk.className}`}><RiskIcon className="h-3 w-3" />{risk.label}</span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-elevated)] px-2 py-1 text-[11px] font-medium">{track.owner}</span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-elevated)] px-2 py-1 text-[11px] font-medium">对象:{track.agent}</span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-elevated)] px-2 py-1 text-[11px] font-medium">{track.baselineVersion} → {track.currentVersion}</span>
+    <div className="mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-10">
+      <Link to="/admin/regressions" className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--brand)]">
+        <span aria-hidden="true">←</span>返回回归追踪
+      </Link>
+
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">回归追踪 · {badge.label}</p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight">{draft.name}</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-muted)]">{draft.notes}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold ${risk.className}`}><RiskIcon className="h-3 w-3" />{risk.label}</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-elevated)] px-2 py-1 text-[11px] font-medium">{draft.owner}</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-elevated)] px-2 py-1 text-[11px] font-medium">对象:{draft.agent}</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-elevated)] px-2 py-1 text-[11px] font-medium">{draft.baselineVersion} → {draft.currentVersion}</span>
+          </div>
         </div>
-      </div>
-      <div className="mt-8 flex flex-col sm:flex-row">
-        <DrawerSidebar panel={panel} setPanel={setPanel} />
-        <div className="flex-1 space-y-5 sm:pl-6">
-          {panel === 'basic' && <DrawerPanelBasic track={track} onChange={onChange} />}
-          {panel === 'baseline' && <DrawerPanelBaseline track={track} />}
-          {panel === 'cases' && <DrawerPanelCases track={track} />}
-          {panel === 'history' && <DrawerPanelHistory track={track} />}
+        <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[var(--brand-light)] text-[var(--brand)]">
+          <GitBranch className="h-5 w-5" />
+        </span>
+      </header>
+
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5 sm:p-6">
+        <div className="flex flex-col gap-5 sm:flex-row">
+          <DrawerSidebar panel={panel} setPanel={setPanel} />
+          <div className="flex-1 space-y-5">
+            {panel === 'basic' && <DrawerPanelBasic track={draft} onChange={update} />}
+            {panel === 'baseline' && <DrawerPanelBaseline track={draft} />}
+            {panel === 'cases' && <DrawerPanelCases track={draft} />}
+            {panel === 'history' && <DrawerPanelHistory track={draft} />}
+          </div>
         </div>
-      </div>
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-5">
-        <button type="button" onClick={onRun} className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
-          <RefreshCw className="h-3.5 w-3.5" />立即重跑回归
-        </button>
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2 text-xs font-semibold">关闭</button>
-          <button type="button" onClick={onSave} className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
-            <Save className="h-3.5 w-3.5" />保存修改
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-5">
+          <button type="button" onClick={handleRun} className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
+            <RefreshCw className="h-3.5 w-3.5" />立即重跑回归
           </button>
+          <div className="flex items-center gap-2">
+            <Link to="/admin/regressions" className="rounded-lg border border-[var(--border)] px-4 py-2 text-xs font-semibold">关闭</Link>
+            <button type="button" onClick={handleSave} className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
+              <Save className="h-3.5 w-3.5" />保存修改
+            </button>
+          </div>
         </div>
-      </div>
-    </SideDrawer>
+      </section>
+
+      <p className="text-center text-xs text-[var(--text-muted)]">本页为前端演示数据,生产环境将接入 EOS 回归追踪中台。</p>
+    </div>
   );
 }

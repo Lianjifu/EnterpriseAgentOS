@@ -283,26 +283,28 @@ export default function KnowledgePage() {
               </div>
             )}
           </section>
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            {kbPageItems.slice.map((kb) => (
-              <KbCard
-                key={kb.id}
-                kb={kb}
-                selected={selectedKbIds.includes(kb.id)}
-                onToggleSelect={toggleSelectKb}
-                onOpen={(k) => navigate(`/admin/knowledge/kbs/${k.id}`)}
-                onTogglePause={handleTogglePause}
-              />
-            ))}
+          <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
+            <div className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 sm:p-7">
+              {kbPageItems.slice.map((kb) => (
+                <KbCard
+                  key={kb.id}
+                  kb={kb}
+                  selected={selectedKbIds.includes(kb.id)}
+                  onToggleSelect={toggleSelectKb}
+                  onOpen={(k) => navigate(`/admin/knowledge/kbs/${k.id}`)}
+                  onTogglePause={handleTogglePause}
+                />
+              ))}
+            </div>
+            <PaginationBar
+              page={kbPage}
+              totalPages={kbPageItems.totalPages}
+              total={visibleKbs.length}
+              pageStart={kbPageItems.pageStart}
+              pageEnd={kbPageItems.pageEnd}
+              onPageChange={setKbPage}
+            />
           </section>
-          <PaginationBar
-            page={kbPage}
-            totalPages={kbPageItems.totalPages}
-            total={visibleKbs.length}
-            pageStart={kbPageItems.pageStart}
-            pageEnd={kbPageItems.pageEnd}
-            onPageChange={setKbPage}
-          />
         </>
       )}
 
@@ -345,19 +347,21 @@ export default function KnowledgePage() {
               </div>
             </div>
           </section>
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            {docPageItems.slice.map((doc) => (
-              <DocCard key={doc.id} doc={doc} onOpen={(d) => navigate(`/admin/knowledge/docs/${d.id}`)} />
-            ))}
+          <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
+            <div className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 sm:p-7">
+              {docPageItems.slice.map((doc) => (
+                <DocCard key={doc.id} doc={doc} onOpen={(d) => navigate(`/admin/knowledge/docs/${d.id}`)} />
+              ))}
+            </div>
+            <PaginationBar
+              page={docPage}
+              totalPages={docPageItems.totalPages}
+              total={visibleDocs.length}
+              pageStart={docPageItems.pageStart}
+              pageEnd={docPageItems.pageEnd}
+              onPageChange={setDocPage}
+            />
           </section>
-          <PaginationBar
-            page={docPage}
-            totalPages={docPageItems.totalPages}
-            total={visibleDocs.length}
-            pageStart={docPageItems.pageStart}
-            pageEnd={docPageItems.pageEnd}
-            onPageChange={setDocPage}
-          />
         </>
       )}
 
@@ -378,25 +382,27 @@ export default function KnowledgePage() {
               </button>
             </div>
           </section>
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {sourcePageItems.slice.map((s) => (
-              <SourceCard
-                key={s.id}
-                source={s}
-                onOpen={(src) => navigate(`/admin/knowledge/sources/${src.id}`)}
-                onSync={() => flash(`已触发 ${s.name} 同步`)}
-                onConfig={(src) => flash(`配置 ${src.name}(占位)`)}
-              />
-            ))}
+          <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
+            <div className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-3 sm:p-7">
+              {sourcePageItems.slice.map((s) => (
+                <SourceCard
+                  key={s.id}
+                  source={s}
+                  onOpen={(src) => navigate(`/admin/knowledge/sources/${src.id}`)}
+                  onSync={() => flash(`已触发 ${s.name} 同步`)}
+                  onConfig={(src) => flash(`配置 ${src.name}(占位)`)}
+                />
+              ))}
+            </div>
+            <PaginationBar
+              page={sourcePage}
+              totalPages={sourcePageItems.totalPages}
+              total={sources.length}
+              pageStart={sourcePageItems.pageStart}
+              pageEnd={sourcePageItems.pageEnd}
+              onPageChange={setSourcePage}
+            />
           </section>
-          <PaginationBar
-            page={sourcePage}
-            totalPages={sourcePageItems.totalPages}
-            total={sources.length}
-            pageStart={sourcePageItems.pageStart}
-            pageEnd={sourcePageItems.pageEnd}
-            onPageChange={setSourcePage}
-          />
         </>
       )}
 
@@ -472,15 +478,15 @@ export default function KnowledgePage() {
                 </tbody>
               </table>
             </div>
+            <PaginationBar
+              page={taskPage}
+              totalPages={taskPageItems.totalPages}
+              total={tasks.length}
+              pageStart={taskPageItems.pageStart}
+              pageEnd={taskPageItems.pageEnd}
+              onPageChange={setTaskPage}
+            />
           </section>
-          <PaginationBar
-            page={taskPage}
-            totalPages={taskPageItems.totalPages}
-            total={tasks.length}
-            pageStart={taskPageItems.pageStart}
-            pageEnd={taskPageItems.pageEnd}
-            onPageChange={setTaskPage}
-          />
         </>
       )}
 
@@ -569,15 +575,15 @@ export default function KnowledgePage() {
                 </tbody>
               </table>
             </div>
+            <PaginationBar
+              page={evalPage}
+              totalPages={evalPageItems.totalPages}
+              total={evalCases.length}
+              pageStart={evalPageItems.pageStart}
+              pageEnd={evalPageItems.pageEnd}
+              onPageChange={setEvalPage}
+            />
           </section>
-          <PaginationBar
-            page={evalPage}
-            totalPages={evalPageItems.totalPages}
-            total={evalCases.length}
-            pageStart={evalPageItems.pageStart}
-            pageEnd={evalPageItems.pageEnd}
-            onPageChange={setEvalPage}
-          />
           <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
             <div className="flex items-center gap-2 border-b border-[var(--border)] px-5 py-4">
               <TrendingUp className="h-5 w-5 text-[var(--brand)]" />
@@ -644,10 +650,10 @@ function PaginationBar({ page, totalPages, total, pageStart, pageEnd, onPageChan
   const safePage = Math.min(page, totalPages);
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
   return (
-    <nav aria-label="分页" className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] px-4 py-2.5 text-xs">
-      <span className="text-[var(--text-muted)]">
-        第 <span className="font-semibold tabular-nums text-[var(--text)]">{pageStart}-{pageEnd}</span> 个 / 共 <span className="font-semibold tabular-nums text-[var(--text)]">{total}</span> 个
-      </span>
+    <nav aria-label="分页" className="flex items-center justify-between border-t border-[var(--border)] px-5 py-3 text-xs">
+      <p className="text-[var(--text-muted)]">
+        第 <span className="font-semibold tabular-nums text-[var(--text-secondary)]">{pageStart}-{pageEnd}</span> 个 / 共 <span className="font-semibold tabular-nums text-[var(--text-secondary)]">{total}</span> 个
+      </p>
       <div className="flex items-center gap-1">
         <button
           type="button"

@@ -1,13 +1,24 @@
 /**
  * WorkflowDetailPage 测试 — happy-path 渲染 + 反向引用 + 404。
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 vi.mock('@/api/admin/workflows/useWorkflows', () => ({
   useWorkflow: vi.fn(),
 }));
+
+beforeAll(() => {
+  // React Flow 在 jsdom 下依赖 ResizeObserver 来测量容器尺寸
+  if (!('ResizeObserver' in globalThis)) {
+    (globalThis as unknown as { ResizeObserver: typeof ResizeObserver }).ResizeObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+  }
+});
 
 import { useWorkflow } from '@/api/admin/workflows/useWorkflows';
 import WorkflowDetailPage from './WorkflowDetailPage';
@@ -57,7 +68,13 @@ describe('WorkflowDetailPage', () => {
       expect(screen.getByText('周报自动生成')).toBeTruthy();
     });
     expect(screen.getByText(/每周五自动汇总并发送/)).toBeTruthy();
-    expect(screen.getByText(/被以下 Agent 引用/)).toBeTruthy();
+
+    // 元信息面板默认收起,点击 元信息 按钮展开后再断言
+    const toggleBtn = screen.getByRole('button', { name: /元信息/ });
+    toggleBtn.click();
+    await waitFor(() => {
+      expect(screen.getByText(/被以下 Agent 引用/)).toBeTruthy();
+    });
   });
 
   it('renders not-found when workflow is missing', () => {

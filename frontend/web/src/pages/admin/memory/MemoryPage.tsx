@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Brain, Zap } from 'lucide-react';
 import {
-  useL1Sessions, useL2Facts, useL3Entries, usePromotions, useRetentionPolicies, useMemoryStats,
+  useL1Sessions, useL2Facts, useL3Entries, usePromotions, useRetentionPolicies, useMemoryStats, useMemoryTrend,
 } from '@/api/admin/memory';
 import type {
   L1Session, L2Category, L2Fact, L3Entry, L3Status, MemoryLayer, MemoryRange, MemoryTabId, RetentionPolicy,
@@ -73,6 +73,7 @@ export default function MemoryPage() {
   const remoteL3 = useL3Entries().data ?? [];
   const remotePromotions = usePromotions().data ?? [];
   const remotePolicies = useRetentionPolicies().data ?? [];
+  const { data: trend } = useMemoryTrend(range);
 
   const [l1, setL1] = useState<L1Session[]>(remoteL1);
   const [l2, setL2] = useState<L2Fact[]>(remoteL2);
@@ -89,6 +90,9 @@ export default function MemoryPage() {
   const avgHitRate = useMemo(() => policies.length === 0 ? 0 : policies.reduce((s, p) => s + p.hitRate, 0) / policies.length, [policies]);
   const pendingCount = useMemo(() => l2.filter((f) => f.status === 'pending').length, [l2]);
   const pendingFacts = useMemo(() => l2.filter((f) => f.status === 'pending').slice(0, 3), [l2]);
+  const pendingL3Drafts = useMemo(() => l3.filter((k) => k.status === 'draft').slice(0, 5), [l3]);
+  const pendingTotal = pendingCount + l3.filter((k) => k.status === 'draft').length;
+  const todayPromotions = useMemo(() => remotePromotions.filter((e) => e.at.startsWith('今天')).length, [remotePromotions]);
   const allUsers = useMemo(() => Array.from(new Set(l2.map((f) => f.userName))).sort(), [l2]);
   const allTeams = useMemo(() => Array.from(new Set(l3.map((k) => k.team))).sort(), [l3]);
 
@@ -198,8 +202,8 @@ export default function MemoryPage() {
         <div className="relative mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <KpiTile label="总记忆条目" value={totalEntries} hint={`L1 ${counts.l1} · L2 ${counts.l2} · L3 ${counts.l3}`} />
           <KpiTile label="平均命中率" value={`${(avgHitRate * 100).toFixed(1)}%`} hint={`${RANGE_LABEL[range]} 区间`} />
-          <KpiTile label="待确认事实" value={pendingCount} hint="L2 pending 状态" tone={pendingCount > 0 ? 'warn' : undefined} />
-          <KpiTile label="晋升事件" value={counts.events} hint="近 7 日活跃" />
+          <KpiTile label="待办总数" value={pendingTotal} hint={`待确认 ${pendingCount} · 待发布 ${l3.filter((k) => k.status === 'draft').length}`} tone={pendingTotal > 0 ? 'warn' : undefined} />
+          <KpiTile label="今日晋升" value={todayPromotions} hint={`总事件 ${counts.events}`} />
         </div>
       </section>
 
@@ -207,7 +211,7 @@ export default function MemoryPage() {
         {(['overview', 'l1', 'l2', 'l3', 'policy'] as MemoryTabId[]).map((id) => {
           const isActive = tab === id;
           const labelMap: Record<MemoryTabId, { label: string; icon: typeof Zap }> = {
-            overview: { label: '三层总览', icon: BookOpen },
+            overview: { label: '记忆总览', icon: BookOpen },
             l1: { label: '短期记忆', icon: Zap },
             l2: { label: '长期记忆', icon: Brain },
             l3: { label: '知识记忆', icon: BookOpen },
@@ -234,7 +238,16 @@ export default function MemoryPage() {
           promotions={remotePromotions}
           policies={policies}
           pendingFacts={pendingFacts}
+          pendingL3Drafts={pendingL3Drafts}
+          trend={trend ?? { l1Active: [0, 0, 0, 0, 0, 0, 0, 0], l2Hits: [0, 0, 0, 0, 0, 0, 0, 0], l3Hits: [0, 0, 0, 0, 0, 0, 0, 0] }}
+          pendingTotal={pendingTotal}
+          todayPromotions={todayPromotions}
+          totalEntries={totalEntries}
+          avgHitRate={avgHitRate}
           onConfirm={confirmFact}
+          onOpenL2={openL2}
+          onOpenL3={openL3}
+          onJumpToPolicies={() => setTab('policy')}
         />
       )}
       {tab === 'l1' && (

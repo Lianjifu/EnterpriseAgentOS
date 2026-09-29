@@ -6,7 +6,7 @@ import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import { qk } from '@/api/shared/query-keys';
 import { renderWithProviders } from '@/test-utils/seed';
 import {
-  mockL1Sessions, mockL2Facts, mockL3Entries, mockPromotions, mockRetentionPolicies,
+  mockL1Sessions, mockL2Facts, mockL3Entries, mockMemoryTrend, mockPromotions, mockRetentionPolicies,
 } from '@/mock/admin/memory.fixtures';
 import MemoryPage from './index';
 
@@ -20,6 +20,7 @@ function renderPage() {
       { key: [...qk.admin.memory.l3, 'w1'], data: mockL3Entries },
       { key: [...qk.admin.memory.promotions, 'w1'], data: mockPromotions },
       { key: [...qk.admin.memory.policies, 'w1'], data: mockRetentionPolicies },
+      { key: [...qk.admin.memory.trend('7d'), 'w1'], data: mockMemoryTrend },
     ],
   });
 }
@@ -30,6 +31,9 @@ describe('AdminMemory', () => {
     expect(screen.getByText(/把企业记忆资产管起来/)).toBeTruthy();
     expect(screen.getByText('总记忆条目')).toBeTruthy();
     expect(screen.getByText('平均命中率')).toBeTruthy();
+    expect(screen.getByText('记忆总览')).toBeTruthy();
+    expect(screen.getByText('当前快照')).toBeTruthy();
+    expect(screen.getByText('待办工作流')).toBeTruthy();
   });
 
   it('切换到 L1 tab 显示会话表格', async () => {

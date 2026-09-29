@@ -4,7 +4,7 @@
 import { useApiQuery } from '@/services/query';
 import { qk } from '@/api/shared/query-keys';
 import type {
-  L1Session, L2Fact, L3Entry, MemoryStats, PromotionEvent, RetentionPolicy,
+  L1Session, L2Fact, L3Entry, MemoryStats, MemoryTrend, PromotionEvent, RetentionPolicy,
 } from './schema';
 
 export function useL1Sessions() {
@@ -70,4 +70,15 @@ export function useMemoryStats(l1: L1Session[], l2: L2Fact[], l3: L3Entry[], eve
     l3Published: l3.filter((k) => k.status === 'published').length,
     events: events.length,
   };
+}
+
+const TREND_FALLBACK: MemoryTrend = { l1Active: [0, 0, 0, 0, 0, 0, 0, 0], l2Hits: [0, 0, 0, 0, 0, 0, 0, 0], l3Hits: [0, 0, 0, 0, 0, 0, 0, 0] };
+
+export function useMemoryTrend(range: '7d' | '30d' | '90d') {
+  return useApiQuery<MemoryTrend>(
+    qk.admin.memory.trend(range),
+    `/api/admin/memory/trend?range=${range}`,
+    undefined,
+    { staleTime: 60_000 },
+  ) ?? { data: TREND_FALLBACK, isLoading: false };
 }

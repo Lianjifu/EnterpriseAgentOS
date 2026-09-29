@@ -7,7 +7,7 @@ import type {
 } from '@/api/admin/memory/schema';
 
 export const TABS: Array<{ id: MemoryTabId; label: string; icon: LucideIcon }> = [
-  { id: 'overview', label: '三层总览', icon: Layers },
+  { id: 'overview', label: '记忆总览', icon: Layers },
   { id: 'l1', label: '短期记忆', icon: Zap },
   { id: 'l2', label: '长期记忆', icon: Brain },
   { id: 'l3', label: '知识记忆', icon: BookOpen },

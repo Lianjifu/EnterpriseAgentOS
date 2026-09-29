@@ -137,6 +137,7 @@ export const qk = {
       l3Detail: (id: string) => ['admin', 'memory', 'l3', 'detail', id] as const,
       promotions: ['admin', 'memory', 'promotions'] as const,
       policies: ['admin', 'memory', 'policies'] as const,
+      trend: (range: string) => ['admin', 'memory', 'trend', range] as const,
     },
   },
 } as const;

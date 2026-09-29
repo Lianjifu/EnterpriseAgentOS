@@ -2,7 +2,7 @@
  * AdminMemory mock handler — 5 个 GET 端点;L1/L2/L3 的状态变更 + 晋升 + 策略保存均在客户端做。
  */
 import {
-  mockL1Sessions, mockL2Facts, mockL3Entries, mockPromotions, mockRetentionPolicies,
+  mockL1Sessions, mockL2Facts, mockL3Entries, mockMemoryTrend, mockPromotions, mockRetentionPolicies,
 } from '@/mock/admin/memory.fixtures';
 
 const withDelay = <T>(value: T, ms = 120) =>
@@ -17,6 +17,7 @@ export function wrapMockHandlerWithAdminMemory(fallback: (path: string, opts: an
     if (path === '/api/admin/memory/l3') return withDelay(mockL3Entries);
     if (path === '/api/admin/memory/promotions') return withDelay(mockPromotions);
     if (path === '/api/admin/memory/policies') return withDelay(mockRetentionPolicies);
+    if (path === '/api/admin/memory/trend' || path.startsWith('/api/admin/memory/trend?')) return withDelay(mockMemoryTrend);
     const policyDetailMatch = /^\/api\/admin\/memory\/policies\/(.+)$/.exec(path);
     if (policyDetailMatch) {
       const id = decodeURIComponent(policyDetailMatch[1]);

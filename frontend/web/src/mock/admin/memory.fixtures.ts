@@ -2,7 +2,7 @@
  * AdminMemory fixtures — 10 L1 sessions / 14 L2 facts / 12 L3 entries / 8 promotions / 3 policies。
  */
 import type {
-  L1Session, L2Fact, L3Entry, PromotionEvent, RetentionPolicy,
+  L1Session, L2Fact, L3Entry, MemoryTrend, PromotionEvent, RetentionPolicy,
 } from '@/api/admin/memory/schema';
 
 export const mockL1Sessions: L1Session[] = [
@@ -66,3 +66,9 @@ export const mockRetentionPolicies: RetentionPolicy[] = [
   { layer: 'l2', label: '长期记忆', description: '用户偏好与事实', ttlMinutes: 60 * 24 * 90, maxItems: 200, storageMb: 32, eviction: 'lru', hitRate: 0.88 },
   { layer: 'l3', label: '知识记忆', description: '团队级共享知识', ttlMinutes: 60 * 24 * 365, maxItems: 500, storageMb: 128, eviction: 'lru', hitRate: 0.92 },
 ];
+
+export const mockMemoryTrend: MemoryTrend = {
+  l1Active: [42, 48, 53, 50, 56, 61, 58, 64],
+  l2Hits: [820, 940, 1020, 1100, 1180, 1240, 1320, 1380],
+  l3Hits: [1280, 1340, 1410, 1480, 1560, 1620, 1680, 1750],
+};

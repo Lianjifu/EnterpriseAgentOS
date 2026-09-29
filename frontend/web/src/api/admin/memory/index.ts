@@ -5,5 +5,5 @@ export {
   useL3Entries, useL3Entry,
   usePromotions,
   useRetentionPolicies, useRetentionPolicy,
-  useMemoryStats,
+  useMemoryStats, useMemoryTrend,
 } from './useMemory';

@@ -48,3 +48,10 @@ export interface RetentionPolicy {
 export interface MemoryStats {
   l1Active: number; l2Confirmed: number; l3Published: number; events: number;
 }
+
+/** 总览趋势 8 期(由旧到新),按所选时间范围步长。 */
+export interface MemoryTrend {
+  l1Active: number[];
+  l2Hits: number[];
+  l3Hits: number[];
+}

@@ -6,14 +6,14 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, BookOpen, Brain, Zap } from 'lucide-react';
+import { BookOpen, Brain, Zap } from 'lucide-react';
 import {
   useL1Sessions, useL2Facts, useL3Entries, usePromotions, useRetentionPolicies, useMemoryStats,
 } from '@/api/admin/memory';
 import type {
   L1Session, L2Category, L2Fact, L3Entry, L3Status, MemoryLayer, MemoryRange, MemoryTabId, RetentionPolicy,
 } from '@/api/admin/memory/schema';
-import { LAYER_META, RANGE_LABEL, toneClass, ttlLabel } from './components/constants';
+import { RANGE_LABEL } from './components/constants';
 import { TimeRangeDropdown } from './components/TimeRangeDropdown';
 import { PromoteMemoryModal } from './components/PromoteMemoryModal';
 import { RetentionPolicyModal } from './components/RetentionPolicyModal';
@@ -201,36 +201,6 @@ export default function MemoryPage() {
           <KpiTile label="待确认事实" value={pendingCount} hint="L2 pending 状态" tone={pendingCount > 0 ? 'warn' : undefined} />
           <KpiTile label="晋升事件" value={counts.events} hint="近 7 日活跃" />
         </div>
-
-        <ul className="relative mt-6 grid gap-2 md:grid-cols-3">
-          {(['l1', 'l2', 'l3'] as MemoryLayer[]).map((layer) => {
-            const meta = LAYER_META[layer];
-            const policy = policies.find((p) => p.layer === layer);
-            const count = layer === 'l1' ? counts.l1 : layer === 'l2' ? counts.l2 : counts.l3;
-            const Icon = meta.icon;
-            return (
-              <li key={layer}>
-                <button
-                  type="button"
-                  onClick={() => setTab(layer)}
-                  className="group flex w-full items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--bg-app)] p-3 text-left transition hover:border-[var(--brand)] hover:shadow-sm"
-                >
-                  <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg ${toneClass[meta.tone]}`}><Icon className="h-5 w-5" /></span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-semibold">{meta.label}</span>
-                      <span className="text-[11px] tabular-nums text-[var(--text-muted)]">{count} 条</span>
-                    </div>
-                    <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">
-                      {policy ? `命中率 ${(policy.hitRate * 100).toFixed(1)}% · TTL ${ttlLabel(policy.ttlMinutes)}` : meta.tagline}
-                    </p>
-                  </div>
-                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[var(--text-muted)] transition group-hover:translate-x-0.5 group-hover:text-[var(--brand)]" />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
       </section>
 
       <section aria-label="子模块导航" className="flex flex-wrap items-center gap-2 overflow-x-auto pb-1">

@@ -21,6 +21,7 @@ const AdminSettings = lazy(() => import('@/pages/admin/settings'));
 const AdminOverview = lazy(() => import('@/pages/admin/overview'));
 const AdminAgents = lazy(() => import('@/pages/admin/agents'));
 const AdminAgentDetail = lazy(() => import('@/pages/admin/agents/AgentDetailPage'));
+const AdminAgentCreate = lazy(() => import('@/pages/admin/agents/AgentCreatePage'));
 const AdminKnowledge = lazy(() => import('@/pages/admin/knowledge'));
 const AdminKnowledgeKbDetail = lazy(() => import('@/pages/admin/knowledge/KbDetailPage'));
 const AdminMemory = lazy(() => import('@/pages/admin/memory'));
@@ -99,6 +100,7 @@ export default function App() {
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/overview" element={<AdminOverview />} />
             <Route path="/admin/agents" element={<AdminAgents />} />
+            <Route path="/admin/agents/new" element={<AdminAgentCreate />} />
             <Route path="/admin/agents/:id" element={<AdminAgentDetail />} />
             <Route path="/admin/knowledge" element={<AdminKnowledge />} />
             <Route path="/admin/knowledge/kbs/:id" element={<AdminKnowledgeKbDetail />} />

@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Activity, AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, Filter, Plus, Search, Star, Upload } from 'lucide-react';
 import type {
-  AgentEntry, AgentFilters, ImportExtension, ImportRow, ExportField, ExportFormat, ExportScope, SortKey, TabId, VisibleScope, WizardDraft,
+  AgentEntry, AgentFilters, ImportExtension, ImportRow, ExportField, ExportFormat, ExportScope, SortKey, TabId,
 } from '@/api/admin/agents/schema';
 import type { DeletePayload } from './components/DeleteConfirmModal';
 import {
@@ -21,8 +21,7 @@ import { AgentCard } from './components/AgentCard';
 import { BatchToolbar } from './components/DrawerSidebar';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { ExportDialog, ImportDialog } from './components/ImportExportModals';
-import { INITIAL_WIZARD_DRAFT, SCENES, SORT_OPTIONS, TABS, DEFAULT_EXPORT_FIELDS } from './components/constants';
-import { WizardModal } from './components/WizardModal';
+import { SCENES, SORT_OPTIONS, TABS, DEFAULT_EXPORT_FIELDS } from './components/constants';
 
 const PAGE_SIZE = 4;
 
@@ -40,10 +39,6 @@ export default function AgentsPage() {
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
-
-  const [wizardOpen, setWizardOpen] = useState(false);
-  const [wizardStep, setWizardStep] = useState<1 | 2 | 3 | 4>(1);
-  const [wizardDraft, setWizardDraft] = useState<WizardDraft>(INITIAL_WIZARD_DRAFT);
 
   const [importOpen, setImportOpen] = useState(false);
   const [importStep, setImportStep] = useState<1 | 2 | 3>(1);
@@ -130,32 +125,7 @@ export default function AgentsPage() {
   };
   const handleRequestDelete = (agent: AgentEntry) => setDeletePayload({ kind: 'single', agentName: agent.name });
 
-  const handleCreateAgent = () => {
-    const today = new Date().toISOString().slice(0, 10);
-    createAgent.mutate({
-      id: `a-${Date.now()}`,
-      name: wizardDraft.name,
-      description: wizardDraft.description,
-      category: wizardDraft.category,
-      owner: wizardDraft.owner,
-      tags: wizardDraft.tags ?? [],
-      tone: 'info',
-      status: 'draft',
-      version: 'v0.1',
-      createdAt: today,
-      tools: toolsFromNames(wizardDraft.defaultSkills),
-      visibleScope: [wizardDraft.visibleScope] as VisibleScope[],
-      dataAccess: '基础数据',
-      prompts: buildPrompts(wizardDraft.name, wizardDraft.category, wizardDraft.owner),
-      customPrompts: [],
-      knowledgeRefs: [],
-      memoryPolicy: { enabled: false, retentionDays: 30, scope: 'user', autoSummarize: false },
-      flowRefs: [],
-    });
-    setWizardOpen(false);
-    setWizardStep(1);
-    setWizardDraft(INITIAL_WIZARD_DRAFT);
-  };
+  const handleOpenCreate = () => navigate('/admin/agents/new');
 
   const handleConfirmDelete = () => {
     if (!deletePayload) return;
@@ -212,7 +182,7 @@ export default function AgentsPage() {
           <div className="mt-5 flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setWizardOpen(true)}
+              onClick={handleOpenCreate}
               className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white shadow-[var(--shadow-sm)] hover:bg-[var(--brand-hover)]"
             >
               <Plus className="h-3.5 w-3.5" />新建智能体
@@ -388,17 +358,6 @@ export default function AgentsPage() {
           </nav>
         )}
       </section>
-
-      {/* Wizard */}
-      <WizardModal
-        open={wizardOpen}
-        onClose={() => setWizardOpen(false)}
-        step={wizardStep}
-        setStep={setWizardStep}
-        draft={wizardDraft}
-        setDraft={setWizardDraft}
-        onCreate={handleCreateAgent}
-      />
 
       {/* Import Dialog */}
       <ImportDialog

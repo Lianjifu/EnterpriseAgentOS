@@ -1,25 +1,29 @@
 /**
- * 4 步新建智能体向导 — 基本信息 / 模板选择 / 快速配置 / 确认创建。
+ * 4 步新建智能体向导(页面体) — 由 AgentCreatePage 包裹使用。
+ *
+ * 历史上曾是 CenterModal 弹窗;现已迁到独立页面 /admin/agents/new,
+ * 移除了 onClose/open/footer;返回按钮由页面提供。
  */
+import { useState } from 'react';
 import { CheckCircle2, ChevronLeft, ChevronRight, Info, Plus, Square, CheckSquare } from 'lucide-react';
-import { CenterModal } from '@/components/feedback/CenterModal';
 import type { WizardDraft } from '@/api/admin/agents/schema';
 import { SCENES, WIZARD_TEMPLATES, WIZARD_ICONS, WIZARD_MODELS, WIZARD_SKILLS, INITIAL_WIZARD_DRAFT } from './constants';
 import { toneClass } from './constants';
 import { StepIndicator } from './Primitives';
 
-export function WizardModal({
-  open, onClose, step, setStep, draft, setDraft, onCreate,
+export type WizardStep = 1 | 2 | 3 | 4;
+const STEP_LABELS = ['基本信息', '模板选择', '快速配置', '确认创建'] as const;
+
+export function WizardBody({
+  initialDraft,
+  onSubmit,
 }: {
-  open: boolean;
-  onClose: () => void;
-  step: 1 | 2 | 3 | 4;
-  setStep: (s: 1 | 2 | 3 | 4) => void;
-  draft: WizardDraft;
-  setDraft: React.Dispatch<React.SetStateAction<WizardDraft>>;
-  onCreate: () => void;
+  initialDraft?: WizardDraft;
+  onSubmit: (draft: WizardDraft) => void;
 }) {
-  const labels = ['基本信息', '模板选择', '快速配置', '确认创建'];
+  const [step, setStep] = useState<WizardStep>(1);
+  const [draft, setDraft] = useState<WizardDraft>(initialDraft ?? INITIAL_WIZARD_DRAFT);
+
   const canNext =
     step === 1 ? draft.name.trim().length > 0
       : step === 2 ? true
@@ -27,45 +31,12 @@ export function WizardModal({
           : true;
   const isLast = step === 4;
 
-  const title = <span className="flex items-center gap-2"><Plus className="h-5 w-5 text-[var(--brand)]" />新建智能体 · {labels[step - 1]}</span>;
-  const description = `第 ${step} / 4 步 · 完成后将进入编辑器继续配置。`;
-
-  const footer = (
-    <>
-      <button type="button" onClick={onClose} className="rounded-xl border border-[var(--border)] px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)]">取消</button>
-      {step > 1 && (
-        <button type="button" onClick={() => setStep((step - 1) as 1 | 2 | 3 | 4)} className="inline-flex items-center gap-1 rounded-xl border border-[var(--border)] px-4 py-2 text-xs font-semibold hover:border-[var(--brand)]">
-          <ChevronLeft className="h-3.5 w-3.5" />上一步
-        </button>
-      )}
-      {isLast ? (
-        <button type="button" onClick={onCreate} disabled={!canNext} className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)] disabled:opacity-50">
-          <Plus className="h-3.5 w-3.5" />创建并进入编辑器
-        </button>
-      ) : (
-        <button type="button" onClick={() => setStep((step + 1) as 1 | 2 | 3 | 4)} disabled={!canNext} className="inline-flex items-center gap-1 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)] disabled:opacity-50">
-          下一步<ChevronRight className="h-3.5 w-3.5" />
-        </button>
-      )}
-    </>
-  );
-
   return (
-    <CenterModal
-      open={open}
-      onClose={onClose}
-      ariaLabel="新建智能体向导"
-      title={title}
-      description={description}
-      panelClassName="max-w-2xl"
-      footer={footer}
-    >
-      <div className="mt-4">
-        <StepIndicator current={step} total={4} labels={labels} />
-      </div>
+    <div className="space-y-6">
+      <StepIndicator current={step} total={4} labels={[...STEP_LABELS]} />
 
       {step === 1 && (
-        <div className="mt-6 space-y-4">
+        <div className="space-y-4">
           <div>
             <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">名称 *</label>
             <input
@@ -130,7 +101,7 @@ export function WizardModal({
       )}
 
       {step === 2 && (
-        <div className="mt-6 space-y-3">
+        <div className="space-y-3">
           {WIZARD_TEMPLATES.map((tpl) => {
             const active = draft.template === tpl.id;
             const Icon = tpl.icon;
@@ -159,7 +130,7 @@ export function WizardModal({
       )}
 
       {step === 3 && (
-        <div className="mt-6 space-y-5">
+        <div className="space-y-5">
           <div>
             <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">默认模型</label>
             <select
@@ -213,7 +184,7 @@ export function WizardModal({
       )}
 
       {step === 4 && (
-        <div className="mt-6 space-y-4">
+        <div className="space-y-4">
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--brand)]">基本信息</p>
             <dl className="mt-3 grid gap-2 text-xs">
@@ -242,8 +213,25 @@ export function WizardModal({
           </div>
         </div>
       )}
-    </CenterModal>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border)] pt-4">
+        {step > 1 ? (
+          <button type="button" onClick={() => setStep((step - 1) as WizardStep)} className="inline-flex items-center gap-1 rounded-xl border border-[var(--border)] px-4 py-2 text-xs font-semibold hover:border-[var(--brand)]">
+            <ChevronLeft className="h-3.5 w-3.5" />上一步
+          </button>
+        ) : (
+          <span />
+        )}
+        {isLast ? (
+          <button type="button" onClick={() => onSubmit(draft)} disabled={!canNext} className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)] disabled:opacity-50">
+            <Plus className="h-3.5 w-3.5" />创建并进入编辑器
+          </button>
+        ) : (
+          <button type="button" onClick={() => setStep((step + 1) as WizardStep)} disabled={!canNext} className="inline-flex items-center gap-1 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)] disabled:opacity-50">
+            下一步<ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
-
-export { INITIAL_WIZARD_DRAFT };

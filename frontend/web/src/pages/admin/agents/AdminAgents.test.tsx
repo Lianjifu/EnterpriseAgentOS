@@ -8,6 +8,7 @@ import { qk } from '@/api/shared/query-keys';
 import { renderWithProviders } from '@/test-utils/seed';
 import AgentsPage from '@/pages/admin/agents';
 import AgentDetailPage from '@/pages/admin/agents/AgentDetailPage';
+import AgentCreatePage from '@/pages/admin/agents/AgentCreatePage';
 import { mockAgents } from '@/mock/admin/agents.fixtures';
 
 function renderPage() {
@@ -23,6 +24,7 @@ function renderApp(initialPath: string) {
   return renderWithProviders(
     <Routes>
       <Route path="/admin/agents" element={<AgentsPage />} />
+      <Route path="/admin/agents/new" element={<AgentCreatePage />} />
       <Route path="/admin/agents/:id" element={<AgentDetailPage />} />
     </Routes>,
     {
@@ -97,19 +99,28 @@ describe('AdminAgents', () => {
     expect(screen.queryByLabelText('批量操作')).toBeNull();
   });
 
-  it('opens the create wizard (4 steps → create)', () => {
-    renderPage();
+  it('navigates to create page (4 steps + 返回 link)', () => {
+    renderApp('/admin/agents');
     fireEvent.click(screen.getAllByRole('button', { name: /新建智能体/ })[0]);
-    const wizard = screen.getByRole('dialog', { name: '新建智能体向导' });
-    expect(wizard).toBeTruthy();
-    fireEvent.change(within(wizard).getByPlaceholderText(/差旅助手/), { target: { value: '测试智能体' } });
-    fireEvent.click(within(wizard).getByRole('button', { name: /下一步/ }));
-    fireEvent.click(within(wizard).getByRole('button', { name: /下一步/ }));
-    // 选择技能
-    fireEvent.click(within(wizard).getByRole('button', { name: /订单查询/ }));
-    fireEvent.click(within(wizard).getByRole('button', { name: /下一步/ }));
-    fireEvent.click(within(wizard).getByRole('button', { name: /创建并进入编辑器/ }));
-    expect(screen.queryByRole('dialog', { name: '新建智能体向导' })).toBeNull();
+    // 路由切换到独立页面,带返回按钮
+    expect(screen.getByRole('link', { name: /返回智能体管理/ })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: '新建智能体' })).toBeTruthy();
+    // 4 步向导页头
+    expect(screen.getByText('基本信息')).toBeTruthy();
+    expect(screen.getByText('确认创建')).toBeTruthy();
+    // Step 1: 名称必填
+    const name = screen.getByPlaceholderText(/差旅助手/);
+    fireEvent.change(name, { target: { value: '测试智能体' } });
+    fireEvent.click(screen.getByRole('button', { name: /下一步/ }));
+    fireEvent.click(screen.getByRole('button', { name: /下一步/ }));
+    // Step 3: 至少选 1 个技能
+    fireEvent.click(screen.getByRole('button', { name: /订单查询/ }));
+    fireEvent.click(screen.getByRole('button', { name: /下一步/ }));
+    // Step 4: 确认页可见
+    expect(screen.getByText(/创建并进入编辑器/)).toBeTruthy();
+    // 返回上一级:从 /admin/agents/new → /admin/agents
+    fireEvent.click(screen.getByRole('link', { name: /返回智能体管理/ }));
+    expect(screen.getByText(/让智能体成为可治理、可观测的能力/)).toBeTruthy();
   });
 
   it('opens import dialog and previews sample', () => {

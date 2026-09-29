@@ -122,4 +122,26 @@ describe('AdminKnowledge', () => {
     fireEvent.click(screen.getByRole('button', { name: /查看 产品 Wiki 详情/ }));
     expect(screen.getByRole('heading', { level: 1, name: '产品 Wiki' })).toBeTruthy();
   });
+
+  it('task table has target-kb links', () => {
+    renderPage();
+    const tabs = screen.getAllByRole('button', { name: /任务/ });
+    fireEvent.click(tabs[0]);
+    expect(screen.getByRole('columnheader', { name: /目标 KB/ })).toBeTruthy();
+    expect(screen.getAllByRole('link', { name: /产品手册 v3/ }).length).toBeGreaterThan(0);
+  });
+
+  it('eval tab shows linked expected/actual kb names and per-kb aggregation table', () => {
+    renderPage();
+    const evalTab = screen.getAllByRole('button', { name: /评测/ })[0];
+    fireEvent.click(evalTab);
+    expect(screen.getByText(/预期/)).toBeTruthy();
+    expect(screen.getByText(/实际/)).toBeTruthy();
+    expect(screen.getAllByRole('link', { name: /员工手册/ }).length).toBeGreaterThan(0);
+    expect(screen.getByText(/知识库命中率分布/)).toBeTruthy();
+    expect(screen.getByText('用例数')).toBeTruthy();
+    expect(screen.getAllByText('通过率').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('平均 MRR').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('平均延迟').length).toBeGreaterThan(0);
+  });
 });

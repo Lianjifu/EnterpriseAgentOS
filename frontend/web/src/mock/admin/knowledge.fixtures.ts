@@ -148,20 +148,20 @@ export const mockSources: Source[] = [
 ];
 
 export const mockTasks: Task[] = [
-  { id: 'task-1', name: '产品手册 v3 全文索引', kind: 'index', kbId: 'kb-prod', status: 'success', progress: 100, items: 286, startedAt: '今天 14:00', duration: '32 分钟' },
-  { id: 'task-2', name: 'FAQ Top100 增量索引', kind: 'reindex', kbId: 'kb-faq', status: 'running', progress: 68, items: 412, startedAt: '今天 15:20', duration: '进行中' },
-  { id: 'task-3', name: '员工手册 2026 重建', kind: 'rebuild', kbId: 'kb-hr', status: 'failed', progress: 42, items: 124, startedAt: '昨天', duration: '失败 @ 第 52 项' },
-  { id: 'task-4', name: '会议纪要导入', kind: 'index', kbId: 'kb-meet', status: 'success', progress: 100, items: 18, startedAt: '今天 16:00', duration: '4 分钟' },
-  { id: 'task-5', name: '应急 runbook 索引', kind: 'index', kbId: 'kb-ops', status: 'running', progress: 28, items: 28, startedAt: '今天 15:48', duration: '进行中' },
-  { id: 'task-6', name: '合同模板全量重建', kind: 'rebuild', kbId: 'kb-legal', status: 'paused', progress: 56, items: 38, startedAt: '上周', duration: '已暂停' },
-  { id: 'task-7', name: '行业研究同步', kind: 'reindex', kbId: 'kb-research', status: 'success', progress: 100, items: 32, startedAt: '本周', duration: '18 分钟' },
-  { id: 'task-8', name: '话术模板清洗', kind: 'reindex', kbId: 'kb-tpl', status: 'success', progress: 100, items: 28, startedAt: '本周', duration: '6 分钟' },
-  { id: 'task-9', name: '安全规范 v3 重建', kind: 'rebuild', kbId: 'kb-sec', status: 'running', progress: 84, items: 24, startedAt: '今天 13:10', duration: '进行中' },
-  { id: 'task-10', name: '历史合同 OCR', kind: 'index', kbId: 'kb-legal', status: 'failed', progress: 12, items: 184, startedAt: '昨天', duration: '失败 · 凭据过期' },
-  { id: 'task-11', name: '回复话术增量', kind: 'reindex', kbId: 'kb-tpl', status: 'pending', progress: 0, items: 28, startedAt: '排队', duration: '—' },
-  { id: 'task-12', name: '术语表同步', kind: 'reindex', kbId: 'kb-glossary', status: 'success', progress: 100, items: 24, startedAt: '上周', duration: '2 分钟' },
-  { id: 'task-13', name: '应急响应案例', kind: 'index', kbId: 'kb-ops', status: 'pending', progress: 0, items: 36, startedAt: '排队', duration: '—' },
-  { id: 'task-14', name: '客服录音转写', kind: 'index', kbId: 'kb-faq', status: 'failed', progress: 23, items: 312, startedAt: '昨天', duration: '失败 · 队列满' },
+  { id: 'task-1', name: '产品手册 v3 全文索引', kind: 'index', kbId: 'kb-prod', sourceId: 'src-1', status: 'success', progress: 100, items: 286, startedAt: '今天 14:00', duration: '32 分钟' },
+  { id: 'task-2', name: 'FAQ Top100 增量索引', kind: 'reindex', kbId: 'kb-faq', sourceId: 'src-3', status: 'running', progress: 68, items: 412, startedAt: '今天 15:20', duration: '进行中' },
+  { id: 'task-3', name: '员工手册 2026 重建', kind: 'rebuild', kbId: 'kb-hr', sourceId: 'src-1', status: 'failed', progress: 42, items: 124, startedAt: '昨天', duration: '失败 @ 第 52 项', failureReason: '文档中含有损坏的 PDF 附件,解析器在第 52 项中止。' },
+  { id: 'task-4', name: '会议纪要导入', kind: 'index', kbId: 'kb-meet', sourceId: 'src-2', status: 'success', progress: 100, items: 18, startedAt: '今天 16:00', duration: '4 分钟' },
+  { id: 'task-5', name: '应急 runbook 索引', kind: 'index', kbId: 'kb-ops', sourceId: 'src-8', status: 'running', progress: 28, items: 28, startedAt: '今天 15:48', duration: '进行中' },
+  { id: 'task-6', name: '合同模板全量重建', kind: 'rebuild', kbId: 'kb-legal', sourceId: 'src-5', status: 'paused', progress: 56, items: 38, startedAt: '上周', duration: '已暂停', failureReason: '管理员手动暂停,等待法务团队复核条款变更后再继续。' },
+  { id: 'task-7', name: '行业研究同步', kind: 'reindex', kbId: 'kb-research', sourceId: 'src-3', status: 'success', progress: 100, items: 32, startedAt: '本周', duration: '18 分钟' },
+  { id: 'task-8', name: '话术模板清洗', kind: 'reindex', kbId: 'kb-tpl', sourceId: 'src-7', status: 'success', progress: 100, items: 28, startedAt: '本周', duration: '6 分钟' },
+  { id: 'task-9', name: '安全规范 v3 重建', kind: 'rebuild', kbId: 'kb-sec', sourceId: 'src-8', status: 'running', progress: 84, items: 24, startedAt: '今天 13:10', duration: '进行中' },
+  { id: 'task-10', name: '历史合同 OCR', kind: 'index', kbId: 'kb-legal', sourceId: 'src-5', status: 'failed', progress: 12, items: 184, startedAt: '昨天', duration: '失败 · 凭据过期', failureReason: 'S3 IAM 角色凭据已过期,请前往 src-5 配置页更新访问密钥。' },
+  { id: 'task-11', name: '回复话术增量', kind: 'reindex', kbId: 'kb-tpl', sourceId: 'src-7', status: 'pending', progress: 0, items: 28, startedAt: '排队', duration: '—' },
+  { id: 'task-12', name: '术语表同步', kind: 'reindex', kbId: 'kb-glossary', sourceId: 'src-4', status: 'success', progress: 100, items: 24, startedAt: '上周', duration: '2 分钟' },
+  { id: 'task-13', name: '应急响应案例', kind: 'index', kbId: 'kb-ops', sourceId: 'src-8', status: 'pending', progress: 0, items: 36, startedAt: '排队', duration: '—' },
+  { id: 'task-14', name: '客服录音转写', kind: 'index', kbId: 'kb-faq', sourceId: 'src-3', status: 'failed', progress: 23, items: 312, startedAt: '昨天', duration: '失败 · 队列满', failureReason: '并发任务数超过工作空间配额,排队队列已满。' },
 ];
 
 export const mockEvalCases: EvalCase[] = [

@@ -1,6 +1,13 @@
 /**
  * 管理侧「知识管理」schema — 5 类实体(Kb / Doc / Source / Task / EvalCase)
  * 以及创建/批量操作的入参形态。颜色/图标等纯展示字段不入 data。
+ *
+ * 实体关系图(单向引用 → 反向查询链):
+ *   Kb 1───* Doc              KbDetailPage 通过 kbId 反查 doc
+ *   Source 1───* Doc          SourceDetailPage 通过 doc.sourceId 反查 doc
+ *   Kb 1───* Task             KbDetailPage 通过 task.kbId 反查 task
+ *   Source 1───* Task         SourceDetailPage 通过 task.sourceId 反查 task
+ *   Kb ←──→ EvalCase(expected/actualKb)   KbDetailPage / DocDetailPage 通过 actualKb 反查
  */
 export type TabId = 'kb' | 'docs' | 'sources' | 'tasks' | 'eval';
 export type Range = '7d' | '30d' | '90d';
@@ -75,6 +82,7 @@ export interface Task {
   items: number;
   startedAt: string;
   duration: string;
+  failureReason?: string;
 }
 
 export interface EvalCase {

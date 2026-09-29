@@ -7,7 +7,7 @@ import { Route, Routes } from 'react-router-dom';
 import { qk } from '@/api/shared/query-keys';
 import { renderWithProviders } from '@/test-utils/seed';
 import DocDetailPage from './DocDetailPage';
-import { mockKbs, mockDocs, mockSources } from '@/mock/admin/knowledge.fixtures';
+import { mockKbs, mockDocs, mockSources, mockEvalCases } from '@/mock/admin/knowledge.fixtures';
 
 function renderAt(id: string) {
   return renderWithProviders(
@@ -20,6 +20,7 @@ function renderAt(id: string) {
         { key: [...qk.admin.knowledge.root, 'kbs', 'w1'], data: mockKbs },
         { key: [...qk.admin.knowledge.root, 'docs', 'w1'], data: mockDocs },
         { key: [...qk.admin.knowledge.root, 'sources', 'w1'], data: mockSources },
+        { key: [...qk.admin.knowledge.root, 'eval', 'w1'], data: mockEvalCases },
       ],
     },
   );
@@ -37,7 +38,8 @@ describe('AdminKnowledgeDocDetail', () => {
     expect(screen.getByText('引用')).toBeTruthy();
     expect(screen.getByText('产品定位')).toBeTruthy();
     expect(screen.getByText('核心功能矩阵')).toBeTruthy();
-    expect(screen.getByText(/切片预览/)).toBeTruthy();
+    expect(screen.getAllByText(/切片预览/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/评测引用/).length).toBeGreaterThan(0);
   });
 
   it('shows not-found when id is unknown', () => {

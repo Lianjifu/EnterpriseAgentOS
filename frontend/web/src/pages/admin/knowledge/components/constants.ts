@@ -42,14 +42,14 @@ export const TASK_KIND_LABEL = {
   rebuild: '重建',
 } as const;
 
-export const QUALITY_TREND = [
-  { day: '周一', hit: 0.91, mrr: 0.85 },
-  { day: '周二', hit: 0.92, mrr: 0.86 },
-  { day: '周三', hit: 0.93, mrr: 0.87 },
-  { day: '周四', hit: 0.92, mrr: 0.86 },
-  { day: '周五', hit: 0.94, mrr: 0.88 },
-  { day: '周六', hit: 0.94, mrr: 0.89 },
-  { day: '周日', hit: 0.95, mrr: 0.90 },
+export const QUALITY_TREND: { label: string; hit: number; mrr: number }[] = [
+  { label: '周一', hit: 0.91, mrr: 0.85 },
+  { label: '周二', hit: 0.92, mrr: 0.86 },
+  { label: '周三', hit: 0.93, mrr: 0.87 },
+  { label: '周四', hit: 0.92, mrr: 0.86 },
+  { label: '周五', hit: 0.94, mrr: 0.88 },
+  { label: '周六', hit: 0.94, mrr: 0.89 },
+  { label: '周日', hit: 0.95, mrr: 0.90 },
 ];
 
 export const WIZARD_STEPS = [

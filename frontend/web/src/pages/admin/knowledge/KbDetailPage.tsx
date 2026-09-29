@@ -3,15 +3,15 @@
  *
  * 顶部返回知识管理;头部展示名称 + 状态 + 可见范围 + 关键 KPI;
  * 下方展示知识库全部字段 + 「知识库文档」段(可点击跳到文档详情)
- * + 反向引用 agent 列表。
+ * + 反向引用 agent 列表 + 最近任务 + 评测用例命中。
  * wrapper / Stat / Field / NotFound / Skeleton 全部走 components/DetailLayout 共享件。
  */
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Database, FileText, Tag, Hash, Activity, Layers, Users, ChevronRight } from 'lucide-react';
-import { useKnowledgeBase, useKnowledgeDocs } from '@/api/admin/knowledge/useKnowledge';
+import { Database, FileText, Tag, Hash, Activity, Layers, Users, ChevronRight, ListChecks, TrendingUp, AlertTriangle } from 'lucide-react';
+import { useKnowledgeBase, useKnowledgeDocs, useKnowledgeTasks, useKnowledgeEvalCases } from '@/api/admin/knowledge/useKnowledge';
 import { mockAgents } from '@/mock/admin/agents.fixtures';
-import { KB_STATUS_BADGE, DOC_STATUS_BADGE } from './components/Primitives';
+import { KB_STATUS_BADGE, DOC_STATUS_BADGE, TASK_STATUS_BADGE, EVAL_STATUS_BADGE, ProgressBar } from './components/Primitives';
 import { DOC_TYPE_LABEL } from './components/constants';
 import {
   DetailShell, DetailHeader, DetailStatGrid, DetailStat, DetailSection, DetailField,
@@ -22,8 +22,18 @@ export default function KbDetailPage() {
   const { id = '' } = useParams<{ id: string }>();
   const { data: kb, isLoading } = useKnowledgeBase(id || null);
   const { data: docs = [] } = useKnowledgeDocs();
+  const { data: tasks = [] } = useKnowledgeTasks();
+  const { data: evalCases = [] } = useKnowledgeEvalCases();
 
   const kbDocs = useMemo(() => docs.filter((d) => d.kbId === id), [docs, id]);
+
+  const recentTasks = useMemo(() => {
+    return tasks.filter((t) => t.kbId === id).slice(-5).reverse();
+  }, [tasks, id]);
+
+  const matchedEvalCases = useMemo(() => {
+    return evalCases.filter((e) => e.expectedKb === id || e.actualKb === id);
+  }, [evalCases, id]);
 
   const boundAgents = useMemo(() => {
     if (!kb) return [] as typeof mockAgents;
@@ -146,6 +156,76 @@ export default function KbDetailPage() {
                 <a href={`/admin/agents/${a.id}`} className="text-[var(--brand)] hover:underline">查看 →</a>
               </li>
             ))}
+          </ul>
+        )}
+      </DetailSection>
+
+      <DetailSection title={`最近任务 (${recentTasks.length})`} icon={ListChecks}>
+        {recentTasks.length === 0 ? (
+          <p className="text-xs text-[var(--text-muted)]">该知识库暂无任务记录</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {recentTasks.map((t) => {
+              const badge = TASK_STATUS_BADGE[t.status];
+              return (
+                <li key={t.id} className="rounded-xl border border-[var(--border)] bg-[var(--bg-app)] p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">{t.name}</p>
+                      <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{t.startedAt} · 耗时 {t.duration}</p>
+                    </div>
+                    <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.className}`}>{badge.label}</span>
+                  </div>
+                  <ProgressBar
+                    value={t.progress}
+                    tone={t.status === 'failed' ? 'danger' : t.status === 'success' ? 'success' : 'brand'}
+                  />
+                  <p className="mt-1 text-[11px] text-[var(--text-muted)]">{t.progress}% · {t.items} 项</p>
+                  {t.failureReason && (
+                    <p className="mt-1.5 flex items-start gap-1 text-[11px] text-rose-600 dark:text-rose-300">
+                      <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+                      {t.failureReason}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </DetailSection>
+
+      <DetailSection title={`评测用例命中 (${matchedEvalCases.length})`} icon={TrendingUp}>
+        {matchedEvalCases.length === 0 ? (
+          <p className="text-xs text-[var(--text-muted)]">该知识库暂无评测引用</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {matchedEvalCases.map((e) => {
+              const badge = EVAL_STATUS_BADGE[e.status];
+              const isFail = e.status === 'fail';
+              const expectedId = e.expectedKb === id ? '本库' : e.expectedKb;
+              const actualId = e.actualKb === id ? '本库' : e.actualKb;
+              return (
+                <li
+                  key={e.id}
+                  className={`rounded-xl border bg-[var(--bg-app)] p-3 ${isFail ? 'border-l-4 border-l-rose-500 border-[var(--border)]' : 'border-[var(--border)]'}`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="truncate text-sm font-semibold">{e.name}</p>
+                    <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.className}`}>{badge.label}</span>
+                  </div>
+                  <p className="mt-1 line-clamp-1 text-[11px] text-[var(--text-muted)]">{e.query}</p>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
+                    <span>预期 · <span className="font-medium text-[var(--text-secondary)]">{expectedId}</span></span>
+                    <span>·</span>
+                    <span>实际 · <span className="font-medium text-[var(--text-secondary)]">{actualId}</span></span>
+                    <span>·</span>
+                    <span>MRR {(e.mrr * 100).toFixed(0)}%</span>
+                    <span>·</span>
+                    <span>{e.latency.toFixed(2)}s</span>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </DetailSection>

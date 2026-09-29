@@ -49,8 +49,8 @@ export function OverviewTab({
 
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
+        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h3 className="flex items-center gap-2 text-base font-semibold">
               <Workflow className="h-4 w-4 text-amber-600" />
@@ -81,7 +81,7 @@ export function OverviewTab({
           </div>
         </div>
 
-        <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        <div className="mt-5 grid gap-4 px-5 pb-5 lg:grid-cols-2">
           {pagedFlows.map((flow) => (
             <FlowCard
               key={flow.id}
@@ -96,22 +96,29 @@ export function OverviewTab({
           ))}
         </div>
         {total === 0 && (
-          <div className="mt-5 rounded-2xl border border-dashed border-[var(--border-strong)] bg-[var(--surface-1)] p-12 text-center">
+          <div className="border-t border-dashed border-[var(--border-strong)] p-12 text-center">
             <Search className="mx-auto h-6 w-6 text-[var(--text-muted)]" />
             <p className="mt-3 text-sm font-semibold">{emptyTitleForTab(statusTab)}</p>
             <p className="mt-1 text-xs text-[var(--text-muted)]">{emptyHintForTab(statusTab)}</p>
           </div>
         )}
-      </section>
 
-      <PaginationBar
-        page={safePage}
-        totalPages={totalPages}
-        total={total}
-        pageStart={pageStart}
-        pageEnd={pageEnd}
-        onPageChange={setPage}
-      />
+        {total > 0 && (
+          <div className="flex items-center justify-between border-t border-[var(--border)] px-5 py-3">
+            <p className="text-xs text-[var(--text-muted)]">
+              第 <span className="font-semibold tabular-nums text-[var(--text-secondary)]">{pageStart}</span>-<span className="font-semibold tabular-nums text-[var(--text-secondary)]">{pageEnd}</span> 个 / 共 <span className="font-semibold tabular-nums text-[var(--text-secondary)]">{total}</span> 个
+            </p>
+            <PaginationBar
+              page={safePage}
+              totalPages={totalPages}
+              total={total}
+              pageStart={pageStart}
+              pageEnd={pageEnd}
+              onPageChange={setPage}
+            />
+          </div>
+        )}
+      </section>
     </div>
   );
 }

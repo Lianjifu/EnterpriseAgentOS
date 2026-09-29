@@ -135,22 +135,27 @@ export default function WorkflowsPage() {
         </NoticeBanner>
       )}
 
-      <section aria-label="子模块导航" className="flex flex-wrap items-center gap-2 overflow-x-auto pb-1">
-        {TABS.map((t) => {
-          const count = countForTab(t.id, flows);
-          return (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              aria-pressed={tab === t.id}
-              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-semibold transition ${tab === t.id ? 'border-[var(--brand)] bg-[var(--brand-light)] text-[var(--brand)]' : 'border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]'}`}
-            >
-              {t.label}
-              <span className="rounded bg-[var(--bg-elevated)] px-1.5 py-0.5 text-[10px] tabular-nums">{count}</span>
-            </button>
-          );
-        })}
+      <section aria-label="子模块导航" className="flex items-center gap-2 overflow-x-auto pb-1">
+        <div className="inline-flex items-center gap-1 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-1">
+          {TABS.map((t) => {
+            const count = countForTab(t.id, flows);
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTab(t.id)}
+                aria-pressed={active}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${active ? 'bg-[var(--brand)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-1)] hover:text-[var(--brand)]'}`}
+              >
+                {t.label}
+                <span className={`inline-flex min-w-[1.25rem] items-center justify-center rounded-md px-1 py-px text-[10px] font-bold tabular-nums ${active ? 'bg-white/20 text-white' : 'bg-[var(--surface-1)] text-[var(--text-muted)] group-hover:text-[var(--brand)]'}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </section>
 
       <OverviewTab

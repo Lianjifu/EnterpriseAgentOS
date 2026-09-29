@@ -44,8 +44,8 @@ export function OverviewTab({
               点击「查看」打开工作流详情页;点击「编辑」直接进入画布;点击右上「新建工作流」从空白开始。
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-full sm:max-w-xs">
+          <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-3">
+            <div className="relative w-full sm:w-64">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
               <input
                 value={search}
@@ -57,7 +57,7 @@ export function OverviewTab({
             <button
               type="button"
               onClick={onCreate}
-              className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]"
+              className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]"
             >
               <Plus className="h-4 w-4" />
               新建工作流

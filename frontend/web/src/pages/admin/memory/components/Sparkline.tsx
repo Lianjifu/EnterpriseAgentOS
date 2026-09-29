@@ -69,23 +69,23 @@ export function TrendCard({
       : 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300';
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${toneClass}`}>
-            <Icon className="h-4 w-4" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-xs font-semibold text-[var(--text)]">{title}</p>
-            <p className="mt-0.5 truncate text-[10px] text-[var(--text-muted)]">{hint}</p>
-          </div>
-        </div>
-        <div className="shrink-0 text-right">
-          <p className="text-lg font-semibold tabular-nums">{current.toLocaleString()}</p>
-          <p className="text-[10px] text-[var(--text-muted)]">{unit}</p>
+      <div className="flex items-center gap-2">
+        <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${toneClass}`}>
+          <Icon className="h-4 w-4" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-[var(--text)]">{title}</p>
+          <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">{hint}</p>
         </div>
       </div>
-      <div className="min-w-0">
-        <Sparkline values={values} tone={tone} />
+      <div className="flex items-end justify-between gap-3">
+        <div className="shrink-0">
+          <p className="text-xl font-semibold tabular-nums leading-none">{current.toLocaleString()}</p>
+          <p className="mt-1 text-[10px] text-[var(--text-muted)]">{unit}</p>
+        </div>
+        <div className="min-w-0 flex-1">
+          <Sparkline values={values} tone={tone} />
+        </div>
       </div>
     </div>
   );

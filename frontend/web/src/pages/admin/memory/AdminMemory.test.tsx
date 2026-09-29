@@ -29,10 +29,9 @@ describe('AdminMemory', () => {
   it('渲染 hero + 5 子模块标签 + 默认 overview', () => {
     renderPage();
     expect(screen.getByText(/把企业记忆资产管起来/)).toBeTruthy();
-    expect(screen.getByText('总记忆条目')).toBeTruthy();
-    expect(screen.getByText('平均命中率')).toBeTruthy();
+    expect(screen.getByText('最近 7 天')).toBeTruthy();
     expect(screen.getByText('记忆总览')).toBeTruthy();
-    expect(screen.getByText('当前快照')).toBeTruthy();
+    expect(screen.getByText('趋势')).toBeTruthy();
     expect(screen.getByText('待办工作流')).toBeTruthy();
   });
 

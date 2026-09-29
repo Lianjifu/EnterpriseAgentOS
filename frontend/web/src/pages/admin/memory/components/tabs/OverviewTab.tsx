@@ -1,24 +1,25 @@
 /**
  * OverviewTab — 「记忆总览」数据驱动总览:左 3 趋势卡 + 中待办工作流 + 右晋升 feed + 策略快访。
  *
- * Wave 6 重构:
- * - 顶部 4 KPI(总条目 / 平均命中率 / 待办总数 / 今日晋升)由 MemoryPage Hero 提供
- * - 本 tab 聚焦于:趋势 + 待办 + 事件流 + 策略快访
+ * 顶部趋势区携带 TimeRangeDropdown,控制 3 个 TrendCard 的数据范围;
+ * 卡片右侧展示「最后刷新 · {lastRefresh}」。
  */
 import { Link } from 'react-router-dom';
-import { AlertCircle, BookOpen, Brain, ChevronRight, Clock, Sparkles, Zap } from 'lucide-react';
+import { BookOpen, Brain, ChevronRight, Clock, Zap } from 'lucide-react';
 import type {
-  L2Fact, L3Entry, MemoryTrend, PromotionEvent, RetentionPolicy,
+  L2Fact, L3Entry, MemoryRange, MemoryTrend, PromotionEvent, RetentionPolicy,
 } from '@/api/admin/memory/schema';
 import {
   L2_CATEGORY_LABEL, L2_STATUS_BADGE, L3_STATUS_BADGE, LAYER_META, ttlLabel, toneClass,
 } from '../constants';
 import { PromotionFeed } from '../PromotionFeed';
+import { TimeRangeDropdown } from '../TimeRangeDropdown';
 import { TrendCard } from '../Sparkline';
 
 export function OverviewTab({
   promotions, policies, pendingFacts, pendingL3Drafts, trend,
-  pendingTotal, todayPromotions, totalEntries, avgHitRate,
+  pendingTotal,
+  range, onRangeChange, onRefresh, refreshing, lastRefresh,
   onConfirm, onOpenL2, onOpenL3, onJumpToPolicies,
 }: {
   promotions: PromotionEvent[];
@@ -27,9 +28,11 @@ export function OverviewTab({
   pendingL3Drafts: L3Entry[];
   trend: MemoryTrend;
   pendingTotal: number;
-  todayPromotions: number;
-  totalEntries: number;
-  avgHitRate: number;
+  range: MemoryRange;
+  onRangeChange: (next: MemoryRange) => void;
+  onRefresh?: () => void;
+  refreshing?: boolean;
+  lastRefresh?: string;
   onConfirm: (id: string) => void;
   onOpenL2: (f: L2Fact) => void;
   onOpenL3: (e: L3Entry) => void;
@@ -44,56 +47,47 @@ export function OverviewTab({
 
   return (
     <section className="space-y-4">
-      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4 sm:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h3 className="text-base font-semibold">当前快照</h3>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">
-              总条目 {totalEntries.toLocaleString()} · 平均命中率 {(avgHitRate * 100).toFixed(1)}% · 今日晋升 {todayPromotions} · 待办 {pendingTotal}
-            </p>
-          </div>
-          {pendingTotal > 0 ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--warning-bg)] px-2.5 py-1 text-[10px] font-semibold text-[var(--warning)]">
-              <AlertCircle className="h-3 w-3" />{pendingTotal} 项待处理
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-              <Sparkles className="h-3 w-3" />全部已处理
-            </span>
-          )}
-        </div>
-      </div>
-
       <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <TrendCard
-              icon={l1Meta.icon}
-              title={`${l1Meta.label} · 活跃`}
-              current={l1Latest}
-              unit="活跃会话"
-              tone="info"
-              values={trend.l1Active}
-              hint="8 期会话数"
-            />
-            <TrendCard
-              icon={l2Meta.icon}
-              title={`${l2Meta.label} · 命中`}
-              current={l2Latest}
-              unit="本周命中"
-              tone="purple"
-              values={trend.l2Hits}
-              hint="8 期长期记忆命中次数"
-            />
-            <TrendCard
-              icon={l3Meta.icon}
-              title={`${l3Meta.label} · 命中`}
-              current={l3Latest}
-              unit="本周命中"
-              tone="brand"
-              values={trend.l3Hits}
-              hint="8 期知识记忆命中次数"
-            />
+          <div>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-base font-semibold">趋势</h3>
+              <div className="flex items-center gap-3">
+                {lastRefresh && <p className="text-[10px] text-[var(--text-muted)]">最后刷新 · {lastRefresh}</p>}
+                {onRangeChange && (
+                  <TimeRangeDropdown value={range} onChange={onRangeChange} onRefresh={onRefresh} refreshing={refreshing} />
+                )}
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <TrendCard
+                icon={l1Meta.icon}
+                title={`${l1Meta.label} · 活跃`}
+                current={l1Latest}
+                unit="活跃会话"
+                tone="info"
+                values={trend.l1Active}
+                hint="8 期会话数"
+              />
+              <TrendCard
+                icon={l2Meta.icon}
+                title={`${l2Meta.label} · 命中`}
+                current={l2Latest}
+                unit="本周命中"
+                tone="purple"
+                values={trend.l2Hits}
+                hint="8 期长期记忆命中次数"
+              />
+              <TrendCard
+                icon={l3Meta.icon}
+                title={`${l3Meta.label} · 命中`}
+                current={l3Latest}
+                unit="本周命中"
+                tone="brand"
+                values={trend.l3Hits}
+                hint="8 期知识记忆命中次数"
+              />
+            </div>
           </div>
 
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4 sm:p-5">

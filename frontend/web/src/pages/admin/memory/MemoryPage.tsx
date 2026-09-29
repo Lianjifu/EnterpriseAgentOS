@@ -1,7 +1,8 @@
 /**
  * MemoryPage — 5-tab orchestrator + 3 模态 + 乐观更新(useEffect 同步 local↔remote)。
  *
- * Wave 2 Hero:标题 + 4 KPI 矩阵 + 3 层入口卡 + TimeRangeDropdown。
+ * Wave 2 Hero:标题 + 3 层入口卡 + 时间范围下拉(TimeRangeDropdown 移至 OverviewTab 趋势区)。
+ * 删 KPI 矩阵 — 时间范围与趋势绑定,控件随趋势走。
  * Wave 3 prep:detail modal 保留(将被独立路由替代)。
  */
 import { useEffect, useMemo, useState } from 'react';
@@ -13,8 +14,6 @@ import {
 import type {
   L1Session, L2Category, L2Fact, L3Entry, L3Status, MemoryLayer, MemoryRange, MemoryTabId, RetentionPolicy,
 } from '@/api/admin/memory/schema';
-import { RANGE_LABEL } from './components/constants';
-import { TimeRangeDropdown } from './components/TimeRangeDropdown';
 import { PromoteMemoryModal } from './components/PromoteMemoryModal';
 import { RetentionPolicyModal } from './components/RetentionPolicyModal';
 import { OverviewTab } from './components/tabs/OverviewTab';
@@ -22,7 +21,6 @@ import { L1Tab } from './components/tabs/L1Tab';
 import { L2Tab } from './components/tabs/L2Tab';
 import { L3Tab } from './components/tabs/L3Tab';
 import { PolicyTab } from './components/tabs/PolicyTab';
-import { PaginationBar } from './components/PaginationBar';
 
 const PAGE_SIZE = 8;
 function paginate<T>(items: T[], page: number) {
@@ -185,25 +183,13 @@ export default function MemoryPage() {
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
           <div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.08),transparent_68%)]" />
         </div>
-        <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
+        <div className="relative flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--brand)]">ADMIN / 记忆管理</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">把企业记忆资产管起来。</h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">按会话上下文、用户长期偏好、团队共享知识三层组织,各有独立的保留策略与命中率。</p>
           </div>
-          <div className="flex flex-col items-end gap-1.5">
-            <div className="flex items-center gap-2">
-              <TimeRangeDropdown value={range} onChange={setRange} onRefresh={refreshAll} refreshing={refreshing} />
-            </div>
-            <p className="text-[10px] text-[var(--text-muted)]">最后刷新 · {lastRefresh}</p>
-          </div>
-        </div>
-
-        <div className="relative mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <KpiTile label="总记忆条目" value={totalEntries} hint={`短期 ${counts.l1} · 长期 ${counts.l2} · 知识 ${counts.l3}`} />
-          <KpiTile label="平均命中率" value={`${(avgHitRate * 100).toFixed(1)}%`} hint={`${RANGE_LABEL[range]} 区间`} />
-          <KpiTile label="待办总数" value={pendingTotal} hint={`待确认 ${pendingCount} · 待发布 ${l3.filter((k) => k.status === 'draft').length}`} tone={pendingTotal > 0 ? 'warn' : undefined} />
-          <KpiTile label="今日晋升" value={todayPromotions} hint={`总事件 ${counts.events}`} />
+          <p className="text-[11px] text-[var(--text-muted)]">最后刷新 · {lastRefresh}</p>
         </div>
       </section>
 
@@ -241,9 +227,11 @@ export default function MemoryPage() {
           pendingL3Drafts={pendingL3Drafts}
           trend={trend ?? { l1Active: [0, 0, 0, 0, 0, 0, 0, 0], l2Hits: [0, 0, 0, 0, 0, 0, 0, 0], l3Hits: [0, 0, 0, 0, 0, 0, 0, 0] }}
           pendingTotal={pendingTotal}
-          todayPromotions={todayPromotions}
-          totalEntries={totalEntries}
-          avgHitRate={avgHitRate}
+          range={range}
+          onRangeChange={setRange}
+          onRefresh={refreshAll}
+          refreshing={refreshing}
+          lastRefresh={lastRefresh}
           onConfirm={confirmFact}
           onOpenL2={openL2}
           onOpenL3={openL3}
@@ -306,17 +294,6 @@ export default function MemoryPage() {
 
       <PromoteMemoryModal open={promoteOpen} factIds={promoteIds} onClose={() => setPromoteOpen(false)} onConfirm={submitPromote} />
       <RetentionPolicyModal open={policyOpen} onClose={() => setPolicyOpen(false)} policy={policyTarget} onSave={savePolicy} />
-    </div>
-  );
-}
-
-function KpiTile({ label, value, hint, tone }: { label: string; value: number | string; hint?: string; tone?: 'warn' }) {
-  const valueClass = tone === 'warn' ? 'text-[var(--warning)]' : '';
-  return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-app)] p-4">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">{label}</p>
-      <p className={`mt-2 text-2xl font-semibold tabular-nums ${valueClass}`}>{value}</p>
-      {hint && <p className="mt-1 text-[11px] text-[var(--text-muted)]">{hint}</p>}
     </div>
   );
 }

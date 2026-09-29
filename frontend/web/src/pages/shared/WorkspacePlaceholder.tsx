@@ -16,7 +16,7 @@ const pageCopy: Record<string, { title: string; description: string; actions: st
   '/admin/agents': { title: '智能体管理', description: '创建、评测和发布企业智能体与应用。', actions: ['智能体目录', '草稿与待发布', '版本与发布'] },
   '/admin/knowledge': { title: '知识管理', description: '管理企业知识库、文档资产、数据来源、加工状态和访问权限。', actions: ['知识库', '文档资产', '数据来源', '加工任务', '检索评测'] },
   '/admin/memory': { title: '记忆管理', description: '管理智能体记忆、用户偏好与跨会话上下文，配置保留策略与可见范围。', actions: ['记忆条目', '保留策略', '可见范围', '评测与导出'] },
-  '/admin/workflows': { title: '流程管理', description: '设计、发布和分析企业自动化流程。', actions: ['流程目录', '草稿流程', '版本与发布'] },
+  '/admin/workflows': { title: '工作流管理', description: '设计、发布和分析企业自动化流程。', actions: ['流程目录', '草稿流程', '版本与发布'] },
   '/admin/tools': { title: '技能管理', description: '管理企业 Skill、Tool 与 MCP 等可被智能体调用的技能能力。', actions: ['技能目录', '新增接入', '访问权限'] },
   '/admin/evaluations': { title: '评测中心', description: '评测智能体、知识与流程的质量，对比版本差异并跟踪回归。', actions: ['评测集', '运行评测', '结果对比', '回归追踪'] },
   '/admin/regressions': { title: '回归追踪', description: '智能体 / 知识 / 模型版本变更后自动跑回归用例，发现质量退化。', actions: ['回归用例', '运行结果', '历史对比'] },

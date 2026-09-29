@@ -1,5 +1,5 @@
 /**
- * WorkflowsPage — 流程管理 orchestrator(list + editor 视图, 5 tab + 4 modal + 1 drawer)。
+ * WorkflowsPage — 工作流管理 orchestrator(list + editor 视图, 5 tab + 4 modal + 1 drawer)。
  */
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Boxes, CirclePlay, Plus } from 'lucide-react';
@@ -171,7 +171,7 @@ export default function WorkflowsPage() {
         </div>
         <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700 dark:text-amber-300">ADMIN / 流程管理</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700 dark:text-amber-300">ADMIN / 工作流管理</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">把可复用的工作流设计出来。</h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
               用画布把触发器、工具调用、条件分支、结束节点串成可执行的流程;可发布为工具,被任意智能体按需调用。

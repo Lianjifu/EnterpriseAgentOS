@@ -16,7 +16,7 @@ function NotFound() {
   return (
     <div className="mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-6">
       <Link to="/admin/workflows" className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--brand)]">
-        <ArrowLeft className="h-3.5 w-3.5" />返回流程管理
+        <ArrowLeft className="h-3.5 w-3.5" />返回工作流管理
       </Link>
       <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-1)] p-8 text-center">
         <p className="text-sm font-semibold">流程不存在或已被删除</p>
@@ -78,7 +78,7 @@ export default function WorkflowDetailPage() {
         onClick={() => { window.location.href = '/admin/workflows'; }}
         className="inline-flex w-fit items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--brand)]"
       >
-        <ArrowLeft className="h-3.5 w-3.5" />返回流程管理
+        <ArrowLeft className="h-3.5 w-3.5" />返回工作流管理
       </button>
 
       <header className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] px-5 py-4">

@@ -1310,16 +1310,16 @@ export function DrawerPanelFlow({ draft, onChange }: { draft: AgentEntry; onChan
     <div className="space-y-4">
       <PanelHero
         icon={<Workflow className="h-4 w-4" />}
-        eyebrow="来自流程管理"
+        eyebrow="来自工作流管理"
         title="自动化流程绑定"
         subtitle="智能体可作为触发器、节点或被调用的步骤参与这些流程。"
         sourceHref="/admin/workflows"
-        sourceLabel="前往流程管理"
+        sourceLabel="前往工作流管理"
       />
       <section className="grid gap-3 sm:grid-cols-4">
         <PanelStat label="已绑定流程" value={`${draft.flowRefs.length}`} />
         <PanelStat label="已启用" value={`${enabledCount}`} tone="success" />
-        <PanelStat label="流程总数" value={`${flows.length}`} hint="来自流程管理" />
+        <PanelStat label="流程总数" value={`${flows.length}`} hint="来自工作流管理" />
         <PanelStat label="未绑定" value={`${unbound.length}`} tone="info" hint="可选流程" />
       </section>
       <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
@@ -1355,7 +1355,7 @@ export function DrawerPanelFlow({ draft, onChange }: { draft: AgentEntry; onChan
                 <a
                   href={`/admin/workflows/${flow.id}`}
                   className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] px-2 py-1 text-[11px] font-semibold hover:border-[var(--brand)] hover:text-[var(--brand)]"
-                  title="在流程管理查看详情"
+                  title="在工作流管理查看详情"
                 >
                   <ExternalLink className="h-3 w-3" />查看
                 </a>

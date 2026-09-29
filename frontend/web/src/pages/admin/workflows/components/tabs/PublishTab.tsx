@@ -1,5 +1,5 @@
 /**
- * PublishTab — 已发布流程 + 待发布列表(发布与版本 tab)。
+ * PublishTab — 已发布工作流 + 待发布列表(发布与版本 tab)。
  */
 import { Brain, History, Rocket, Sparkles } from 'lucide-react';
 import type { Flow } from '@/api/admin/workflows/schema';
@@ -16,12 +16,12 @@ export function PublishTab({ flows, onVersions, onPublish }: PublishTabProps) {
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
       <section className="space-y-3">
-        <h3 className="flex items-center gap-2 text-base font-semibold"><Rocket className="h-4 w-4 text-amber-600" />已发布为工具的流程</h3>
-        <p className="text-xs text-[var(--text-muted)]">这些流程已发布为可被智能体调用的工具</p>
+        <h3 className="flex items-center gap-2 text-base font-semibold"><Rocket className="h-4 w-4 text-amber-600" />已发布为工具的工作流</h3>
+        <p className="text-xs text-[var(--text-muted)]">这些工作流已发布为可被智能体调用的工具</p>
         {published.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[var(--border-strong)] bg-[var(--surface-1)] p-10 text-center">
             <Rocket className="mx-auto h-6 w-6 text-[var(--text-muted)]" />
-            <p className="mt-3 text-sm font-semibold">还没有已发布的流程</p>
+            <p className="mt-3 text-sm font-semibold">还没有已发布的工作流</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -57,10 +57,10 @@ export function PublishTab({ flows, onVersions, onPublish }: PublishTabProps) {
       </section>
       <aside className="space-y-3">
         <h3 className="flex items-center gap-2 text-base font-semibold"><Sparkles className="h-4 w-4 text-amber-600" />待发布</h3>
-        <p className="text-xs text-[var(--text-muted)]">草稿 / 灰度中的流程可以发布为工具</p>
+        <p className="text-xs text-[var(--text-muted)]">草稿 / 灰度中的工作流可以发布为工具</p>
         {drafts.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[var(--border-strong)] bg-[var(--surface-1)] p-8 text-center">
-            <p className="text-xs text-[var(--text-muted)]">暂无待发布流程</p>
+            <p className="text-xs text-[var(--text-muted)]">暂无待发布工作流</p>
           </div>
         ) : (
           <div className="space-y-2">

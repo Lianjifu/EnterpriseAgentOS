@@ -43,7 +43,7 @@ export const workspaceNavigation: NavigationItem[] = [
   { label: '智能体库', href: '/agents', icon: Bot, description: '查看管理员已开放的智能体并选用' },
   { label: '我的知识', href: '/knowledge', icon: FileText, description: '基于企业资料获取可信答案' },
   { label: '我的技能', href: '/skills', icon: Sparkles, description: '选择可用 Skill、Tool 和 MCP 能力' },
-  { label: '我的流程', href: '/automations', icon: Workflow, description: '选择和使用团队准备好的流程' },
+  { label: '我的工作流', href: '/automations', icon: Workflow, description: '选择和使用团队准备好的工作流' },
   { label: '我的协作', href: '/team', icon: UsersRound, description: '共享团队智能体与知识' },
 ];
 

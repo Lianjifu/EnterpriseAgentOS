@@ -2,12 +2,12 @@ import { ArrowRight, CheckCircle2, Clock3, Plus, Sparkles } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
 const pageCopy: Record<string, { title: string; description: string; actions: string[] }> = {
-  '/home': { title: '首页', description: '从今天要完成的工作开始，让智能体帮你更快得到结果。', actions: ['新建对话', '运行智能体', '发起流程', '搜索知识'] },
+  '/home': { title: '首页', description: '从今天要完成的工作开始，让智能体帮你更快得到结果。', actions: ['新建对话', '运行智能体', '发起工作流', '搜索知识'] },
   '/agents': { title: '智能体库', description: '查看管理员已开放的智能体，按需选用并进入对话。', actions: ['浏览可用智能体', '查看团队智能体', '开始对话'] },
   '/copilot': { title: '我的对话', description: '发起一项工作，查看执行进度，并在需要时完成确认。', actions: ['新建对话', '查看历史会话', '查看产出物'] },
   '/tasks': { title: '任务记录', description: '集中查看待处理、进行中、已完成和异常的执行任务。', actions: ['待我处理', '我发起的', '失败与异常'] },
   '/knowledge': { title: '我的知识', description: '基于企业资料提问，查看答案来源和引用位置。', actions: ['开始问答', '上传资料', '查看我的知识库'] },
-  '/automations': { title: '我的流程', description: '把重复工作配置成可追踪、可复用的流程。', actions: ['我的流程', '新建流程', '执行记录'] },
+  '/automations': { title: '我的工作流', description: '把重复工作配置成可追踪、可复用的工作流。', actions: ['我的工作流', '新建工作流', '执行记录'] },
   '/team': { title: '我的协作', description: '共享智能体、知识和执行结果，让团队减少重复配置。', actions: ['协作空间', '共享智能体', '协作产出物'] },
   '/insights': { title: '效果看板', description: '查看智能体任务完成情况和预计节省时长。', actions: ['我的使用小结', '任务完成率', '满意度与反馈'] },
   '/account': { title: '个人中心', description: '管理个人资料、账号安全、通知和使用偏好。', actions: ['个人资料', '账号安全', '偏好设置'] },
@@ -16,9 +16,9 @@ const pageCopy: Record<string, { title: string; description: string; actions: st
   '/admin/agents': { title: '智能体管理', description: '创建、评测和发布企业智能体与应用。', actions: ['智能体目录', '草稿与待发布', '版本与发布'] },
   '/admin/knowledge': { title: '知识管理', description: '管理企业知识库、文档资产、数据来源、加工状态和访问权限。', actions: ['知识库', '文档资产', '数据来源', '加工任务', '检索评测'] },
   '/admin/memory': { title: '记忆管理', description: '管理智能体记忆、用户偏好与跨会话上下文，配置保留策略与可见范围。', actions: ['记忆条目', '保留策略', '可见范围', '评测与导出'] },
-  '/admin/workflows': { title: '工作流管理', description: '设计、发布和分析企业自动化流程。', actions: ['流程目录', '草稿流程', '版本与发布'] },
+  '/admin/workflows': { title: '工作流管理', description: '设计、发布和分析企业工作流。', actions: ['工作流目录', '草稿工作流', '版本与发布'] },
   '/admin/tools': { title: '技能管理', description: '管理企业 Skill、Tool 与 MCP 等可被智能体调用的技能能力。', actions: ['技能目录', '新增接入', '访问权限'] },
-  '/admin/evaluations': { title: '评测中心', description: '评测智能体、知识与流程的质量，对比版本差异并跟踪回归。', actions: ['评测集', '运行评测', '结果对比', '回归追踪'] },
+  '/admin/evaluations': { title: '评测中心', description: '评测智能体、知识与工作流的质量，对比版本差异并跟踪回归。', actions: ['评测集', '运行评测', '结果对比', '回归追踪'] },
   '/admin/regressions': { title: '回归追踪', description: '智能体 / 知识 / 模型版本变更后自动跑回归用例，发现质量退化。', actions: ['回归用例', '运行结果', '历史对比'] },
   '/admin/feedback': { title: '用户反馈', description: '收集用户对智能体回答的赞踩、修正建议和 badcase。', actions: ['反馈列表', '修正建议', '反馈转用例'] },
   '/admin/models': { title: '模型配置', description: '配置模型服务、算力资源和运行策略。', actions: ['模型服务', '运行策略', '健康状态'] },

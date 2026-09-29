@@ -24,7 +24,7 @@ export const mockDocs: Doc[] = [
     id: 'doc-001', name: '产品手册 v3.pdf', type: 'manual', kbId: 'kb-prod', sourceId: 'src-1', status: 'parsed', sizeKb: 4820, chunks: 286, updatedAt: '今天 14:32', citations: 1240,
     chunksPreview: [
       { index: 1, heading: '产品定位', snippet: '本产品面向 B 端中型企业的智能体编排场景,核心卖点是一站式的知识接入与权限治理,目标用户为业务负责人 + 智能体运营。', citations: 18, tokens: 184 },
-      { index: 2, heading: '核心功能矩阵', snippet: '智能体管理 / 知识检索 / 工具调用 / 流程编排 四大模块,每个模块均有独立配置面板与权限边界。', citations: 24, tokens: 312 },
+      { index: 2, heading: '核心功能矩阵', snippet: '智能体管理 / 知识检索 / 工具调用 / 工作流编排 四大模块,每个模块均有独立配置面板与权限边界。', citations: 24, tokens: 312 },
       { index: 3, heading: '快速开始 · 5 分钟接入', snippet: '登录后台 → 创建智能体 → 绑定知识库 → 接入企业微信/飞书 → 发布。无需任何代码即可上线。', citations: 32, tokens: 268 },
       { index: 4, heading: '功能边界 · 计费相关', snippet: '免费版支持 3 个智能体 / 1GB 知识;企业版按席位计费,详询商务。私有化部署需采购独立 license。', citations: 14, tokens: 196 },
       { index: 5, heading: '常见 FAQ · 价格政策', snippet: 'Q:试用多久?A:14 天全功能,无需信用卡。Q:能否按月付费?A:仅年付,不支持月付。', citations: 9, tokens: 220 },
@@ -35,7 +35,7 @@ export const mockDocs: Doc[] = [
     id: 'doc-001b', name: '产品发布说明 · v3.2.md', type: 'faq', kbId: 'kb-prod', sourceId: 'src-1', status: 'parsed', sizeKb: 32, chunks: 18, updatedAt: '今天 10:08', citations: 68,
     chunksPreview: [
       { index: 1, heading: 'v3.2 重点更新', snippet: '本次发布智能体编排可视化编辑器、向量检索召回率 +6%、新增 12 个企业级模板。', citations: 12, tokens: 156 },
-      { index: 2, heading: '可视化编辑器使用', snippet: '从智能体详情页进入流程编辑器,左侧节点栏拖入节点,右侧实时预览运行结果;支持撤销 / 重做。', citations: 9, tokens: 188 },
+      { index: 2, heading: '可视化编辑器使用', snippet: '从智能体详情页进入工作流编辑器,左侧节点栏拖入节点,右侧实时预览运行结果;支持撤销 / 重做。', citations: 9, tokens: 188 },
       { index: 3, heading: '新增模板列表', snippet: '客服 / 销售 / HR / 财务 / 运维 5 大类共 12 个模板,一键克隆到工作空间,2 分钟即可上线。', citations: 6, tokens: 142 },
     ],
   },

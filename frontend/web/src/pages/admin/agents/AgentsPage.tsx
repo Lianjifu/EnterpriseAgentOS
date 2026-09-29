@@ -178,7 +178,7 @@ export default function AgentsPage() {
         <div className="relative z-10">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">智能体工作台</p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">让智能体成为可治理、可观测的能力。</h1>
-          <p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">统一管理 Prompt、技能、知识、流程与权限;支持版本对比、批量发布、灰度评估与全量导入导出。</p>
+          <p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">统一管理 Prompt、技能、知识、工作流与权限;支持版本对比、批量发布、灰度评估与全量导入导出。</p>
           <div className="mt-5 flex flex-wrap gap-2">
             <button
               type="button"

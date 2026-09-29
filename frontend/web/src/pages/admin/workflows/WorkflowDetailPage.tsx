@@ -1,9 +1,9 @@
 /**
- * 管理侧「流程详情」独立页面 — 路由 /admin/workflows/:id
+ * 管理侧「工作流详情」独立页面 — 路由 /admin/workflows/:id
  *
  * 顶部返回按钮回到 /admin/workflows;
  * 头部展示名称 + 触发器 + 关键 KPI;
- * 下方展示流程全部字段 + 反向引用 agent 列表。
+ * 下方展示工作流全部字段 + 反向引用 agent 列表。
  */
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -19,7 +19,7 @@ function NotFound() {
         <ArrowLeft className="h-3.5 w-3.5" />返回工作流管理
       </Link>
       <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-1)] p-8 text-center">
-        <p className="text-sm font-semibold">流程不存在或已被删除</p>
+        <p className="text-sm font-semibold">工作流不存在或已被删除</p>
         <p className="mt-1 text-xs text-[var(--text-muted)]">请返回列表重新选择。</p>
       </div>
     </div>
@@ -108,7 +108,7 @@ export default function WorkflowDetailPage() {
       </section>
 
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <Field icon={<Hash className="h-3.5 w-3.5" />} label="流程 ID">
+        <Field icon={<Hash className="h-3.5 w-3.5" />} label="工作流 ID">
           <code className="text-xs">{flow.id}</code>
         </Field>
         <Field icon={<Tag className="h-3.5 w-3.5" />} label="业务场景">

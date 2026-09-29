@@ -24,13 +24,13 @@ const userFaqs: Faq[] = [
 const adminTopics: HelpTopic[] = [
   { id: 'agent', title: '智能体管理', description: '创建、评测和发布企业智能体。', icon: Sparkles, color: 'bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300' },
   { id: 'knowledge', title: '知识管理', description: '维护资料来源、加工状态和访问权限。', icon: BookOpen, color: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' },
-  { id: 'workflow', title: '流程与工具', description: '编排自动化流程并接入外部系统。', icon: ClipboardList, color: 'bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300' },
+  { id: 'workflow', title: '工作流与工具', description: '编排工作流并接入外部系统。', icon: ClipboardList, color: 'bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300' },
   { id: 'govern', title: '合规与监控', description: '配置模型、额度、告警、审计与合规策略。', icon: TerminalSquare, color: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300' },
 ];
 const adminFaqs: Faq[] = [
   { question: '如何发布一个智能体给用户使用？', answer: '进入“智能体管理”，完成草稿、评测和发布三步。发布后该智能体会出现在用户的“智能体库”。', topic: '智能体管理' },
   { question: '知识库如何保证回答质量？', answer: '在“知识管理”维护来源、加工任务和访问范围；通过“检索评测”持续校验召回与准确率。', topic: '知识管理' },
-  { question: '怎样接入一个新的外部工具？', answer: '进入“技能管理”，新增 Skill / Tool 能力并配置鉴权与访问权限；上线后用户即可在“我的技能”选用。', topic: '流程与工具' },
+  { question: '怎样接入一个新的外部工具？', answer: '进入”技能管理”，新增 Skill / Tool 能力并配置鉴权与访问权限；上线后用户即可在”我的技能”选用。', topic: '工作流与工具' },
   { question: '告警应该如何分级？', answer: '在“告警配置”按严重程度（提醒 / 警告 / 严重）和通知渠道分级，避免用户被低优先级信息打扰。', topic: '合规与监控' },
   { question: '如何导出审计日志？', answer: '在“审计日志”页面，按时间范围或成员筛选后点击“导出审计”，会生成可下载的文件。', topic: '合规与监控' },
   { question: '管理员如何进入用户视角？', answer: '登录后默认进入用户工作台；点击顶部“返回企智搭工作台”可在用户/管理两侧切换。', topic: '系统设置' },

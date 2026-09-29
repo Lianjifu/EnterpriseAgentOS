@@ -1,5 +1,5 @@
 /**
- * PublishAsToolModal — 把流程发布为可被智能体调用的工具。
+ * PublishAsToolModal — 把工作流发布为可被智能体调用的工具。
  */
 import { Rocket } from 'lucide-react';
 import { CenterModal } from '@/components/feedback/CenterModal';
@@ -23,7 +23,7 @@ export function PublishAsToolModal({ open, onClose, flow, toolId, setToolId, too
       onClose={onClose}
       ariaLabel="发布为工具"
       title={flow ? `发布「${flow.name}」为工具` : '发布为工具'}
-      description="发布后,任何智能体都可以按工具 ID 调用此流程"
+      description="发布后,任何智能体都可以按工具 ID 调用此工作流"
       panelClassName="max-w-2xl"
       footer={
         <div className="flex w-full items-center justify-end gap-2">
@@ -36,7 +36,7 @@ export function PublishAsToolModal({ open, onClose, flow, toolId, setToolId, too
     >
       <div className="space-y-3">
         <div className="rounded-lg bg-[var(--bg-elevated)] p-3 text-xs">
-          <p className="text-[var(--text-muted)]">当前流程</p>
+          <p className="text-[var(--text-muted)]">当前工作流</p>
           <p className="mt-1 font-semibold">{flow?.name}</p>
           <p className="mt-1 text-[10px] text-[var(--text-muted)]">节点 {flow?.initialNodes.length ?? 0} · 连线 {flow?.initialEdges.length ?? 0} · 触发器 {flow?.trigger}</p>
         </div>

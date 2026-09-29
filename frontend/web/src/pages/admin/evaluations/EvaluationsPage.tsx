@@ -173,7 +173,7 @@ export default function EvaluationsPage() {
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-teal-700 dark:text-teal-300">ADMIN / 评测中心</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">把评测当作质量的尺子。</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">为智能体与流程设置可重复运行的评测套件,持续追踪能力、质量、安全与回归表现。</p>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">为智能体与工作流设置可重复运行的评测套件,持续追踪能力、质量、安全与回归表现。</p>
           </div>
           <div className="flex flex-col items-end gap-2">
             <div className="flex items-center gap-2">

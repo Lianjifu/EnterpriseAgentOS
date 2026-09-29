@@ -5,7 +5,7 @@ import MyInsights from './MyInsights';
 const quickActions = [
   { label: '新建对话', description: '描述目标，立即开始', href: '/copilot', icon: MessageSquarePlus, tone: 'brand' },
   { label: '选择智能体', description: '使用已授权的工作助手', href: '/agents', icon: Bot, tone: 'violet' },
-  { label: '选择流程', description: '使用团队准备好的流程', href: '/automations', icon: Workflow, tone: 'amber' },
+  { label: '选择工作流', description: '使用团队准备好的工作流', href: '/automations', icon: Workflow, tone: 'amber' },
   { label: '查找知识', description: '从企业资料中找到答案', href: '/knowledge', icon: Search, tone: 'emerald' },
 ] as const;
 

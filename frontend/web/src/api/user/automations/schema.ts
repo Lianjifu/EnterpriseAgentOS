@@ -1,5 +1,5 @@
 /**
- * 用户侧「我的流程」实体 — 用户只选择 / 使用 / 收藏,流程由管理员维护。
+ * 用户侧「我的工作流」实体 — 用户只选择 / 使用 / 收藏,工作流由管理员维护。
  */
 export type FlowAvailability = 'available' | 'unavailable';
 

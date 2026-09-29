@@ -88,7 +88,7 @@ describe('AdminOverview', () => {
     expect(screen.getByText('销售支持')).toBeTruthy();
     expect(screen.getByText('数据洞察助手')).toBeTruthy();
     expect(screen.getByText('财务问答')).toBeTruthy();
-    expect(screen.getByText('流程编排')).toBeTruthy();
+    expect(screen.getByText('工作流编排')).toBeTruthy();
     expect(screen.getByText('18.2k')).toBeTruthy();
   });
 

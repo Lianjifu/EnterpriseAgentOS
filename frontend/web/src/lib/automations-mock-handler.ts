@@ -50,8 +50,8 @@ export async function automationsMockHandler(
     const flowId = runMatch[1];
     const body = (opts.body ?? {}) as { note?: string };
     const flow = state.flows.find((f) => f.id === flowId);
-    if (!flow) throw new Error('E_NOT_FOUND: 流程不存在');
-    if (flow.availability !== 'available') throw new Error('E_NOT_AVAILABLE: 流程当前不可用');
+    if (!flow) throw new Error('E_NOT_FOUND: 工作流不存在');
+    if (flow.availability !== 'available') throw new Error('E_NOT_AVAILABLE: 工作流当前不可用');
     const run: FlowRun = {
       id: uid('local'),
       name: flow.name,

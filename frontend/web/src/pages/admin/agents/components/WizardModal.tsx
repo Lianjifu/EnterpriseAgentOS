@@ -253,7 +253,7 @@ export function WizardBody({
           </div>
           <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/50 p-3 text-[11px] text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
             <Info className="mt-0.5 h-3.5 w-3.5" />
-            <span>智能体创建后将进入「草稿」状态,你可以在编辑器中继续完善 Prompt、技能、知识、流程等。</span>
+            <span>智能体创建后将进入「草稿」状态,你可以在编辑器中继续完善 Prompt、技能、知识、工作流等。</span>
           </div>
         </div>
       )}

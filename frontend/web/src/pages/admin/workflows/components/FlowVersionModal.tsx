@@ -1,5 +1,5 @@
 /**
- * FlowVersionModal — 流程版本历史弹窗。
+ * FlowVersionModal — 工作流版本历史弹窗。
  */
 import { Rocket } from 'lucide-react';
 import { CenterModal } from '@/components/feedback/CenterModal';

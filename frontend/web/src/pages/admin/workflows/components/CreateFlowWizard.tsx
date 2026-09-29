@@ -1,5 +1,5 @@
 /**
- * CreateFlowWizard — 三步新建流程向导(基本信息 → 选模板 → 确认)。
+ * CreateFlowWizard — 三步新建工作流向导(基本信息 → 选模板 → 确认)。
  */
 import { ArrowRight, Save } from 'lucide-react';
 import { CenterModal } from '@/components/feedback/CenterModal';
@@ -26,9 +26,9 @@ export function CreateFlowWizard({ open, onClose, step, setStep, name, setName, 
     <CenterModal
       open={open}
       onClose={onClose}
-      ariaLabel="新建流程"
-      title={`新建流程 · 第 ${step} / 3 步`}
-      description={step === 1 ? '设置流程名称、描述与触发方式' : step === 2 ? '从模板开始或留白' : '确认后进入编辑器'}
+      ariaLabel="新建工作流"
+      title={`新建工作流 · 第 ${step} / 3 步`}
+      description={step === 1 ? '设置工作流名称、描述与触发方式' : step === 2 ? '从模板开始或留白' : '确认后进入编辑器'}
       panelClassName="max-w-2xl"
       footer={
         <div className="flex w-full items-center justify-between">
@@ -60,12 +60,12 @@ export function CreateFlowWizard({ open, onClose, step, setStep, name, setName, 
         {step === 1 && (
           <div className="space-y-3">
             <label className="block">
-              <span className="text-xs font-semibold text-[var(--text-secondary)]">流程名称</span>
+              <span className="text-xs font-semibold text-[var(--text-secondary)]">工作流名称</span>
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="例如:客户投诉自动分流" className="mt-1 h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 text-sm outline-none focus:border-[var(--brand)]" />
             </label>
             <label className="block">
               <span className="text-xs font-semibold text-[var(--text-secondary)]">描述</span>
-              <textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} placeholder="简要说明这个流程解决什么问题" className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-sm outline-none focus:border-[var(--brand)]" />
+              <textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} placeholder="简要说明这个工作流解决什么问题" className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-sm outline-none focus:border-[var(--brand)]" />
             </label>
             <div>
               <span className="text-xs font-semibold text-[var(--text-secondary)]">触发器类型</span>
@@ -100,8 +100,8 @@ export function CreateFlowWizard({ open, onClose, step, setStep, name, setName, 
         )}
         {step === 3 && (
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-5">
-            <p className="text-xs text-[var(--text-muted)]">已准备好以下流程</p>
-            <p className="mt-2 text-base font-semibold">{name || '未命名流程'}</p>
+            <p className="text-xs text-[var(--text-muted)]">已准备好以下工作流</p>
+            <p className="mt-2 text-base font-semibold">{name || '未命名工作流'}</p>
             <p className="mt-1 text-xs text-[var(--text-muted)]">{desc || '尚未填写描述'}</p>
             <div className="mt-3 flex flex-wrap gap-2 text-[10px]">
               <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 font-semibold ${TRIGGER_BADGE[trigger].className}`}>

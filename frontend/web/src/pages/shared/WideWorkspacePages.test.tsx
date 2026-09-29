@@ -93,7 +93,7 @@ describe('设置', () => {
     renderWith(<AccountSettings />);
     fireEvent.click(screen.getByRole('button', { name: /通知设置/ }));
     expect(screen.getByRole('heading', { name: '通知设置' })).toBeTruthy();
-    const checkbox = screen.getByRole('checkbox', { name: /任务与流程提醒/ });
+    const checkbox = screen.getByRole('checkbox', { name: /任务与工作流提醒/ });
     expect((checkbox as HTMLInputElement).checked).toBe(true);
     fireEvent.click(checkbox);
     expect((checkbox as HTMLInputElement).checked).toBe(false);

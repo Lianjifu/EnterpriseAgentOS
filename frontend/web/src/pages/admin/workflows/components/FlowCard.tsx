@@ -1,5 +1,5 @@
 /**
- * FlowCard — 流程总览 tab 中单个流程卡片。
+ * FlowCard — 工作流总览 tab 中单个工作流卡片。
  */
 import { Copy, Edit, Pause, Rocket, Workflow } from 'lucide-react';
 import type { Flow } from '@/api/admin/workflows/schema';

@@ -1,5 +1,5 @@
 /**
- * AdminWorkflows fixtures — 6 流程,每条带 initialNodes(2-6 个)/initialEdges(0-5 条)简化版。
+ * AdminWorkflows fixtures — 6 工作流,每条带 initialNodes(2-6 个)/initialEdges(0-5 条)简化版。
  * Mock 阶段只展示关键节点和连线,不渲染完整 ReactFlow 几何。
  */
 import type { Flow } from '@/api/admin/workflows/schema';
@@ -25,7 +25,7 @@ export const mockFlows: Flow[] = [
       { v: 'v1.0', at: '2026-08-12', operator: '运营-小明', note: '首次发布' },
     ],
     initialNodes: [
-      { id: 'n-trigger', type: 'flowNode', position: { x: 40, y: 120 }, data: { label: '定时触发', subtitle: '流程入口', kind: 'trigger', config: { trigger: '定时触发', cron: '0 17 * * 1-5' } } },
+      { id: 'n-trigger', type: 'flowNode', position: { x: 40, y: 120 }, data: { label: '定时触发', subtitle: '工作流入口', kind: 'trigger', config: { trigger: '定时触发', cron: '0 17 * * 1-5' } } },
       { id: 'n-tool', type: 'flowNode', position: { x: 280, y: 120 }, data: { label: '查询 Postgres', subtitle: '本周数据', kind: 'tool', config: { tool: 'postgres_query' } } },
       { id: 'n-agent', type: 'flowNode', position: { x: 540, y: 120 }, data: { label: '数据智能体', subtitle: '润色', kind: 'agent', config: { agent: 'report-writer' } } },
       { id: 'n-end', type: 'flowNode', position: { x: 800, y: 120 }, data: { label: '发邮件', subtitle: '结束', kind: 'end', config: { action: 'notify', target: 'team@x.com' } } },
@@ -56,7 +56,7 @@ export const mockFlows: Flow[] = [
       { v: 'v1.0', at: '2026-07-02', operator: '客服-李雷', note: '首次发布' },
     ],
     initialNodes: [
-      { id: 'n-trigger', type: 'flowNode', position: { x: 40, y: 120 }, data: { label: '消息触发', subtitle: '流程入口', kind: 'trigger', config: { trigger: '消息触发', keyword: '/complaint' } } },
+      { id: 'n-trigger', type: 'flowNode', position: { x: 40, y: 120 }, data: { label: '消息触发', subtitle: '工作流入口', kind: 'trigger', config: { trigger: '消息触发', keyword: '/complaint' } } },
       { id: 'n-cond', type: 'flowNode', position: { x: 280, y: 120 }, data: { label: '严重程度判断', subtitle: 'IF', kind: 'condition', config: { mode: 'if', op: '>=', value: '3' } } },
       { id: 'n-agent', type: 'flowNode', position: { x: 540, y: 40 }, data: { label: '客服智能体', subtitle: 'AI 处理', kind: 'agent', config: { agent: 'support-bot' } } },
       { id: 'n-tool', type: 'flowNode', position: { x: 540, y: 220 }, data: { label: '写入工单', subtitle: '工单系统', kind: 'tool', config: { tool: 'ticket_create' } } },
@@ -114,7 +114,7 @@ export const mockFlows: Flow[] = [
     createdAt: '今天 10:08',
     updatedAt: '今天 10:08',
     boundAgents: [],
-    versions: [{ v: 'v0.1-草稿', at: '今天 10:08', operator: 'HR-赵敏', note: '新增流程' }],
+    versions: [{ v: 'v0.1-草稿', at: '今天 10:08', operator: 'HR-赵敏', note: '新增工作流' }],
     initialNodes: [
       { id: 'n-trigger', type: 'flowNode', position: { x: 40, y: 120 }, data: { label: '事件触发', subtitle: '员工入职', kind: 'trigger', config: { trigger: '事件触发', event: 'employee.hired' } } },
     ],
@@ -136,14 +136,14 @@ export const mockFlows: Flow[] = [
     boundAgents: [],
     versions: [{ v: 'v0.2-草稿', at: '昨天', operator: '产品-陈涛', note: '调整触发时间' }],
     initialNodes: [
-      { id: 'n-trigger', type: 'flowNode', position: { x: 40, y: 120 }, data: { label: '定时触发', subtitle: '流程入口', kind: 'trigger', config: { trigger: '定时触发', cron: '0 9 * * *' } } },
+      { id: 'n-trigger', type: 'flowNode', position: { x: 40, y: 120 }, data: { label: '定时触发', subtitle: '工作流入口', kind: 'trigger', config: { trigger: '定时触发', cron: '0 9 * * *' } } },
     ],
     initialEdges: [],
   },
   {
     id: 'wf-retired',
     name: '客户反馈分类 v1',
-    description: '旧版反馈分类流程,已下线,保留作为历史参考。',
+    description: '旧版反馈分类工作流,已下线,保留作为历史参考。',
     owner: '客户成功',
     scene: '客户成功',
     trigger: '手动触发',
@@ -156,7 +156,7 @@ export const mockFlows: Flow[] = [
     boundAgents: [],
     versions: [{ v: 'v1.0-已下线', at: '2 周前', operator: '客服-李雷', note: '由 v2 系列替代' }],
     initialNodes: [
-      { id: 'n-trigger', type: 'flowNode', position: { x: 40, y: 120 }, data: { label: '手动触发', subtitle: '流程入口', kind: 'trigger', config: { trigger: '手动触发' } } },
+      { id: 'n-trigger', type: 'flowNode', position: { x: 40, y: 120 }, data: { label: '手动触发', subtitle: '工作流入口', kind: 'trigger', config: { trigger: '手动触发' } } },
     ],
     initialEdges: [],
   },

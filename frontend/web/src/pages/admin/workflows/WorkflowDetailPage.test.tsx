@@ -63,7 +63,7 @@ describe('WorkflowDetailPage', () => {
   it('renders not-found when workflow is missing', () => {
     (useWorkflow as unknown as ReturnType<typeof vi.fn>).mockReturnValue({ data: null, isLoading: false });
     renderAt('nonexistent');
-    expect(screen.getByText(/流程不存在或已被删除/)).toBeTruthy();
+    expect(screen.getByText(/工作流不存在或已被删除/)).toBeTruthy();
   });
 
   it('shows loading state', () => {

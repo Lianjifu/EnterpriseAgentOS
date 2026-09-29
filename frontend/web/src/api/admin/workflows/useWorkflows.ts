@@ -1,5 +1,5 @@
 /**
- * AdminWorkflows hooks — useApiQuery 拉取流程列表; mutation 走本地 mock 包装。
+ * AdminWorkflows hooks — useApiQuery 拉取工作流列表; mutation 走本地 mock 包装。
  */
 import { useApiQuery } from '@/services/query';
 import { qk } from '@/api/shared/query-keys';

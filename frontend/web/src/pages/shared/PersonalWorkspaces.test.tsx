@@ -75,7 +75,7 @@ describe('我的知识', () => {
   });
 });
 
-describe('我的流程', () => {
+describe('我的工作流', () => {
   function renderAutomations() {
     const qc = makeClient();
     qc.setQueryData([...qk.user.automations.list, {}, 'w1'], mockFlows);
@@ -85,10 +85,10 @@ describe('我的流程', () => {
 
   it('filters available flows and records a local use', () => {
     renderAutomations();
-    fireEvent.change(screen.getByPlaceholderText('搜索流程、场景或团队'), { target: { value: '晨间' } });
+    fireEvent.change(screen.getByPlaceholderText('搜索工作流、场景或团队'), { target: { value: '晨间' } });
     expect(screen.getByRole('button', { name: '晨间信息简报' })).toBeTruthy();
     expect(screen.queryByText('客户反馈分类')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /使用流程/ }));
+    fireEvent.click(screen.getByRole('button', { name: /使用工作流/ }));
     expect(screen.getByRole('dialog', { name: '使用晨间信息简报' })).toBeTruthy();
     fireEvent.change(screen.getByPlaceholderText('例如：整理本周华东客户进展'), { target: { value: '每日摘要' } });
     fireEvent.click(screen.getByRole('button', { name: '确认使用' }));
@@ -98,14 +98,14 @@ describe('我的流程', () => {
   it('opens steps, favorites a flow, and filters unavailable flows', () => {
     renderAutomations();
     fireEvent.click(screen.getAllByRole('button', { name: /查看步骤/ })[0]);
-    expect(screen.getByRole('dialog', { name: /流程详情/ })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: /工作流详情/ })).toBeTruthy();
     expect(screen.getByText('收集工作记录')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /关闭流程详情/ }));
+    fireEvent.click(screen.getByRole('button', { name: /关闭工作流详情/ }));
     fireEvent.click(screen.getByRole('button', { name: '取消收藏销售周报自动整理' }));
     expect(screen.getByRole('button', { name: '收藏销售周报自动整理' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '暂不可用' }));
     expect(screen.getByText('客户反馈分类')).toBeTruthy();
-    expect((screen.getByRole('button', { name: /使用流程/ }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: /使用工作流/ }) as HTMLButtonElement).disabled).toBe(true);
   });
 });
 

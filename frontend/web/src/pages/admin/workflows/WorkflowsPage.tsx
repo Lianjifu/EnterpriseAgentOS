@@ -76,12 +76,12 @@ export default function WorkflowsPage() {
   const submitCreate = () => {
     const id = uid('wf');
     const next: Flow = {
-      id, name: draftName.trim() || '未命名流程', description: draftDesc.trim() || '尚未填写描述',
+      id, name: draftName.trim() || '未命名工作流', description: draftDesc.trim() || '尚未填写描述',
       owner: '当前管理员', scene: '团队协作', trigger: draftTrigger, status: 'draft', callCount: 0,
       inputs: 1, outputs: 1, createdAt: '今天', updatedAt: '刚刚', boundAgents: [],
-      versions: [{ v: 'v0.1-草稿', at: '刚刚', operator: '当前管理员', note: '新建流程' }],
+      versions: [{ v: 'v0.1-草稿', at: '刚刚', operator: '当前管理员', note: '新建工作流' }],
       initialNodes: [
-        { id: 'n-trigger', type: 'flowNode', position: { x: 40, y: 120 }, data: { label: draftTrigger, subtitle: '流程入口', kind: 'trigger', config: { trigger: draftTrigger } } },
+        { id: 'n-trigger', type: 'flowNode', position: { x: 40, y: 120 }, data: { label: draftTrigger, subtitle: '工作流入口', kind: 'trigger', config: { trigger: draftTrigger } } },
       ],
       initialEdges: [],
     };
@@ -90,7 +90,7 @@ export default function WorkflowsPage() {
     setCreateOpen(false);
     setView('editor');
     setTab('overview');
-    setNotice(`已新建流程「${next.name}」,可在画布上继续编排。`);
+    setNotice(`已新建工作流「${next.name}」,可在画布上继续编排。`);
   };
 
   const openPublish = (flow: Flow) => {
@@ -174,7 +174,7 @@ export default function WorkflowsPage() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700 dark:text-amber-300">ADMIN / 工作流管理</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">把可复用的工作流设计出来。</h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
-              用画布把触发器、工具调用、条件分支、结束节点串成可执行的流程;可发布为工具,被任意智能体按需调用。
+              用画布把触发器、工具调用、条件分支、结束节点串成可执行的工作流;可发布为工具,被任意智能体按需调用。
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
@@ -185,18 +185,18 @@ export default function WorkflowsPage() {
                 disabled={view !== 'editor'}
                 className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--brand)] hover:text-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {view === 'editor' ? <><ArrowRight className="h-3.5 w-3.5 rotate-180" />返回列表</> : <><CirclePlay className="h-3.5 w-3.5" />查看流程</>}
+                {view === 'editor' ? <><ArrowRight className="h-3.5 w-3.5 rotate-180" />返回列表</> : <><CirclePlay className="h-3.5 w-3.5" />查看工作流</>}
               </button>
               <button
                 type="button"
                 onClick={openCreate}
                 className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 text-xs font-semibold text-white transition hover:bg-[var(--brand-hover)]"
               >
-                <Plus className="h-4 w-4" />新建流程
+                <Plus className="h-4 w-4" />新建工作流
               </button>
             </div>
             <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-              <Boxes className="h-3 w-3" />{flows.length} 个流程 · 已发布 {counts.published}
+              <Boxes className="h-3 w-3" />{flows.length} 个工作流 · 已发布 {counts.published}
             </div>
           </div>
         </div>

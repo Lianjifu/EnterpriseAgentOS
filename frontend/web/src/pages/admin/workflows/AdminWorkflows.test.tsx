@@ -1,5 +1,5 @@
 /**
- * AdminWorkflows — 渲染 + 5 tab 切换 + 流程卡片可见。
+ * AdminWorkflows — 渲染 + 5 tab 切换 + 工作流卡片可见。
  */
 import { describe, expect, it, afterEach } from 'vitest';
 import { cleanup, screen, waitFor, within } from '@testing-library/react';
@@ -22,7 +22,7 @@ describe('AdminWorkflows', () => {
   it('渲染 hero + 5 子模块标签 + 默认 overview', () => {
     renderPage();
     expect(screen.getByText(/把可复用的工作流设计出来/)).toBeTruthy();
-    expect(screen.getByText('流程列表')).toBeTruthy();
+    expect(screen.getByText('工作流列表')).toBeTruthy();
   });
 
   it('切换到触发器 tab 显示触发器类型', async () => {
@@ -57,7 +57,7 @@ describe('AdminWorkflows', () => {
     const nav = screen.getByLabelText('子模块导航');
     within(nav).getByRole('button', { name: /发布与版本/ }).click();
     await waitFor(() => {
-      expect(screen.getByText('已发布为工具的流程')).toBeTruthy();
+      expect(screen.getByText('已发布为工具的工作流')).toBeTruthy();
     });
   });
 });

@@ -11,7 +11,7 @@ import type {
 } from '@/api/admin/workflows/schema';
 
 export const TABS: Array<{ id: WorkflowTabId; label: string }> = [
-  { id: 'overview', label: '流程总览' },
+  { id: 'overview', label: '工作流总览' },
   { id: 'trigger', label: '触发器' },
   { id: 'action', label: '动作节点' },
   { id: 'condition', label: '条件分支' },
@@ -51,15 +51,15 @@ export const TRIGGER_BADGE: Record<TriggerType, { label: string; icon: typeof Me
 };
 
 export const NODE_TEMPLATES: NodeTemplate[] = [
-  { kind: 'trigger', label: '触发器', subtitle: '流程入口', tone: 'info', description: '触发器是流程的入口,4 种:消息、定时、事件、手动。', defaults: { trigger: '消息触发', cron: '0 9 * * *' } },
+  { kind: 'trigger', label: '触发器', subtitle: '工作流入口', tone: 'info', description: '触发器是工作流的入口,4 种:消息、定时、事件、手动。', defaults: { trigger: '消息触发', cron: '0 9 * * *' } },
   { kind: 'tool', label: '工具调用', subtitle: '调用外部能力', tone: 'brand', description: '调起一个工具,传入参数,等待结果。', defaults: { tool: 'knowledge_search', input: '{query}' } },
   { kind: 'agent', label: '智能体调用', subtitle: '委托给智能体', tone: 'success', description: '委托一个智能体执行子任务,可指定 model / prompt。', defaults: { agent: 'sales-coach', prompt: '请根据 {topic} 给出建议' } },
   { kind: 'condition', label: '条件分支', subtitle: 'IF / Switch', tone: 'warn', description: '根据表达式分流到不同分支,支持 IF / Switch / 循环。', defaults: { mode: 'if', op: '==' } },
-  { kind: 'end', label: '结束节点', subtitle: '返回 / 通知 / 写库', tone: 'purple', description: '流程出口:返回结果、发送通知或写入数据库。', defaults: { action: 'return', target: 'caller' } },
+  { kind: 'end', label: '结束节点', subtitle: '返回 / 通知 / 写库', tone: 'purple', description: '工作流出口:返回结果、发送通知或写入数据库。', defaults: { action: 'return', target: 'caller' } },
 ];
 
 export const TEMPLATE_CHOICES: TemplateChoice[] = [
-  { id: 'blank', name: '空白流程', desc: '从空白画布开始', icon: 'Workflow', tone: 'info' },
+  { id: 'blank', name: '空白工作流', desc: '从空白画布开始', icon: 'Workflow', tone: 'info' },
   { id: 'complaint', name: '客户投诉处理', desc: '触发器 → 分类 → 分配 → 通知 → 写库', icon: 'AlertCircle', tone: 'danger' },
   { id: 'lead', name: '销售线索分发', desc: '触发器 → 查 CRM → IF 等级 → 分配销售', icon: 'Sparkles', tone: 'brand' },
   { id: 'weekly', name: '数据周报生成', desc: '定时触发 → 查数据 → 智能体润色 → 通知', icon: 'History', tone: 'success' },
@@ -86,7 +86,7 @@ export function nodeKindIcon(kind: NodeKind) {
 }
 
 export const NODE_TYPE_TAB_META: Record<NodeTypeTabId, { title: string; subtitle: string }> = {
-  trigger: { title: '触发器类型', subtitle: '触发器是流程的入口;选择合适的触发方式,从左侧加入画布。' },
-  action: { title: '动作节点类型', subtitle: '动作节点是流程的执行步骤;工具调用 / 智能体调用 / HTTP / 数据库 / 通知。' },
-  condition: { title: '条件分支类型', subtitle: '条件分支决定流程的走向;IF / Switch / 循环 / 并行。' },
+  trigger: { title: '触发器类型', subtitle: '触发器是工作流的入口;选择合适的触发方式,从左侧加入画布。' },
+  action: { title: '动作节点类型', subtitle: '动作节点是工作流的执行步骤;工具调用 / 智能体调用 / HTTP / 数据库 / 通知。' },
+  condition: { title: '条件分支类型', subtitle: '条件分支决定工作流的走向;IF / Switch / 循环 / 并行。' },
 };

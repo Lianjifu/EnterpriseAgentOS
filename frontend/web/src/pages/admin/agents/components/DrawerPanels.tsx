@@ -1311,20 +1311,20 @@ export function DrawerPanelFlow({ draft, onChange }: { draft: AgentEntry; onChan
       <PanelHero
         icon={<Workflow className="h-4 w-4" />}
         eyebrow="来自工作流管理"
-        title="自动化流程绑定"
-        subtitle="智能体可作为触发器、节点或被调用的步骤参与这些流程。"
+        title="工作流绑定"
+        subtitle="智能体可作为触发器、节点或被调用的步骤参与这些工作流。"
         sourceHref="/admin/workflows"
         sourceLabel="前往工作流管理"
       />
       <section className="grid gap-3 sm:grid-cols-4">
-        <PanelStat label="已绑定流程" value={`${draft.flowRefs.length}`} />
+        <PanelStat label="已绑定工作流" value={`${draft.flowRefs.length}`} />
         <PanelStat label="已启用" value={`${enabledCount}`} tone="success" />
-        <PanelStat label="流程总数" value={`${flows.length}`} hint="来自工作流管理" />
-        <PanelStat label="未绑定" value={`${unbound.length}`} tone="info" hint="可选流程" />
+        <PanelStat label="工作流总数" value={`${flows.length}`} hint="来自工作流管理" />
+        <PanelStat label="未绑定" value={`${unbound.length}`} tone="info" hint="可选工作流" />
       </section>
       <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
         <header className="flex items-center justify-between">
-          <h4 className="text-sm font-semibold">流程列表</h4>
+          <h4 className="text-sm font-semibold">工作流列表</h4>
           <span className="text-[10px] text-[var(--text-muted)]">本智能体绑定 {draft.flowRefs.length} / {flows.length}</span>
         </header>
         <ul className="mt-3 space-y-2">

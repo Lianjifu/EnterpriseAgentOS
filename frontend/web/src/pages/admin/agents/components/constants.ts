@@ -1,5 +1,5 @@
 /**
- * 管理侧「智能体工作台」常量 — Tab/状态徽章/排序/导出字段/向导/导入格式/drawer nav/Prompt 文档/记忆/流程触发器。
+ * 管理侧「智能体工作台」常量 — Tab/状态徽章/排序/导出字段/向导/导入格式/drawer nav/Prompt 文档/记忆/工作流触发器。
  */
 import {
   Activity, AlertTriangle, Beaker, BookOpen, Bot, Brain, ChevronDown, ChevronLeft, ChevronRight, CheckCircle2, CheckSquare, Clock, Copy, Download, Edit3, FileJson, FileSpreadsheet, FileText, FolderTree, GitBranch, Headphones, History, Info, Layers, LineChart, MessageSquareText, MoreVertical, PenLine, Play, Plus, RotateCcw, Save, Search, ShieldCheck, Sparkles, Square, Star, Tag, Timer, Trash2, TrendingUp, Upload, Workflow, X,
@@ -19,7 +19,7 @@ export const TABS: Array<{ id: TabId; label: string }> = [
   { id: 'retired', label: '已下线' },
 ];
 
-export const SCENES = ['全部场景', '客服', '销售', '数据', '财务', '流程', 'HR', 'IT'];
+export const SCENES = ['全部场景', '客服', '销售', '数据', '财务', '工作流', 'HR', 'IT'];
 
 export const toneClass: Record<Tone, string> = {
   brand: 'bg-[var(--brand-light)] text-[var(--brand)]',
@@ -51,7 +51,7 @@ export const EXPORT_FIELDS: Array<{ id: ExportField; label: string }> = [
   { id: 'skills', label: '技能' },
   { id: 'knowledge', label: '知识' },
   { id: 'memory', label: '记忆' },
-  { id: 'flow', label: '流程' },
+  { id: 'flow', label: '工作流' },
 ];
 
 export const WIZARD_TEMPLATES: Array<{ id: WizardDraft['template']; title: string; description: string; icon: typeof Bot; tone: Tone }> = [
@@ -65,7 +65,7 @@ export const WIZARD_ICONS: Array<{ name: string; Icon: typeof Bot; tone: Tone; l
   { name: 'Headphones', Icon: Headphones, tone: 'info', label: '客服' },
   { name: 'LineChart', Icon: LineChart, tone: 'success', label: '数据' },
   { name: 'PenLine', Icon: PenLine, tone: 'warn', label: '文案' },
-  { name: 'Workflow', Icon: Workflow, tone: 'purple', label: '流程' },
+  { name: 'Workflow', Icon: Workflow, tone: 'purple', label: '工作流' },
   { name: 'ShieldCheck', Icon: ShieldCheck, tone: 'danger', label: '审批' },
 ];
 
@@ -130,7 +130,7 @@ export const PROMPT_SNIPPETS: Record<PromptKey, Array<{ name: string; body: stri
   ],
   tools: [
     { name: '调用原则', body: '## 调用原则\n- 只在确实需要事实/动作时调用\n- 单次调用最小化\n- 调用失败需要重试或显式告知\n' },
-    { name: '工具分类', body: '## 工具分类\n- 查询类:订单 / 客户 / 知识 / 指标\n- 动作类:发送邮件 / 创建工单 / 触发流程\n- 审计类:操作前需复核,失败要回滚\n' },
+    { name: '工具分类', body: '## 工具分类\n- 查询类:订单 / 客户 / 知识 / 指标\n- 动作类:发送邮件 / 创建工单 / 触发工作流\n- 审计类:操作前需复核,失败要回滚\n' },
   ],
 };
 
@@ -152,7 +152,7 @@ export const DRAWER_NAV_ITEMS: Array<{ id: DrawerPanel; label: string; icon: typ
   { id: 'skills', label: '技能', icon: Layers },
   { id: 'knowledge', label: '知识', icon: FolderTree },
   { id: 'memory', label: '记忆', icon: Brain },
-  { id: 'flow', label: '流程', icon: Workflow },
+  { id: 'flow', label: '工作流', icon: Workflow },
   { id: 'versions', label: '版本', icon: GitBranch },
   { id: 'evaluation', label: '评测', icon: Beaker },
   { id: 'permission', label: '权限', icon: ShieldCheck },

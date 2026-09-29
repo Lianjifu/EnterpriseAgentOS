@@ -1,5 +1,5 @@
 /**
- * FlowEditor — 流程编辑器(三栏布局:节点模板 + ReactFlow 画布 + 属性面板)。
+ * FlowEditor — 工作流编辑器(三栏布局:节点模板 + ReactFlow 画布 + 属性面板)。
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactFlow, {
@@ -48,7 +48,7 @@ export function FlowEditor({ flow, selectedNodeId, setSelectedNodeId, setFlows, 
 
   const save = () => {
     setFlows((prev) => prev.map((f) => f.id === flow.id ? { ...f, initialNodes: nodes, initialEdges: edges, name: nameEdit, updatedAt: '刚刚' } : f));
-    setNotice(`已保存流程「${nameEdit}」,共 ${nodes.length} 个节点 / ${edges.length} 条连线。`);
+    setNotice(`已保存工作流「${nameEdit}」,共 ${nodes.length} 个节点 / ${edges.length} 条连线。`);
   };
 
   const selectedNode = useMemo(() => nodes.find((n) => n.id === selectedNodeId) || null, [nodes, selectedNodeId]);

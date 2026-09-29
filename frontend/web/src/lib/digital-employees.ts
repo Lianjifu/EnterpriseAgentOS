@@ -167,7 +167,7 @@ export function capabilityAssemblyCompleteness(employee: CapabilityAssemblyEmplo
     ...employee.capabilities.workflows.map((name) => ({ capabilityType: 'workflow' as const, capabilityName: name })),
   ];
   const assetsOk = bound.length > 0;
-  if (!assetsOk) missing.push('技能/工具/流程技能');
+  if (!assetsOk) missing.push('技能/工具/工作流技能');
 
   const modes = employee.boundaryPolicy?.capabilityModes ?? [];
   const modesOk = assetsOk && bound.every((item) => modes.some((mode) => mode.capabilityType === item.capabilityType && mode.capabilityName === item.capabilityName));
@@ -280,7 +280,7 @@ export function releaseOnboardingCompleteness(employee: ReleaseOnboardingEmploye
       key: 'capability',
       label: '能力装配',
       passed: capabilityOk,
-      detail: capabilityOk ? `已装配 ${capability.boundCount} 项引用` : missing.filter((item) => ['模型路由', '技能/工具/流程技能'].includes(item)).join('、') || '待装配模型与执行能力',
+      detail: capabilityOk ? `已装配 ${capability.boundCount} 项引用` : missing.filter((item) => ['模型路由', '技能/工具/工作流技能'].includes(item)).join('、') || '待装配模型与执行能力',
       fixTab: 'capabilities',
     },
     {

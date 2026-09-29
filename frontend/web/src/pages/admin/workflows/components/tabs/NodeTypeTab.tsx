@@ -12,7 +12,7 @@ interface NodeTypeTabProps {
 
 const TAB_DATA: Record<NodeTypeTabId, Array<{ kind: NodeKind; label: string; subtitle: string; description: string; defaults: Record<string, string> }>> = {
   trigger: [
-    { kind: 'trigger', label: '消息触发', subtitle: '用户输入关键字时启动', description: '当用户输入匹配关键字或正则表达式时启动流程。常用于客服 / 表单提交场景。', defaults: { trigger: '消息触发', keyword: '/complaint', mode: 'startsWith' } },
+    { kind: 'trigger', label: '消息触发', subtitle: '用户输入关键字时启动', description: '当用户输入匹配关键字或正则表达式时启动工作流。常用于客服 / 表单提交场景。', defaults: { trigger: '消息触发', keyword: '/complaint', mode: 'startsWith' } },
     { kind: 'trigger', label: '定时触发', subtitle: '按 cron 表达式启动', description: '按 cron 表达式或固定间隔启动。常用于日报 / 周报 / 巡检。', defaults: { trigger: '定时触发', cron: '0 9 * * 1-5', tz: 'Asia/Shanghai' } },
     { kind: 'trigger', label: '事件触发', subtitle: 'webhook / 业务事件', description: '由 webhook / 业务事件(订单提交 / 工单创建)启动。', defaults: { trigger: '事件触发', event: 'order.created', source: 'crm' } },
     { kind: 'trigger', label: '手动触发', subtitle: '管理员手动运行', description: '由管理员在工作流管理页手动运行。常用于一次性的数据修复。', defaults: { trigger: '手动触发', runBy: 'admin' } },
@@ -27,7 +27,7 @@ const TAB_DATA: Record<NodeTypeTabId, Array<{ kind: NodeKind; label: string; sub
   condition: [
     { kind: 'condition', label: 'IF / ELSE', subtitle: '二元分支', description: '按表达式真假分流;真走 if 分支,假走 else 分支。', defaults: { mode: 'if', op: '==', left: '{level}', right: 'A' } },
     { kind: 'condition', label: 'Switch 多分支', subtitle: '按值路由', description: '按表达式的值路由到不同分支,支持任意多个分支。', defaults: { mode: 'switch', expr: '{severity}', cases: 'high,mid,low' } },
-    { kind: 'condition', label: '循环', subtitle: '遍历子流程', description: '对集合中的每个元素执行一次子流程,结果聚合。', defaults: { mode: 'loop', over: '{items}' } },
+    { kind: 'condition', label: '循环', subtitle: '遍历子工作流', description: '对集合中的每个元素执行一次子工作流,结果聚合。', defaults: { mode: 'loop', over: '{items}' } },
     { kind: 'condition', label: '并行', subtitle: '并发执行', description: '并行执行多个子分支,等待全部完成后再继续。', defaults: { mode: 'parallel', branches: '2' } },
   ],
 };

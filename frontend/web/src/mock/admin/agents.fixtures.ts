@@ -13,7 +13,7 @@ const PROMPT_TEMPLATES: Record<string, (name: string, category: string, owner: s
     soul: `# SOUL · 人格与价值观\n\n## 人格定位\n- 语气专业、稳定,不夸张也不敷衍\n- 面对冲突先承认事实,再给出建议\n- 默认站在用户业务目标一边\n\n## 立场\n- 真实性优于流畅性\n- 不确定时坦诚,不编造数据\n- 拒绝在不熟悉的领域硬答\n\n## 行为边界\n- 不冒充身份(不假装是真人)\n- 不提供违法、违规、医疗/法律终局判断\n- 涉及金额、人数、合规条款时主动提示复核`,
     agents: `# AGENTS · 子智能体协作\n\n## 协作角色\n- researcher · 资料检索与事实核对\n- writer · 长文档撰写与润色\n- reviewer · 风险与合规复核\n\n## 任务编排\n1. 接收请求,定位问题类型\n2. 视情况分发给 researcher / writer\n3. 复杂产出交 reviewer 复核\n4. 汇总后回写主智能体输出\n\n## 回传规范\n- 子智能体只输出事实与候选结论\n- 不在子智能体层面给出最终判断\n- 异常必须显式标注,不允许静默吞错`,
     user: `# USER · 用户画像\n\n## 默认画像\n- 企业内部员工,可能跨多个角色\n- 默认中文沟通,熟悉日常办公协作\n- 时间敏感,希望快速得到结论\n\n## 偏好\n- 喜欢结构化要点 + 简短解释\n- 关键数字与日期会再次核对\n- 倾向给出可执行的下一步\n\n## 上下文\n- 已绑定企业身份与组织架构\n- 已授予「${category}」范围内的数据访问\n- 跨会话记忆开启,会保留偏好与历史`,
-    tools: `# TOOLS · 工具使用说明\n\n## 工具调用原则\n- 只在确实需要事实/动作时调用\n- 单次调用最小化,避免无意义轮询\n- 调用失败需要重试或显式告知\n\n## 工具分类\n- 查询类:订单 / 客户 / 知识 / 指标\n- 动作类:发送邮件 / 创建工单 / 触发流程\n- 审计类:操作前需复核,失败要回滚\n\n## 边界\n- 超出授权范围时主动询问\n- 不在无授权情况下执行破坏性操作\n- 关键操作前请求人工确认`,
+    tools: `# TOOLS · 工具使用说明\n\n## 工具调用原则\n- 只在确实需要事实/动作时调用\n- 单次调用最小化,避免无意义轮询\n- 调用失败需要重试或显式告知\n\n## 工具分类\n- 查询类:订单 / 客户 / 知识 / 指标\n- 动作类:发送邮件 / 创建工单 / 触发工作流\n- 审计类:操作前需复核,失败要回滚\n\n## 边界\n- 超出授权范围时主动询问\n- 不在无授权情况下执行破坏性操作\n- 关键操作前请求人工确认`,
   }),
 };
 
@@ -23,7 +23,7 @@ export function buildPrompts(name: string, category: string, owner: string): Pro
     : tpl === '销' ? '销售'
     : tpl === '数' ? '数据'
     : tpl === '财' ? '财务'
-    : tpl === '流' ? '流程'
+    : tpl === '工作流' ? '工作流'
     : tpl === 'H' ? 'HR'
     : tpl === 'I' ? 'IT'
     : tpl === '法' ? '法务'
@@ -39,7 +39,7 @@ const TOOL_TYPE_BY_NAME: Record<string, 'Skill' | 'Tool' | 'MCP'> = {
   '报价引擎': 'Tool', '合同条款检索': 'Tool', '日程预约': 'Tool', 'SQL 生成': 'Skill',
   '图表渲染': 'Tool', '指标库查询': 'Tool', '数据脱敏': 'Tool', '导出 PDF': 'Tool',
   'OCR 单据': 'Skill', '报销规则': 'Tool', '预算查询': 'Tool', '对账核对': 'Tool',
-  '审批中心': 'Tool', '流程编辑器': 'Skill', '触发器': 'Skill', '人工审批': 'Tool',
+  '审批中心': 'Tool', '工作流编辑器': 'Skill', '触发器': 'Skill', '人工审批': 'Tool',
   '通知中心': 'Tool', '审计日志': 'Tool', '图片 OCR': 'Skill', '上下文记忆': 'MCP',
   '审批中心·升级': 'Tool', '审批中心·驳回': 'Tool', '日程预约·同步': 'Tool',
 };
@@ -93,7 +93,7 @@ export function buildKnowledgeRefs(category: string): KnowledgeRef[] {
     : category.startsWith('销售') ? '销售'
     : category.startsWith('数据') ? '数据'
     : category.startsWith('财务') ? '财务'
-    : category.startsWith('流程') ? '流程'
+    : category.startsWith('工作流') ? '工作流'
     : category.startsWith('HR') ? 'HR'
     : category.startsWith('IT') ? 'IT'
     : '客服';
@@ -208,14 +208,14 @@ const SEEDS: AgentSeed[] = [
     trend: [60, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120],
   },
   {
-    id: 'a-flow-v1', name: '流程编排',
-    description: '把重复工作配置成可追踪、可复用的自动化流程,支持条件分支与人工介入。',
-    category: '流程', owner: '李雷', tone: 'warn', status: 'published',
+    id: 'a-flow-v1', name: '工作流编排',
+    description: '把重复工作配置成可追踪、可复用的工作流,支持条件分支与人工介入。',
+    category: '工作流', owner: '李雷', tone: 'warn', status: 'published',
     version: 'v1.5', lastUpdate: '上周', createdAt: '2026-05-08',
     calls: 5400, successRate: 99.55, errorRate: 0.34, avgLatencyMs: 2100, rating: 4.4,
-    tags: ['流程', '自动化', '审批'],
-    tools: toolsFromNames(['流程编辑器', '触发器', '人工审批', '通知中心', '审计日志']),
-    starred: false, visibleScope: ['公开'], dataAccess: '流程引擎',
+    tags: ['工作流', '自动化', '审批'],
+    tools: toolsFromNames(['工作流编辑器', '触发器', '人工审批', '通知中心', '审计日志']),
+    starred: false, visibleScope: ['公开'], dataAccess: '工作流引擎',
     versions: [
       { version: 'v1.5', publisher: '李雷', releasedAt: '2026-09-08', current: true },
       { version: 'v1.4', publisher: '李雷', releasedAt: '2026-08-18' },

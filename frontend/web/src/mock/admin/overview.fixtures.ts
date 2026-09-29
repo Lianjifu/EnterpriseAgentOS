@@ -89,7 +89,7 @@ export const mockTopAgents: TopAgent[] = [
   { name: '销售支持', calls: '14.7k', share: 0.34, tone: 'success' },
   { name: '数据洞察助手', calls: '9.8k', share: 0.23, tone: 'info' },
   { name: '财务问答', calls: '6.1k', share: 0.14, tone: 'purple' },
-  { name: '流程编排', calls: '5.4k', share: 0.12, tone: 'warn' },
+  { name: '工作流编排', calls: '5.4k', share: 0.12, tone: 'warn' },
 ];
 
 export const mockOverviewSummary: OverviewSummary = {

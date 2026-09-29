@@ -1,5 +1,5 @@
 /**
- * 用户侧「我的流程」hooks — 列表 + 收藏 + 运行记录。
+ * 用户侧「我的工作流」hooks — 列表 + 收藏 + 运行记录。
  * 端点 /api/user/automations 由 web/src/lib/automations-mock-handler.ts 接管,
  * 因为全局 mock.ts ladder 没有这个端点。
  */

@@ -1,5 +1,5 @@
 /**
- * FlowDetailDrawer — 流程详情侧抽屉(节点列表 + 元数据 + 绑定智能体)。
+ * FlowDetailDrawer — 工作流详情侧抽屉(节点列表 + 元数据 + 绑定智能体)。
  */
 import { Brain } from 'lucide-react';
 import { SideDrawer } from '@/components/feedback/SideDrawer';
@@ -11,9 +11,9 @@ export function FlowDetailDrawer({ flow, onClose }: { flow: Flow | null; onClose
     <SideDrawer
       open={flow !== null}
       onClose={onClose}
-      ariaLabel={flow ? `${flow.name}流程详情` : '流程详情'}
-      eyebrow={<p className="text-[11px] font-semibold tracking-[0.2em] text-amber-700 dark:text-amber-300">流程详情 / {flow?.scene ?? ''}</p>}
-      closeLabel="关闭流程详情"
+      ariaLabel={flow ? `${flow.name}工作流详情` : '工作流详情'}
+      eyebrow={<p className="text-[11px] font-semibold tracking-[0.2em] text-amber-700 dark:text-amber-300">工作流详情 / {flow?.scene ?? ''}</p>}
+      closeLabel="关闭工作流详情"
     >
       {flow && (
         <div className="space-y-6 pb-10">

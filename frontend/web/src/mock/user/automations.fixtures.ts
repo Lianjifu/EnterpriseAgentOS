@@ -1,5 +1,5 @@
 /**
- * 用户侧「我的流程」fixtures — 与原 MyAutomations.tsx 内联数据对应。
+ * 用户侧「我的工作流」fixtures — 与原 MyAutomations.tsx 内联数据对应。
  */
 import type { Flow, FlowRun } from '@/api/user/automations/schema';
 

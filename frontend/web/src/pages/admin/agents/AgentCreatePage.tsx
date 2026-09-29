@@ -136,7 +136,7 @@ export default function AgentCreatePage() {
           <div className="mt-2 flex items-start gap-2 rounded-xl border border-dashed border-[var(--border)] p-3 text-[11px] leading-4 text-[var(--text-muted)]">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--brand)]" />
             <span>
-              草稿状态可随时修改,所有面板(技能/知识/记忆/流程等)可在编辑器中继续完善。
+              草稿状态可随时修改,所有面板(技能/知识/记忆/工作流等)可在编辑器中继续完善。
             </span>
           </div>
         </aside>

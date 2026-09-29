@@ -1,8 +1,8 @@
 /**
  * KbDetailPage 测试 — happy-path 渲染 + 反向引用 + 404。
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 vi.mock('@/api/admin/knowledge/useKnowledge', () => ({
@@ -28,6 +28,7 @@ describe('KbDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
+  afterEach(() => cleanup());
 
   it('renders kb fields with documents list', async () => {
     (useKnowledgeBase as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
@@ -73,6 +74,9 @@ describe('KbDetailPage', () => {
     (useKnowledgeBase as unknown as ReturnType<typeof vi.fn>).mockReturnValue({ data: null, isLoading: true });
     (useKnowledgeDocs as unknown as ReturnType<typeof vi.fn>).mockReturnValue({ data: [] });
     renderAt('kb-prod');
-    expect(screen.getByText(/加载中/)).toBeTruthy();
+    // DetailSkeleton renders 3 animated placeholder rows
+    expect(screen.getAllByText('').length).toBeGreaterThan(0);
+    expect(document.querySelectorAll('.animate-pulse').length).toBe(4);
+    expect(screen.queryByText(/知识库不存在/)).toBeNull();
   });
 });

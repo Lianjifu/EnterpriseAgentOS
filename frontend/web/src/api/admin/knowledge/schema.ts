@@ -36,6 +36,7 @@ export interface Doc {
   name: string;
   type: DocType;
   kbId: string;
+  sourceId?: string;
   status: DocStatus;
   sizeKb: number;
   chunks: number;

@@ -7,7 +7,7 @@ import { Route, Routes } from 'react-router-dom';
 import { qk } from '@/api/shared/query-keys';
 import { renderWithProviders } from '@/test-utils/seed';
 import DocDetailPage from './DocDetailPage';
-import { mockKbs, mockDocs } from '@/mock/admin/knowledge.fixtures';
+import { mockKbs, mockDocs, mockSources } from '@/mock/admin/knowledge.fixtures';
 
 function renderAt(id: string) {
   return renderWithProviders(
@@ -19,6 +19,7 @@ function renderAt(id: string) {
       seeds: [
         { key: [...qk.admin.knowledge.root, 'kbs', 'w1'], data: mockKbs },
         { key: [...qk.admin.knowledge.root, 'docs', 'w1'], data: mockDocs },
+        { key: [...qk.admin.knowledge.root, 'sources', 'w1'], data: mockSources },
       ],
     },
   );

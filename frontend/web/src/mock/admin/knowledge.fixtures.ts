@@ -20,18 +20,18 @@ export const mockKbs: Kb[] = [
 ];
 
 export const mockDocs: Doc[] = [
-  { id: 'doc-001', name: '产品手册 v3.pdf', type: 'manual', kbId: 'kb-prod', status: 'parsed', sizeKb: 4820, chunks: 286, updatedAt: '今天 14:32', citations: 1240 },
-  { id: 'doc-002', name: '员工手册 2026.docx', type: 'policy', kbId: 'kb-hr', status: 'parsed', sizeKb: 1280, chunks: 124, updatedAt: '昨天 18:10', citations: 412 },
-  { id: 'doc-003', name: '信息安全等级保护指南.pdf', type: 'policy', kbId: 'kb-sec', status: 'parsing', sizeKb: 1840, chunks: 24, updatedAt: '2 小时前', citations: 86 },
-  { id: 'doc-004', name: '客服 FAQ Top100.csv', type: 'faq', kbId: 'kb-faq', status: 'parsed', sizeKb: 412, chunks: 412, updatedAt: '今天 09:18', citations: 2840 },
-  { id: 'doc-005', name: '销售合同模板 v2.docx', type: 'contract', kbId: 'kb-legal', status: 'parsed', sizeKb: 184, chunks: 38, updatedAt: '上周', citations: 142 },
-  { id: 'doc-006', name: '差旅报销指南.md', type: 'policy', kbId: 'kb-finance', status: 'parsed', sizeKb: 96, chunks: 56, updatedAt: '本周', citations: 318 },
-  { id: 'doc-007', name: 'Q3 周会纪要.md', type: 'meeting', kbId: 'kb-meet', status: 'parsed', sizeKb: 28, chunks: 18, updatedAt: '今天 16:45', citations: 24 },
-  { id: 'doc-008', name: 'Q4 发布会清单.md', type: 'meeting', kbId: 'kb-launch', status: 'failed', sizeKb: 12, chunks: 0, updatedAt: '昨天', citations: 0 },
-  { id: 'doc-009', name: '行业研究 - SaaS.pdf', type: 'manual', kbId: 'kb-research', status: 'parsed', sizeKb: 3120, chunks: 32, updatedAt: '本周', citations: 64 },
-  { id: 'doc-010', name: '应急响应 runbook.md', type: 'policy', kbId: 'kb-ops', status: 'parsing', sizeKb: 184, chunks: 28, updatedAt: '今天', citations: 48 },
-  { id: 'doc-011', name: '常见拒绝话术.md', type: 'faq', kbId: 'kb-tpl', status: 'parsed', sizeKb: 18, chunks: 28, updatedAt: '本周', citations: 96 },
-  { id: 'doc-012', name: '业务术语表 v2.csv', type: 'faq', kbId: 'kb-glossary', status: 'parsed', sizeKb: 24, chunks: 24, updatedAt: '上周', citations: 184 },
+  { id: 'doc-001', name: '产品手册 v3.pdf', type: 'manual', kbId: 'kb-prod', sourceId: 'src-1', status: 'parsed', sizeKb: 4820, chunks: 286, updatedAt: '今天 14:32', citations: 1240 },
+  { id: 'doc-002', name: '员工手册 2026.docx', type: 'policy', kbId: 'kb-hr', sourceId: 'src-1', status: 'parsed', sizeKb: 1280, chunks: 124, updatedAt: '昨天 18:10', citations: 412 },
+  { id: 'doc-003', name: '信息安全等级保护指南.pdf', type: 'policy', kbId: 'kb-sec', sourceId: 'src-8', status: 'parsing', sizeKb: 1840, chunks: 24, updatedAt: '2 小时前', citations: 86 },
+  { id: 'doc-004', name: '客服 FAQ Top100.csv', type: 'faq', kbId: 'kb-faq', sourceId: 'src-3', status: 'parsed', sizeKb: 412, chunks: 412, updatedAt: '今天 09:18', citations: 2840 },
+  { id: 'doc-005', name: '销售合同模板 v2.docx', type: 'contract', kbId: 'kb-legal', sourceId: 'src-5', status: 'parsed', sizeKb: 184, chunks: 38, updatedAt: '上周', citations: 142 },
+  { id: 'doc-006', name: '差旅报销指南.md', type: 'policy', kbId: 'kb-finance', sourceId: 'src-6', status: 'parsed', sizeKb: 96, chunks: 56, updatedAt: '本周', citations: 318 },
+  { id: 'doc-007', name: 'Q3 周会纪要.md', type: 'meeting', kbId: 'kb-meet', sourceId: 'src-2', status: 'parsed', sizeKb: 28, chunks: 18, updatedAt: '今天 16:45', citations: 24 },
+  { id: 'doc-008', name: 'Q4 发布会清单.md', type: 'meeting', kbId: 'kb-launch', sourceId: 'src-2', status: 'failed', sizeKb: 12, chunks: 0, updatedAt: '昨天', citations: 0 },
+  { id: 'doc-009', name: '行业研究 - SaaS.pdf', type: 'manual', kbId: 'kb-research', sourceId: 'src-3', status: 'parsed', sizeKb: 3120, chunks: 32, updatedAt: '本周', citations: 64 },
+  { id: 'doc-010', name: '应急响应 runbook.md', type: 'policy', kbId: 'kb-ops', sourceId: 'src-8', status: 'parsing', sizeKb: 184, chunks: 28, updatedAt: '今天', citations: 48 },
+  { id: 'doc-011', name: '常见拒绝话术.md', type: 'faq', kbId: 'kb-tpl', sourceId: 'src-7', status: 'parsed', sizeKb: 18, chunks: 28, updatedAt: '本周', citations: 96 },
+  { id: 'doc-012', name: '业务术语表 v2.csv', type: 'faq', kbId: 'kb-glossary', sourceId: 'src-4', status: 'parsed', sizeKb: 24, chunks: 24, updatedAt: '上周', citations: 184 },
 ];
 
 export const mockSources: Source[] = [

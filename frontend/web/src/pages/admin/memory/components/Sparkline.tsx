@@ -1,6 +1,7 @@
 /**
- * Sparkline — 8 期条形图,h-16 容器,每条 inline 数字,末期高亮品牌色。
+ * Sparkline — 8 期条形图,h-20 容器,末期高亮品牌色。
  * 用 `Math.max(1, ...values)` 归一化,避免全 0 时除零 / 数据缺失 fallback。
+ * 末期 delta 徽章在最右侧;最新数值由 TrendCard header 大字号展示,不在柱顶重复。
  */
 import type { LucideIcon } from 'lucide-react';
 import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
@@ -16,17 +17,12 @@ export function Sparkline({ values, tone = 'brand' }: { values: number[]; tone?:
   const trackColor = 'var(--bg-elevated)';
 
   return (
-    <div className="flex h-16 items-end gap-1.5" role="img" aria-label={`近 ${list.length} 期趋势`}>
+    <div className="flex h-20 items-end gap-1" role="img" aria-label={`近 ${list.length} 期趋势`}>
       {list.map((v, idx) => {
         const heightPct = Math.max(6, Math.round((v / max) * 100));
         const isLatest = idx === list.length - 1;
         return (
           <div key={idx} className="group relative flex flex-1 flex-col items-center justify-end">
-            {isLatest && (
-              <span className="mb-1 text-[10px] font-semibold tabular-nums" style={{ color: trendColor }}>
-                {v.toLocaleString()}
-              </span>
-            )}
             <div
               className="w-full rounded-t transition-colors"
               style={{
@@ -36,6 +32,7 @@ export function Sparkline({ values, tone = 'brand' }: { values: number[]; tone?:
                 opacity: isLatest ? 1 : 0.85,
               }}
               aria-label={`第 ${idx + 1} 期 ${v}`}
+              title={`第 ${idx + 1} 期 ${v.toLocaleString()}`}
             />
           </div>
         );
@@ -48,6 +45,7 @@ export function Sparkline({ values, tone = 'brand' }: { values: number[]; tone?:
             ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300'
             : 'bg-[var(--bg-elevated)] text-[var(--text-muted)]'
         }`}
+        title={`较上期 ${delta > 0 ? '+' : ''}${delta.toLocaleString()}`}
       >
         {trendDir === 'up' ? <ArrowUpRight className="h-3 w-3" /> : trendDir === 'down' ? <ArrowDownRight className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
         {Math.abs(delta).toLocaleString()}
@@ -70,23 +68,23 @@ export function TrendCard({
       ? 'bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300'
       : 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300';
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className={`grid h-8 w-8 place-items-center rounded-lg ${toneClass}`}>
+    <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${toneClass}`}>
             <Icon className="h-4 w-4" />
           </span>
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-semibold text-[var(--text)]">{title}</p>
-            <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">{hint}</p>
+            <p className="mt-0.5 truncate text-[10px] text-[var(--text-muted)]">{hint}</p>
           </div>
         </div>
-        <div className="text-right">
+        <div className="shrink-0 text-right">
           <p className="text-lg font-semibold tabular-nums">{current.toLocaleString()}</p>
           <p className="text-[10px] text-[var(--text-muted)]">{unit}</p>
         </div>
       </div>
-      <div className="mt-3">
+      <div className="min-w-0">
         <Sparkline values={values} tone={tone} />
       </div>
     </div>

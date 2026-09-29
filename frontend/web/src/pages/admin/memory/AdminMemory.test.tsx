@@ -31,7 +31,6 @@ describe('AdminMemory', () => {
     expect(screen.getByText(/把企业记忆资产管起来/)).toBeTruthy();
     expect(screen.getByText('最近 7 天')).toBeTruthy();
     expect(screen.getByText('记忆总览')).toBeTruthy();
-    expect(screen.getByText('趋势')).toBeTruthy();
     expect(screen.getByText('待办工作流')).toBeTruthy();
   });
 

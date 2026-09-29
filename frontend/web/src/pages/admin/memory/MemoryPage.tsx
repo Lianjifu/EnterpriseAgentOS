@@ -14,6 +14,7 @@ import {
 import type {
   L1Session, L2Category, L2Fact, L3Entry, L3Status, MemoryLayer, MemoryRange, MemoryTabId, RetentionPolicy,
 } from '@/api/admin/memory/schema';
+import { TimeRangeDropdown } from './components/TimeRangeDropdown';
 import { PromoteMemoryModal } from './components/PromoteMemoryModal';
 import { RetentionPolicyModal } from './components/RetentionPolicyModal';
 import { OverviewTab } from './components/tabs/OverviewTab';
@@ -193,30 +194,33 @@ export default function MemoryPage() {
         </div>
       </section>
 
-      <section aria-label="子模块导航" className="flex flex-wrap items-center gap-2 overflow-x-auto pb-1">
-        {(['overview', 'l1', 'l2', 'l3', 'policy'] as MemoryTabId[]).map((id) => {
-          const isActive = tab === id;
-          const labelMap: Record<MemoryTabId, { label: string; icon: typeof Zap }> = {
-            overview: { label: '记忆总览', icon: BookOpen },
-            l1: { label: '短期记忆', icon: Zap },
-            l2: { label: '长期记忆', icon: Brain },
-            l3: { label: '知识记忆', icon: BookOpen },
-            policy: { label: '保留策略与评测', icon: Brain },
-          };
-          const entry = labelMap[id];
-          const Icon = entry.icon;
-          const count =
-            id === 'overview' ? counts.l1 + counts.l2 + counts.l3 :
-            id === 'l1' ? counts.l1 :
-            id === 'l2' ? counts.l2 :
-            id === 'l3' ? counts.l3 :
-            policies.length;
-          return (
-            <button key={id} type="button" onClick={() => setTab(id)} aria-pressed={isActive} className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-semibold transition ${isActive ? 'border-[var(--brand)] bg-[var(--brand-light)] text-[var(--brand)]' : 'border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]'}`}>
-              <Icon className="h-3.5 w-3.5" />{entry.label}<span className="rounded bg-[var(--bg-elevated)] px-1.5 py-0.5 text-[10px] tabular-nums">{count}</span>
-            </button>
-          );
-        })}
+      <section aria-label="子模块导航" className="flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex items-center gap-1 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-1">
+          {(['overview', 'l1', 'l2', 'l3', 'policy'] as MemoryTabId[]).map((id) => {
+            const isActive = tab === id;
+            const labelMap: Record<MemoryTabId, { label: string; icon: typeof Zap }> = {
+              overview: { label: '记忆总览', icon: BookOpen },
+              l1: { label: '短期记忆', icon: Zap },
+              l2: { label: '长期记忆', icon: Brain },
+              l3: { label: '知识记忆', icon: BookOpen },
+              policy: { label: '保留策略与评测', icon: Brain },
+            };
+            const entry = labelMap[id];
+            const Icon = entry.icon;
+            const count =
+              id === 'overview' ? counts.l1 + counts.l2 + counts.l3 :
+              id === 'l1' ? counts.l1 :
+              id === 'l2' ? counts.l2 :
+              id === 'l3' ? counts.l3 :
+              policies.length;
+            return (
+              <button key={id} type="button" onClick={() => setTab(id)} aria-pressed={isActive} className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${isActive ? 'bg-[var(--brand)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-1)] hover:text-[var(--brand)]'}`}>
+                <Icon className="h-3.5 w-3.5" />{entry.label}<span className={`rounded px-1.5 py-0.5 text-[10px] tabular-nums ${isActive ? 'bg-white/20 text-white' : 'bg-[var(--surface-1)] text-[var(--text-muted)]'}`}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+        <TimeRangeDropdown value={range} onChange={setRange} onRefresh={refreshAll} refreshing={refreshing} />
       </section>
 
       {tab === 'overview' && (
@@ -227,11 +231,6 @@ export default function MemoryPage() {
           pendingL3Drafts={pendingL3Drafts}
           trend={trend ?? { l1Active: [0, 0, 0, 0, 0, 0, 0, 0], l2Hits: [0, 0, 0, 0, 0, 0, 0, 0], l3Hits: [0, 0, 0, 0, 0, 0, 0, 0] }}
           pendingTotal={pendingTotal}
-          range={range}
-          onRangeChange={setRange}
-          onRefresh={refreshAll}
-          refreshing={refreshing}
-          lastRefresh={lastRefresh}
           onConfirm={confirmFact}
           onOpenL2={openL2}
           onOpenL3={openL3}

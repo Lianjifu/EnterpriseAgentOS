@@ -1,8 +1,7 @@
 /**
  * OverviewTab — 「记忆总览」数据驱动总览:左 3 趋势卡 + 中待办工作流 + 右晋升 feed + 策略快访。
  *
- * 顶部趋势区携带 TimeRangeDropdown,控制 3 个 TrendCard 的数据范围;
- * 卡片右侧展示「最后刷新 · {lastRefresh}」。
+ * 时间范围下拉(TimeRangeDropdown)已移至子模块导航行,趋势卡只接收 trend 数据。
  *
  * 布局:左 3fr(趋势 + 待办 + 策略快访)· 右 2fr(晋升事件 feed)。
  * 原右栏顶部 3 KpiMini 已删 —— 当前值在左 TrendCard 大字号展示过,
@@ -11,19 +10,17 @@
 import { Link } from 'react-router-dom';
 import { BookOpen, Brain, ChevronRight, Clock } from 'lucide-react';
 import type {
-  L2Fact, L3Entry, MemoryRange, MemoryTrend, PromotionEvent, RetentionPolicy,
+  L2Fact, L3Entry, MemoryTrend, PromotionEvent, RetentionPolicy,
 } from '@/api/admin/memory/schema';
 import {
   L2_CATEGORY_LABEL, L2_STATUS_BADGE, L3_STATUS_BADGE, LAYER_META, ttlLabel, toneClass,
 } from '../constants';
 import { PromotionFeed } from '../PromotionFeed';
-import { TimeRangeDropdown } from '../TimeRangeDropdown';
 import { TrendCard } from '../Sparkline';
 
 export function OverviewTab({
   promotions, policies, pendingFacts, pendingL3Drafts, trend,
   pendingTotal,
-  range, onRangeChange, onRefresh, refreshing, lastRefresh,
   onConfirm, onOpenL2, onOpenL3, onJumpToPolicies,
 }: {
   promotions: PromotionEvent[];
@@ -32,11 +29,6 @@ export function OverviewTab({
   pendingL3Drafts: L3Entry[];
   trend: MemoryTrend;
   pendingTotal: number;
-  range: MemoryRange;
-  onRangeChange: (next: MemoryRange) => void;
-  onRefresh?: () => void;
-  refreshing?: boolean;
-  lastRefresh?: string;
   onConfirm: (id: string) => void;
   onOpenL2: (f: L2Fact) => void;
   onOpenL3: (e: L3Entry) => void;
@@ -54,42 +46,33 @@ export function OverviewTab({
       <div className="grid gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="space-y-4">
           <div>
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-base font-semibold">趋势</h3>
-              <div className="flex items-center gap-3">
-                {lastRefresh && <p className="text-[10px] text-[var(--text-muted)]">最后刷新 · {lastRefresh}</p>}
-                {onRangeChange && (
-                  <TimeRangeDropdown value={range} onChange={onRangeChange} onRefresh={onRefresh} refreshing={refreshing} />
-                )}
-              </div>
-            </div>
             <div className="grid gap-3 sm:grid-cols-3">
               <TrendCard
                 icon={l1Meta.icon}
-                title={`${l1Meta.label} · 活跃`}
+                title={l1Meta.label}
                 current={l1Latest}
                 unit="活跃会话"
                 tone="info"
                 values={trend.l1Active}
-                hint="8 期会话数"
+                hint="近 8 期会话上下文"
               />
               <TrendCard
                 icon={l2Meta.icon}
-                title={`${l2Meta.label} · 命中`}
+                title={l2Meta.label}
                 current={l2Latest}
                 unit="本周命中"
                 tone="purple"
                 values={trend.l2Hits}
-                hint="8 期长期记忆命中次数"
+                hint="近 8 期长期记忆命中"
               />
               <TrendCard
                 icon={l3Meta.icon}
-                title={`${l3Meta.label} · 命中`}
+                title={l3Meta.label}
                 current={l3Latest}
                 unit="本周命中"
                 tone="brand"
                 values={trend.l3Hits}
-                hint="8 期知识记忆命中次数"
+                hint="近 8 期知识记忆命中"
               />
             </div>
           </div>

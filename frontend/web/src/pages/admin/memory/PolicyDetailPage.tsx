@@ -1,156 +1,197 @@
 /**
  * 管理侧「记忆策略详情」独立页面 — 路由 /admin/memory/policies/:id
  *
- * id 即策略 label(URL 编码)。
- * 顶部返回按钮回到 /admin/memory;
- * 头部展示名称 + 层级 + 关键参数;
- * 下方展示策略全部字段 + 反向引用 agent 列表。
+ * Wave 5:迁移到 DetailLayout + 4 section(参数/状态/数据量/被 Agent 引用)。
  */
 import { useMemo } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Brain, Layers, Clock, Hash, HardDrive, Percent, Users, Trash2 } from 'lucide-react';
-import { useRetentionPolicy } from '@/api/admin/memory/useMemory';
+import { Link, useParams } from 'react-router-dom';
+import {
+  Activity, BarChart3, Clock, HardDrive, Hash, Layers, Percent, Settings, Trash2, Users,
+} from 'lucide-react';
+import { useRetentionPolicy, useL1Sessions, useL2Facts, useL3Entries } from '@/api/admin/memory';
 import { mockAgents } from '@/mock/admin/agents.fixtures';
+import {
+  DetailShell, DetailHeader, DetailStatGrid, DetailStat,
+  DetailSection, DetailField, DetailNotFound, DetailSkeleton,
+} from '@/pages/admin/knowledge/components/DetailLayout';
 
-function NotFound() {
-  return (
-    <div className="mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-6">
-      <Link to="/admin/memory" className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--brand)]">
-        <ArrowLeft className="h-3.5 w-3.5" />返回记忆管理
-      </Link>
-      <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-1)] p-8 text-center">
-        <p className="text-sm font-semibold">策略不存在或已被删除</p>
-        <p className="mt-1 text-xs text-[var(--text-muted)]">请返回列表重新选择。</p>
-      </div>
-    </div>
-  );
-}
-
-function Stat({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
-  return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
-      <p className="text-[11px] uppercase tracking-wide text-[var(--text-muted)]">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-[var(--text)]">{value}</p>
-      {hint && <p className="mt-1 text-[11px] text-[var(--text-muted)]">{hint}</p>}
-    </div>
-  );
-}
-
-function Field({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-3">
-      <span className="mt-0.5 grid h-7 w-7 place-items-center rounded-md bg-[var(--bg-elevated)] text-[var(--brand)]">
-        {icon}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-[11px] uppercase tracking-wide text-[var(--text-muted)]">{label}</p>
-        <div className="mt-0.5 text-sm text-[var(--text)]">{children}</div>
-      </div>
-    </div>
-  );
-}
-
-const LAYER_LABEL: Record<string, { label: string; className: string }> = {
-  L1: { label: '短期会话', className: 'bg-[var(--info-soft)] text-[var(--info)]' },
-  L2: { label: '事实经验', className: 'bg-[var(--purple-soft)] text-[var(--purple)]' },
-  L3: { label: '长期知识', className: 'bg-[var(--brand-soft)] text-[var(--brand)]' },
+const LAYER_LABEL: Record<string, { label: string; className: string; full: string }> = {
+  l1: { label: '短期记忆', className: 'bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300', full: 'L1 短期记忆' },
+  l2: { label: '长期记忆', className: 'bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300', full: 'L2 长期记忆' },
+  l3: { label: '知识记忆', className: 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300', full: 'L3 知识记忆' },
 };
+
+const EVICTION_LABEL: Record<string, string> = {
+  lru: 'LRU · 最近最少使用',
+  fifo: 'FIFO · 先进先出',
+  confidence: 'Confidence · 低置信度优先',
+};
+
+function policyHealth(hitRate: number): { tone: 'success' | 'warn' | 'danger'; label: string; advice: string } {
+  if (hitRate >= 0.9) return { tone: 'success', label: '运行良好', advice: '策略与数据匹配,无需调整' };
+  if (hitRate >= 0.75) return { tone: 'warn', label: '关注中', advice: '建议观察 2 周后再决定' };
+  return { tone: 'danger', label: '需调整', advice: '考虑扩容或更换淘汰策略' };
+}
 
 export default function PolicyDetailPage() {
   const { id = '' } = useParams<{ id: string }>();
   const decoded = useMemo(() => decodeURIComponent(id), [id]);
   const { data: policy, isLoading } = useRetentionPolicy(decoded || null);
-  const navigate = useNavigate();
+  const { data: l1Sessions } = useL1Sessions();
+  const { data: l2Facts } = useL2Facts();
+  const { data: l3Entries } = useL3Entries();
+
+  const layerCount = useMemo(() => {
+    if (!policy) return null;
+    if (policy.layer === 'l1') return l1Sessions?.filter((s) => s.status !== 'expired').length ?? 0;
+    if (policy.layer === 'l2') return l2Facts?.filter((f) => f.status !== 'retired').length ?? 0;
+    return l3Entries?.filter((k) => k.status === 'published').length ?? 0;
+  }, [policy, l1Sessions, l2Facts, l3Entries]);
+
+  const otherLayers = useMemo(() => {
+    if (!policy) return [] as Array<{ key: string; label: string; count: number | undefined }>;
+    const items: Array<{ key: string; label: string; count: number | undefined }> = [];
+    if (policy.layer !== 'l1') items.push({ key: 'l1', label: 'L1 短期记忆', count: l1Sessions?.filter((s) => s.status !== 'expired').length });
+    if (policy.layer !== 'l2') items.push({ key: 'l2', label: 'L2 长期记忆', count: l2Facts?.filter((f) => f.status !== 'retired').length });
+    if (policy.layer !== 'l3') items.push({ key: 'l3', label: 'L3 知识记忆', count: l3Entries?.filter((k) => k.status === 'published').length });
+    return items;
+  }, [policy, l1Sessions, l2Facts, l3Entries]);
 
   const boundAgents = useMemo(() => {
     if (!policy) return [] as typeof mockAgents;
-    return mockAgents.filter((a) => a.memoryPolicy.enabled && a.category === policy.layer);
+    return mockAgents.filter((a) => a.memoryPolicy.enabled);
   }, [policy]);
 
   if (isLoading) {
     return (
-      <div className="mx-auto w-full max-w-[1440px] p-5 pb-16 sm:p-8 xl:px-6">
-        <p className="text-sm text-[var(--text-muted)]">加载中…</p>
-      </div>
+      <DetailShell backTo="/admin/memory" backLabel="返回记忆管理">
+        <DetailSkeleton rows={3} />
+      </DetailShell>
+    );
+  }
+  if (!policy) {
+    return (
+      <DetailShell backTo="/admin/memory" backLabel="返回记忆管理">
+        <DetailNotFound subject="策略不存在或已被删除" />
+      </DetailShell>
     );
   }
 
-  if (!policy) return <NotFound />;
-
-  const layerBadge = LAYER_LABEL[policy.layer] ?? LAYER_LABEL.L2;
+  const layerBadge = LAYER_LABEL[policy.layer] ?? LAYER_LABEL.l2;
+  const eviction = EVICTION_LABEL[policy.eviction] ?? policy.eviction;
+  const ttlDisplay = policy.ttlMinutes < 1440
+    ? `${policy.ttlMinutes} 分钟`
+    : policy.ttlMinutes < 1440 * 30
+    ? `${Math.round(policy.ttlMinutes / 1440)} 天`
+    : `${Math.round(policy.ttlMinutes / (1440 * 30))} 月`;
+  const health = policyHealth(policy.hitRate);
+  const usagePct = layerCount !== null && layerCount !== undefined && policy.maxItems > 0
+    ? Math.min(100, Math.round((layerCount / policy.maxItems) * 100))
+    : 0;
+  const storagePct = policy.storageMb > 0 && layerCount !== null && layerCount !== undefined
+    ? Math.min(100, Math.round(((layerCount * 0.16) / policy.storageMb) * 100))
+    : 0;
 
   return (
-    <div className="mx-auto w-full max-w-[1440px] space-y-4 p-5 pb-16 sm:p-8 xl:px-6">
-      <button
-        type="button"
-        onClick={() => { navigate('/admin/memory'); }}
-        className="inline-flex w-fit items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--brand)]"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />返回记忆管理
-      </button>
+    <DetailShell backTo="/admin/memory" backLabel="返回记忆管理">
+      <DetailHeader
+        eyebrow={`保留策略 · ${layerBadge.full}`}
+        title={policy.label}
+        icon={Settings}
+        iconClass="bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+        subtitle={policy.description}
+        badges={[
+          { label: layerBadge.full, className: layerBadge.className },
+          { label: `淘汰 ${policy.eviction}`, className: 'bg-[var(--bg-elevated)] text-[var(--text-secondary)]' },
+        ]}
+      />
 
-      <header className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] px-5 py-4">
-        <div className="flex items-start gap-3">
-          <span className="grid h-12 w-12 place-items-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)]">
-            <Brain className="h-6 w-6" />
-          </span>
+      <DetailStatGrid columns={4}>
+        <DetailStat label="存活时间" value={ttlDisplay} hint={`${policy.ttlMinutes.toLocaleString()} 分钟`} />
+        <DetailStat label="最大条目" value={policy.maxItems.toLocaleString()} />
+        <DetailStat label="存储上限" value={`${policy.storageMb}MB`} />
+        <DetailStat label="命中率" value={`${(policy.hitRate * 100).toFixed(0)}%`} tone={health.tone} hint={health.label} />
+      </DetailStatGrid>
+
+      <DetailSection title="策略参数" icon={Layers}>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <DetailField icon={Layers} label="记忆层级">{layerBadge.full}</DetailField>
+          <DetailField icon={Clock} label="存活时间">{ttlDisplay} · {policy.ttlMinutes.toLocaleString()} 分钟</DetailField>
+          <DetailField icon={Hash} label="最大条目">{policy.maxItems.toLocaleString()} 条</DetailField>
+          <DetailField icon={HardDrive} label="存储上限">{policy.storageMb} MB</DetailField>
+          <DetailField icon={Trash2} label="淘汰策略">{eviction}</DetailField>
+          <DetailField icon={Percent} label="实际命中率">{(policy.hitRate * 100).toFixed(1)}%</DetailField>
+        </div>
+      </DetailSection>
+
+      <DetailSection title="策略状态" icon={Activity}>
+        <DetailStatGrid columns={4}>
+          <DetailStat label="运行状态" value={health.label} tone={health.tone} />
+          <DetailStat label="实际命中率" value={`${(policy.hitRate * 100).toFixed(1)}%`} tone={health.tone} />
+          <DetailStat label="目标命中率" value="≥ 90%" hint="策略设计目标" />
+          <DetailStat label="调整建议" value={health.advice} hint={health.tone === 'success' ? '保持当前配置' : health.tone === 'warn' ? '2 周后复评' : '本周内决策'} />
+        </DetailStatGrid>
+      </DetailSection>
+
+      <DetailSection title="当前数据量" icon={BarChart3}>
+        <div className="space-y-4">
           <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-lg font-semibold tracking-tight">{policy.label}</h1>
-              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${layerBadge.className}`}>
-                {policy.layer} · {layerBadge.label}
+            <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
+              <span className="font-medium">{layerBadge.full} · 本策略对应层级</span>
+              <span>
+                已用 <span className="font-semibold tabular-nums">{layerCount ?? '—'}</span>
+                {' '}/ {policy.maxItems.toLocaleString()}({usagePct}%)
               </span>
             </div>
-            <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{policy.description}</p>
+            <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-[var(--bg-elevated)]">
+              <div
+                className={`h-full rounded-full ${usagePct >= 90 ? 'bg-rose-500' : usagePct >= 70 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                style={{ width: `${usagePct}%` }}
+              />
+            </div>
           </div>
+          <div>
+            <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
+              <span className="font-medium">存储占用</span>
+              <span>
+                估算 <span className="font-semibold tabular-nums">{layerCount !== null && layerCount !== undefined ? (layerCount * 0.16).toFixed(1) : '—'}</span>
+                {' '}/ {policy.storageMb} MB({storagePct}%)
+              </span>
+            </div>
+            <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-[var(--bg-elevated)]">
+              <div className="h-full rounded-full bg-blue-500" style={{ width: `${storagePct}%` }} />
+            </div>
+          </div>
+          {otherLayers.length > 0 && (
+            <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {otherLayers.map((o) => (
+                <li key={o.key} className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--bg-app)] px-3 py-2 text-xs">
+                  <span className="font-medium text-[var(--text-secondary)]">{o.label}</span>
+                  <span className="tabular-nums text-[var(--text-muted)]">{o.count ?? '—'} 条</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-      </header>
+      </DetailSection>
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="TTL" value={`${policy.ttlMinutes}m`} />
-        <Stat label="最大条目" value={policy.maxItems} />
-        <Stat label="存储上限" value={`${policy.storageMb}MB`} />
-        <Stat label="命中率" value={`${(policy.hitRate * 100).toFixed(0)}%`} hint={`淘汰 ${policy.eviction}`} />
-      </section>
-
-      <section className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <Field icon={<Layers className="h-3.5 w-3.5" />} label="记忆层级">
-          {policy.layer} · {layerBadge.label}
-        </Field>
-        <Field icon={<Clock className="h-3.5 w-3.5" />} label="存活时间">
-          {policy.ttlMinutes} 分钟
-        </Field>
-        <Field icon={<Hash className="h-3.5 w-3.5" />} label="最大条目">
-          {policy.maxItems}
-        </Field>
-        <Field icon={<HardDrive className="h-3.5 w-3.5" />} label="存储上限">
-          {policy.storageMb} MB
-        </Field>
-        <Field icon={<Trash2 className="h-3.5 w-3.5" />} label="淘汰策略">
-          {policy.eviction}
-        </Field>
-        <Field icon={<Percent className="h-3.5 w-3.5" />} label="命中率">
-          {(policy.hitRate * 100).toFixed(1)}%
-        </Field>
-      </section>
-
-      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
-        <div className="flex items-center gap-2 text-xs font-semibold text-[var(--text)]">
-          <Users className="h-3.5 w-3.5 text-[var(--brand)]" />被以下 Agent 引用
-        </div>
+      <DetailSection title="被以下 Agent 引用" icon={Users}>
         {boundAgents.length === 0 ? (
-          <p className="mt-2 text-xs text-[var(--text-muted)]">暂无 Agent 引用</p>
+          <p className="text-xs text-[var(--text-muted)]">暂无 Agent 引用</p>
         ) : (
-          <ul className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {boundAgents.map((a) => (
-              <li key={a.id} className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--bg-app)] px-3 py-2 text-xs">
-                <span className="font-medium">{a.name}</span>
-                <Link to={`/admin/agents/${a.id}`} className="text-[var(--brand)] hover:underline">查看 →</Link>
+              <li key={a.id} className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--bg-app)] px-3 py-2 text-xs">
+                <span className="min-w-0 flex-1 truncate">
+                  <span className="block font-medium">{a.name}</span>
+                  <span className="mt-0.5 block truncate text-[11px] text-[var(--text-muted)]">{a.category}</span>
+                </span>
+                <Link to={`/admin/agents/${a.id}`} className="shrink-0 text-[var(--brand)] hover:underline">查看 →</Link>
               </li>
             ))}
           </ul>
         )}
-      </section>
-    </div>
+      </DetailSection>
+    </DetailShell>
   );
 }

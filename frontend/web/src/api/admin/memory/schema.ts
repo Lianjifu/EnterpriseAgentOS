@@ -21,11 +21,17 @@ export interface L2Fact {
   id: string; userName: string; key: string; value: string; category: L2Category;
   sourceSession: string; confidence: number;
   lastUsed: string; promotedAt: string; status: L2Status; promotedToL3: boolean;
+  /** 近 7 天使用时间戳,可选 */
+  usageHistory?: string[];
 }
 
 export interface L3Entry {
   id: string; team: string; title: string; summary: string; category: string;
   hits: number; updatedAt: string; contributor: string; status: L3Status;
+  /** 8 期命中数(由旧到新),可选 */
+  hitsTrend?: number[];
+  /** 晋升来源 L2 fact id,可选 */
+  promotedFromL2Ids?: string[];
 }
 
 export interface PromotionEvent {

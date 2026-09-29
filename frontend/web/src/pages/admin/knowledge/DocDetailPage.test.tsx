@@ -35,6 +35,9 @@ describe('AdminKnowledgeDocDetail', () => {
     expect(screen.getByText('大小')).toBeTruthy();
     expect(screen.getByText('切片')).toBeTruthy();
     expect(screen.getByText('引用')).toBeTruthy();
+    expect(screen.getByText('产品定位')).toBeTruthy();
+    expect(screen.getByText('核心功能矩阵')).toBeTruthy();
+    expect(screen.getByText(/切片预览/)).toBeTruthy();
   });
 
   it('shows not-found when id is unknown', () => {

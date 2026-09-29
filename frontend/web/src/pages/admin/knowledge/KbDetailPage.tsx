@@ -2,15 +2,17 @@
  * 管理侧「知识库详情」独立页面 — 路由 /admin/knowledge/kbs/:id
  *
  * 顶部返回知识管理;头部展示名称 + 状态 + 可见范围 + 关键 KPI;
- * 下方展示知识库全部字段 + 反向引用 doc / agent 列表。
+ * 下方展示知识库全部字段 + 「知识库文档」段(可点击跳到文档详情)
+ * + 反向引用 agent 列表。
  * wrapper / Stat / Field / NotFound / Skeleton 全部走 components/DetailLayout 共享件。
  */
 import { useMemo } from 'react';
-import { useParams } from 'react-router-dom';
-import { Database, FileText, Tag, Hash, Activity, Layers, Users } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { Database, FileText, Tag, Hash, Activity, Layers, Users, ChevronRight } from 'lucide-react';
 import { useKnowledgeBase, useKnowledgeDocs } from '@/api/admin/knowledge/useKnowledge';
 import { mockAgents } from '@/mock/admin/agents.fixtures';
-import { KB_STATUS_BADGE } from './components/Primitives';
+import { KB_STATUS_BADGE, DOC_STATUS_BADGE } from './components/Primitives';
+import { DOC_TYPE_LABEL } from './components/constants';
 import {
   DetailShell, DetailHeader, DetailStatGrid, DetailStat, DetailSection, DetailField,
   DetailNotFound, DetailSkeleton,
@@ -94,13 +96,41 @@ export default function KbDetailPage() {
         {kbDocs.length === 0 ? (
           <p className="text-xs text-[var(--text-muted)]">该知识库暂无文档</p>
         ) : (
-          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {kbDocs.map((d) => (
-              <li key={d.id} className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--bg-app)] px-3 py-2 text-xs">
-                <span className="font-medium">{d.name}</span>
-                <span className="text-[var(--text-muted)]">{d.chunks} chunks · {d.sizeKb}KB</span>
-              </li>
-            ))}
+          <ul className="flex flex-col gap-1">
+            {kbDocs.map((d) => {
+              const statusBadge = DOC_STATUS_BADGE[d.status];
+              const typeLabel = DOC_TYPE_LABEL[d.type];
+              return (
+                <li key={d.id}>
+                  <Link
+                    to={`/admin/knowledge/docs/${d.id}`}
+                    className="group flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--bg-app)] px-3 py-2.5 transition-colors hover:border-[var(--brand)] hover:bg-[var(--bg-elevated)]"
+                  >
+                    <FileText className="h-4 w-4 shrink-0 text-[var(--text-muted)] group-hover:text-[var(--brand)]" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold">{d.name}</span>
+                      <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
+                        <span className="inline-flex items-center rounded bg-[var(--bg-elevated)] px-1.5 py-0.5 font-medium text-[var(--brand)]">
+                          {typeLabel}
+                        </span>
+                        <span className={`inline-flex items-center rounded px-1.5 py-0.5 font-medium ${statusBadge.className}`}>
+                          {statusBadge.label}
+                        </span>
+                        <span>·</span>
+                        <span>{d.chunks} chunks</span>
+                        <span>·</span>
+                        <span>{(d.sizeKb / 1024).toFixed(2)} MB</span>
+                        <span>·</span>
+                        <span>{d.citations.toLocaleString()} 引用</span>
+                        <span>·</span>
+                        <span>更新于 {d.updatedAt}</span>
+                      </span>
+                    </span>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-[var(--text-muted)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--brand)]" />
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
       </DetailSection>

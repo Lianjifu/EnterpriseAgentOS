@@ -10,7 +10,7 @@ describe('admin-knowledge-mock-handler', () => {
     const fallback = async () => undefined;
     const wrap = wrapMockHandlerWithAdminKnowledge(fallback);
     expect((await wrap('/api/admin/knowledge/kbs', { method: 'GET' })) as unknown[]).toHaveLength(12);
-    expect((await wrap('/api/admin/knowledge/docs', { method: 'GET' })) as unknown[]).toHaveLength(12);
+    expect((await wrap('/api/admin/knowledge/docs', { method: 'GET' })) as unknown[]).toHaveLength(13);
     expect((await wrap('/api/admin/knowledge/sources', { method: 'GET' })) as unknown[]).toHaveLength(8);
     expect((await wrap('/api/admin/knowledge/tasks', { method: 'GET' })) as unknown[]).toHaveLength(14);
     expect((await wrap('/api/admin/knowledge/eval', { method: 'GET' })) as unknown[]).toHaveLength(14);

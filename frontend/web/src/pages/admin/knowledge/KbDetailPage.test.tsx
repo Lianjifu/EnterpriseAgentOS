@@ -50,7 +50,16 @@ describe('KbDetailPage', () => {
     });
     (useKnowledgeDocs as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       data: [
-        { id: 'doc-1', name: '功能说明.md', type: 'markdown', kbId: 'kb-prod', status: 'indexed', sizeKb: 24, chunks: 32, updatedAt: '今天', citations: 12 },
+        {
+          id: 'doc-1', name: '功能说明.md', type: 'manual', kbId: 'kb-prod', sourceId: 'src-1',
+          status: 'parsed', sizeKb: 24, chunks: 32, updatedAt: '今天', citations: 12,
+          chunksPreview: [],
+        },
+        {
+          id: 'doc-2', name: 'FAQ.csv', type: 'faq', kbId: 'kb-prod', sourceId: 'src-3',
+          status: 'parsed', sizeKb: 18, chunks: 18, updatedAt: '昨天', citations: 8,
+          chunksPreview: [],
+        },
       ],
     });
 
@@ -60,7 +69,8 @@ describe('KbDetailPage', () => {
       expect(screen.getByText('产品手册 v3')).toBeTruthy();
     });
     expect(screen.getByText(/对外产品说明/)).toBeTruthy();
-    expect(screen.getByText('功能说明.md')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /功能说明\.md/ })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /FAQ\.csv/ })).toBeTruthy();
   });
 
   it('renders not-found when kb is missing', () => {

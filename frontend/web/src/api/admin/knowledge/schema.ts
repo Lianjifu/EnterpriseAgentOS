@@ -31,6 +31,14 @@ export interface Kb {
   evalHitRate: number;
 }
 
+export interface DocChunk {
+  index: number;
+  heading?: string;
+  snippet: string;
+  citations: number;
+  tokens: number;
+}
+
 export interface Doc {
   id: string;
   name: string;
@@ -40,6 +48,7 @@ export interface Doc {
   status: DocStatus;
   sizeKb: number;
   chunks: number;
+  chunksPreview?: DocChunk[];
   updatedAt: string;
   citations: number;
 }

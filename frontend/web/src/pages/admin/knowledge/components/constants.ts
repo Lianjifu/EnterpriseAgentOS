@@ -56,7 +56,6 @@ export const WIZARD_STEPS = [
   { id: 'basic', label: '基础信息' },
   { id: 'sources', label: '关联数据源' },
   { id: 'retrieval', label: '检索设置' },
-  { id: 'confirm', label: '确认' },
 ];
 
 export function downloadBlob(filename: string, content: string, mime = 'application/json') {

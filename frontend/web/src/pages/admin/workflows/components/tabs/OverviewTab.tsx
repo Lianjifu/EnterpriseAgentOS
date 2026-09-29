@@ -10,10 +10,9 @@
  * - + 添加节点 → onAddNode(flow, kind)(列表侧快速添加)
  */
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Search, Workflow } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Search, Workflow } from 'lucide-react';
 import type { Flow, NodeKind, WorkflowTabId } from '@/api/admin/workflows/schema';
 import { FlowCard } from '../FlowCard';
-import { PaginationBar } from '@/pages/admin/memory/components/PaginationBar';
 
 const PAGE_SIZE = 8;
 
@@ -103,19 +102,46 @@ export function OverviewTab({
           </div>
         )}
 
-        {total > 0 && (
-          <div className="flex items-center justify-between border-t border-[var(--border)] px-5 py-3">
-            <p className="text-xs text-[var(--text-muted)]">
+        {total > 0 && totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-[var(--border)] px-5 py-3 text-xs">
+            <p className="text-[var(--text-muted)]">
               第 <span className="font-semibold tabular-nums text-[var(--text-secondary)]">{pageStart}</span>-<span className="font-semibold tabular-nums text-[var(--text-secondary)]">{pageEnd}</span> 个 / 共 <span className="font-semibold tabular-nums text-[var(--text-secondary)]">{total}</span> 个
             </p>
-            <PaginationBar
-              page={safePage}
-              totalPages={totalPages}
-              total={total}
-              pageStart={pageStart}
-              pageEnd={pageEnd}
-              onPageChange={setPage}
-            />
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setPage(Math.max(1, safePage - 1))}
+                disabled={safePage <= 1}
+                aria-label="上一页"
+                className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronLeft className="h-3 w-3" />上一页
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => {
+                const active = n === safePage;
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setPage(n)}
+                    aria-current={active ? 'page' : undefined}
+                    aria-label={`第 ${n} 页`}
+                    className={`grid h-7 w-7 place-items-center rounded-lg text-[11px] font-semibold transition ${active ? 'bg-[var(--brand)] text-white' : 'border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]'}`}
+                  >
+                    {n}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => setPage(Math.min(totalPages, safePage + 1))}
+                disabled={safePage >= totalPages}
+                aria-label="下一页"
+                className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                下一页<ChevronRight className="h-3 w-3" />
+              </button>
+            </div>
           </div>
         )}
       </section>

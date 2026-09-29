@@ -13,7 +13,6 @@ export function Sparkline({ values, tone = 'brand' }: { values: number[]; tone?:
   const delta = latest - prev;
   const trendDir = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
   const trendColor = tone === 'purple' ? 'var(--purple, #8b5cf6)' : tone === 'info' ? 'var(--info, #0ea5e9)' : 'var(--brand)';
-  const trackColor = 'var(--bg-elevated)';
 
   return (
     <div className="flex h-20 items-end gap-1" role="img" aria-label={`近 ${list.length} 期趋势`}>
@@ -27,8 +26,8 @@ export function Sparkline({ values, tone = 'brand' }: { values: number[]; tone?:
               style={{
                 height: `${heightPct}%`,
                 minHeight: '4px',
-                backgroundColor: isLatest ? trendColor : trackColor,
-                opacity: isLatest ? 1 : 0.85,
+                backgroundColor: trendColor,
+                opacity: isLatest ? 1 : 0.28,
               }}
               aria-label={`第 ${idx + 1} 期 ${v}`}
               title={`第 ${idx + 1} 期 ${v.toLocaleString()}`}

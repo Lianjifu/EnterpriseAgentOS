@@ -3,7 +3,7 @@
  */
 import type { Node, Edge } from 'reactflow';
 
-export type WorkflowTabId = 'overview' | 'trigger' | 'action' | 'condition' | 'publish';
+export type WorkflowTabId = 'overview' | 'nodes' | 'integrations' | 'publish' | 'versions';
 export type WorkflowViewMode = 'list' | 'editor';
 export type FlowStatus = 'draft' | 'graying' | 'published' | 'retired';
 export type NodeKind = 'trigger' | 'tool' | 'agent' | 'condition' | 'end';

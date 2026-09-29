@@ -11,11 +11,11 @@ import type {
 } from '@/api/admin/workflows/schema';
 
 export const TABS: Array<{ id: WorkflowTabId; label: string }> = [
-  { id: 'overview', label: '工作流总览' },
-  { id: 'trigger', label: '触发器' },
-  { id: 'action', label: '动作节点' },
-  { id: 'condition', label: '条件分支' },
-  { id: 'publish', label: '发布与版本' },
+  { id: 'overview', label: '总览' },
+  { id: 'nodes', label: '节点库' },
+  { id: 'integrations', label: '集成' },
+  { id: 'publish', label: '发布' },
+  { id: 'versions', label: '版本' },
 ];
 
 export const TRIGGERS: TriggerType[] = ['消息触发', '定时触发', '事件触发', '手动触发'];
@@ -69,11 +69,18 @@ export function uid(prefix: string): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function countForTab(tabId: WorkflowTabId, flows: Array<{ status: FlowStatus; initialNodes: Array<{ data?: { kind?: NodeKind } }> }>): number {
+export function countForTab(
+  tabId: WorkflowTabId,
+  flows: Array<{ status: FlowStatus; initialNodes: Array<{ data?: { kind?: NodeKind } }>; boundAgents?: string[]; versions?: unknown[] }>,
+): number {
   if (tabId === 'overview') return flows.length;
-  if (tabId === 'trigger') return flows.length;
-  if (tabId === 'action') return flows.filter((f) => f.initialNodes.some((n) => n.data?.kind === 'tool' || n.data?.kind === 'agent')).length;
-  if (tabId === 'condition') return flows.filter((f) => f.initialNodes.some((n) => n.data?.kind === 'condition')).length;
+  if (tabId === 'nodes') return flows.length;
+  if (tabId === 'integrations') {
+    return flows.reduce((sum, f) => sum + (f.boundAgents?.length ?? 0), 0);
+  }
+  if (tabId === 'versions') {
+    return flows.reduce((sum, f) => sum + (f.versions?.length ?? 0), 0);
+  }
   return flows.filter((f) => f.status === 'published').length;
 }
 

@@ -1,17 +1,22 @@
 /**
  * FlowCard — 工作流总览 tab 中单个工作流卡片。
+ *
+ * 3 入口按钮:
+ * - 查看 → onView(id)
+ * - 编辑 → onEdit(id)
+ * - 新建工作流在 OverviewTab 顶部
  */
-import { Copy, Edit, Pause, Rocket, Workflow } from 'lucide-react';
+import { Copy, Edit, Eye, Rocket, Pause, Workflow } from 'lucide-react';
 import type { Flow } from '@/api/admin/workflows/schema';
 import { STATUS_BADGE, TRIGGER_BADGE } from './constants';
 
-export function FlowCard({ flow, onEnterEditor, onCopy, onPublish, onRetire, onView }: {
+export function FlowCard({ flow, onView, onEdit, onCopy, onPublish, onRetire }: {
   flow: Flow;
-  onEnterEditor: (f: Flow) => void;
+  onView: (id: string) => void;
+  onEdit: (id: string) => void;
   onCopy: (f: Flow) => void;
   onPublish: (f: Flow) => void;
   onRetire: (f: Flow) => void;
-  onView: (f: Flow) => void;
 }) {
   const TriggerIcon = TRIGGER_BADGE[flow.trigger].icon;
   const status = STATUS_BADGE[flow.status];
@@ -31,7 +36,7 @@ export function FlowCard({ flow, onEnterEditor, onCopy, onPublish, onRetire, onV
               <TriggerIcon className="h-3 w-3" />{TRIGGER_BADGE[flow.trigger].label}
             </span>
           </div>
-          <button type="button" onClick={() => onView(flow)} className="mt-2 text-left text-base font-semibold hover:text-[var(--brand)]">{flow.name}</button>
+          <button type="button" onClick={() => onView(flow.id)} className="mt-2 text-left text-base font-semibold hover:text-[var(--brand)]">{flow.name}</button>
           <p className="mt-2 text-xs leading-6 text-[var(--text-muted)]">{flow.description}</p>
           <div className="mt-4 grid grid-cols-3 gap-3 text-[11px]">
             <div className="rounded-lg bg-[var(--bg-elevated)] px-3 py-2">
@@ -57,11 +62,11 @@ export function FlowCard({ flow, onEnterEditor, onCopy, onPublish, onRetire, onV
         </div>
       </div>
       <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-[var(--border)] pt-4">
-        <button type="button" onClick={() => onEnterEditor(flow)} className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
-          <Edit className="h-3.5 w-3.5" />编辑
+        <button type="button" onClick={() => onView(flow.id)} className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]">
+          <Eye className="h-3.5 w-3.5" />查看
         </button>
-        <button type="button" onClick={() => onView(flow)} className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]">
-          查看
+        <button type="button" onClick={() => onEdit(flow.id)} className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
+          <Edit className="h-3.5 w-3.5" />编辑
         </button>
         <button type="button" onClick={() => onCopy(flow)} className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]">
           <Copy className="h-3.5 w-3.5" />复制

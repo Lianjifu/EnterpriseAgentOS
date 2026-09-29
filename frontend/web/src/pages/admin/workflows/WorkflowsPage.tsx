@@ -1,33 +1,38 @@
 /**
- * WorkflowsPage — 工作流管理 orchestrator(list + editor 视图, 5 tab + 4 modal + 1 drawer)。
+ * WorkflowsPage — 工作流管理 list hub(纯列表,不再持有内嵌 editor 状态)。
+ *
+ * 5 tab:总览 / 节点库 / 集成 / 发布 / 版本。
+ * 3 入口跳转:
+ * - 新建 → /admin/workflows/new(WorkflowCreatePage)
+ * - 查看 → /admin/workflows/:id(WorkflowDetailPage 只读)
+ * - 编辑 → /admin/workflows/:id?edit=1(WorkflowDetailPage 编辑模式)
+ *
+ * 列表内 modal:发布为工具 / 版本 / 节点配置(继续可用)。
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Boxes, CirclePlay, Plus } from 'lucide-react';
+import { Boxes } from 'lucide-react';
 import { NoticeBanner } from '@/components/feedback/NoticeBanner';
 import { useWorkflows, useWorkflowStats } from '@/api/admin/workflows';
 import type {
-  Flow, NodeTemplate, WorkflowTabId, WorkflowViewMode,
+  Flow, FlowNodeData, WorkflowTabId, NodeKind,
 } from '@/api/admin/workflows/schema';
 import type { Node } from 'reactflow';
-import type { FlowNodeData } from '@/api/admin/workflows/schema';
 import { TABS, countForTab, uid } from './components/constants';
 import { OverviewTab } from './components/tabs/OverviewTab';
-import { NodeTypeTab } from './components/tabs/NodeTypeTab';
+import { NodeLibraryTab } from './components/tabs/NodeLibraryTab';
+import { IntegrationsTab } from './components/tabs/IntegrationsTab';
 import { PublishTab } from './components/tabs/PublishTab';
-import { FlowEditor } from './components/FlowEditor';
-import { FlowDetailDrawer } from './components/FlowDetailDrawer';
+import { VersionsTab } from './components/tabs/VersionsTab';
 import { PublishAsToolModal } from './components/PublishAsToolModal';
 import { FlowVersionModal } from './components/FlowVersionModal';
 import { NodeConfigModal } from './components/NodeConfigModal';
 
 export default function WorkflowsPage() {
   const navigate = useNavigate();
-  const [view, setView] = useState<WorkflowViewMode>('list');
   const [tab, setTab] = useState<WorkflowTabId>('overview');
   const remoteFlows = useWorkflows().data ?? [];
   const [flows, setFlows] = useState<Flow[]>(remoteFlows);
-  const [activeFlowId, setActiveFlowId] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<Flow['status'] | 'all'>('all');
@@ -45,15 +50,10 @@ export default function WorkflowsPage() {
   const [nodeConfigOpen, setNodeConfigOpen] = useState(false);
   const [nodeConfigTarget, setNodeConfigTarget] = useState<Node<FlowNodeData> | null>(null);
 
-  const [detailFlow, setDetailFlow] = useState<Flow | null>(null);
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-
-  useEffect(() => setFlows(remoteFlows), [remoteFlows]);
-
-  const activeFlow = useMemo(
-    () => flows.find((f) => f.id === activeFlowId) || null,
-    [flows, activeFlowId],
-  );
+  // 用 effects 同步远端数据(防止 stale state)
+  useEffect(() => {
+    setFlows(remoteFlows);
+  }, [remoteFlows]);
 
   const counts = useWorkflowStats(flows);
 
@@ -62,8 +62,12 @@ export default function WorkflowsPage() {
     `${f.name} ${f.description} ${f.owner} ${f.scene}`.toLowerCase().includes(search.trim().toLowerCase()),
   ), [flows, statusFilter, search]);
 
+  // ───────────── 路由入口(3 入口) ─────────────
   const goCreate = () => navigate('/admin/workflows/new');
+  const goView = (id: string) => navigate(`/admin/workflows/${id}`);
+  const goEdit = (id: string) => navigate(`/admin/workflows/${id}?edit=1`);
 
+  // ───────────── 列表内 modal 行为 ─────────────
   const openPublish = (flow: Flow) => {
     setPublishFlow(flow);
     setToolId(flow.id.replace(/^wf-/, ''));
@@ -102,41 +106,34 @@ export default function WorkflowsPage() {
     setNotice(`已复制为「${flow.name} · 副本」。`);
   };
 
-  const enterEditor = (flow: Flow) => {
-    setActiveFlowId(flow.id);
-    setSelectedNodeId(null);
-    setView('editor');
-    setTab('overview');
-  };
-
-  const backToList = () => {
-    setView('list'); setActiveFlowId(null); setSelectedNodeId(null);
-  };
-
-  const openNodeConfig = (node: Node<FlowNodeData>) => {
-    setNodeConfigTarget(node); setNodeConfigOpen(true);
-  };
-
-  const addTemplateNode = (tpl: NodeTemplate) => {
-    if (!activeFlow) return;
+  // ───────────── 节点库 tab:加入画布 ─────────────
+  const addNodeToFlow = (seed: { kind: NodeKind; label: string; subtitle: string; defaults: Record<string, string> }, flow: Flow) => {
     const id = uid('n');
     const node: Node<FlowNodeData> = {
       id, type: 'flowNode',
       position: { x: 200 + Math.random() * 200, y: 80 + Math.random() * 200 },
-      data: { label: tpl.label, subtitle: tpl.subtitle, kind: tpl.kind, config: { ...tpl.defaults } },
+      data: { label: seed.label, subtitle: seed.subtitle, kind: seed.kind, config: { ...seed.defaults } },
     };
-    setFlows((prev) => prev.map((f) => f.id === activeFlow.id ? {
+    setFlows((prev) => prev.map((f) => f.id === flow.id ? {
       ...f, initialNodes: [...f.initialNodes, node], updatedAt: '刚刚',
     } : f));
-    setSelectedNodeId(id);
-    setView('editor');
-    setTab('overview');
-    setNotice(`已添加${tpl.label}节点到画布。`);
+    setNotice(`已将「${seed.label}」节点加入「${flow.name}」画布。`);
+  };
+
+  // ───────────── 集成 tab:绑定智能体 ─────────────
+  const bindAgentToFlow = (flowId: string, agentId: string) => {
+    setFlows((prev) => prev.map((f) => {
+      if (f.id !== flowId) return f;
+      if (f.boundAgents.includes(agentId)) return f;
+      return { ...f, boundAgents: [...f.boundAgents, agentId], updatedAt: '刚刚' };
+    }));
+    const flow = flows.find((f) => f.id === flowId);
+    setNotice(`已绑定智能体到「${flow?.name ?? flowId}」。`);
   };
 
   return (
     <div className="workflow-page mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-10">
-      <section className="relative overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--surface-1)] px-6 py-8 shadow-[var(--shadow-sm)] sm:px-8">
+      <section className="relative overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--surface-1)] px-6 py-7 shadow-[var(--shadow-sm)] sm:px-8">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px]">
           <div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.12),transparent_68%)]" />
         </div>
@@ -148,27 +145,8 @@ export default function WorkflowsPage() {
               用画布把触发器、工具调用、条件分支、结束节点串成可执行的工作流;可发布为工具,被任意智能体按需调用。
             </p>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => view === 'editor' ? backToList() : null}
-                disabled={view !== 'editor'}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--brand)] hover:text-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {view === 'editor' ? <><ArrowRight className="h-3.5 w-3.5 rotate-180" />返回列表</> : <><CirclePlay className="h-3.5 w-3.5" />查看工作流</>}
-              </button>
-              <button
-                type="button"
-                onClick={goCreate}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 text-xs font-semibold text-white transition hover:bg-[var(--brand-hover)]"
-              >
-                <Plus className="h-4 w-4" />新建工作流
-              </button>
-            </div>
-            <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-              <Boxes className="h-3 w-3" />{flows.length} 个工作流 · 已发布 {counts.published}
-            </div>
+          <div className="flex items-center gap-1.5 self-end text-[10px] text-[var(--text-muted)]">
+            <Boxes className="h-3 w-3" />{flows.length} 个工作流 · 已发布 {counts.published}
           </div>
         </div>
       </section>
@@ -179,63 +157,47 @@ export default function WorkflowsPage() {
         </NoticeBanner>
       )}
 
-      {view === 'editor' && activeFlow ? (
-        <FlowEditor
-          flow={activeFlow}
-          selectedNodeId={selectedNodeId}
-          setSelectedNodeId={setSelectedNodeId}
-          setFlows={setFlows}
-          onOpenNodeConfig={openNodeConfig}
-          onPublish={() => openPublish(activeFlow)}
-          onVersions={() => { setVersionFlow(activeFlow); setVersionOpen(true); }}
-          onBack={backToList}
-          setNotice={setNotice}
-        />
-      ) : (
-        <>
-          <section aria-label="子模块导航" className="flex flex-wrap items-center gap-2 overflow-x-auto pb-1">
-            {TABS.map((t) => {
-              const count = countForTab(t.id, flows);
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setTab(t.id)}
-                  aria-pressed={tab === t.id}
-                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-semibold transition ${tab === t.id ? 'border-[var(--brand)] bg-[var(--brand-light)] text-[var(--brand)]' : 'border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]'}`}
-                >
-                  {t.label}
-                  <span className="rounded bg-[var(--bg-elevated)] px-1.5 py-0.5 text-[10px] tabular-nums">{count}</span>
-                </button>
-              );
-            })}
-          </section>
+      <section aria-label="子模块导航" className="flex flex-wrap items-center gap-2 overflow-x-auto pb-1">
+        {TABS.map((t) => {
+          const count = countForTab(t.id, flows);
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              aria-pressed={tab === t.id}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-semibold transition ${tab === t.id ? 'border-[var(--brand)] bg-[var(--brand-light)] text-[var(--brand)]' : 'border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]'}`}
+            >
+              {t.label}
+              <span className="rounded bg-[var(--bg-elevated)] px-1.5 py-0.5 text-[10px] tabular-nums">{count}</span>
+            </button>
+          );
+        })}
+      </section>
 
-          {tab === 'overview' && (
-            <OverviewTab
-              flows={visibleFlows}
-              allFlows={flows}
-              search={search}
-              setSearch={setSearch}
-              statusFilter={statusFilter}
-              setStatusFilter={setStatusFilter}
-              onEnterEditor={enterEditor}
-              onCopy={copyFlow}
-              onPublish={openPublish}
-              onRetire={retireFlow}
-              onView={setDetailFlow}
-              onCreate={goCreate}
-              counts={counts}
-            />
-          )}
-          {tab === 'trigger' && <NodeTypeTab type="trigger" onAddTemplate={addTemplateNode} />}
-          {tab === 'action' && <NodeTypeTab type="action" onAddTemplate={addTemplateNode} />}
-          {tab === 'condition' && <NodeTypeTab type="condition" onAddTemplate={addTemplateNode} />}
-          {tab === 'publish' && (
-            <PublishTab flows={flows} onVersions={(f) => { setVersionFlow(f); setVersionOpen(true); }} onPublish={openPublish} />
-          )}
-        </>
+      {tab === 'overview' && (
+        <OverviewTab
+          flows={visibleFlows}
+          allFlows={flows}
+          search={search}
+          setSearch={setSearch}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          onView={goView}
+          onEdit={goEdit}
+          onCopy={copyFlow}
+          onPublish={openPublish}
+          onRetire={retireFlow}
+          onCreate={goCreate}
+          counts={counts}
+        />
       )}
+      {tab === 'nodes' && <NodeLibraryTab flows={flows} onAddToFlow={addNodeToFlow} />}
+      {tab === 'integrations' && <IntegrationsTab flows={flows} onBindAgent={bindAgentToFlow} />}
+      {tab === 'publish' && (
+        <PublishTab flows={flows} onVersions={(f) => { setVersionFlow(f); setVersionOpen(true); }} onPublish={openPublish} />
+      )}
+      {tab === 'versions' && <VersionsTab flows={flows} />}
 
       <PublishAsToolModal
         open={publishOpen}
@@ -259,16 +221,17 @@ export default function WorkflowsPage() {
         onClose={() => setNodeConfigOpen(false)}
         node={nodeConfigTarget}
         onSave={(updated) => {
-          if (!activeFlow) return;
-          setFlows((prev) => prev.map((f) => f.id === activeFlow.id ? {
-            ...f, initialNodes: f.initialNodes.map((n) => n.id === updated.id ? updated : n),
-            updatedAt: '刚刚',
-          } : f));
+          setFlows((prev) => prev.map((f) => {
+            const hasNode = f.initialNodes.some((n) => n.id === updated.id);
+            if (!hasNode) return f;
+            return {
+              ...f, initialNodes: f.initialNodes.map((n) => n.id === updated.id ? updated : n),
+              updatedAt: '刚刚',
+            };
+          }));
           setNotice(`已保存节点「${updated.data.label}」的配置。`);
         }}
       />
-
-      <FlowDetailDrawer flow={detailFlow} onClose={() => setDetailFlow(null)} />
     </div>
   );
 }

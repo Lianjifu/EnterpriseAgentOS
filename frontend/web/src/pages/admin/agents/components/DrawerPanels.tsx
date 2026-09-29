@@ -14,12 +14,14 @@ import { useAdminSkills } from '@/api/admin/skills/useAdminSkills';
 import { useKnowledgeBases } from '@/api/admin/knowledge/useKnowledge';
 import { useL1Sessions, useL2Facts, useL3Entries, useRetentionPolicies } from '@/api/admin/memory/useMemory';
 import { useWorkflows } from '@/api/admin/workflows/useWorkflows';
-import { EvalProgress } from './Primitives';
+import { EvalProgress, PanelPagination } from './Primitives';
 import { MarkdownView } from './MarkdownView';
 import {
   DOCUMENT_TARGET_LIMITS, MEMORY_RETENTION_OPTIONS, MEMORY_SCOPE_OPTIONS,
   PROMPT_DOCS, PROMPT_SNIPPETS, statusBadge, toneClass,
 } from './constants';
+
+const PANEL_PAGE_SIZE = 5;
 
 export function DrawerPanelBasic({ draft, onChange }: { draft: AgentEntry; onChange: (patch: Partial<AgentEntry>) => void }) {
   const update = (patch: Partial<AgentEntry>) => onChange(patch);
@@ -348,6 +350,17 @@ export function DrawerPanelSkills({ draft, onChange }: { draft: AgentEntry; onCh
     draft.tools.forEach((t) => { out[t.type] = (out[t.type] ?? 0) + 1; });
     return out;
   }, [draft.tools]);
+  const mergedList = useMemo(() => [...mySkills, ...unbound], [mySkills, unbound]);
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(mergedList.length / PANEL_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = useMemo(
+    () => mergedList.slice((safePage - 1) * PANEL_PAGE_SIZE, safePage * PANEL_PAGE_SIZE),
+    [mergedList, safePage],
+  );
+  const pageStart = mergedList.length === 0 ? 0 : (safePage - 1) * PANEL_PAGE_SIZE + 1;
+  const pageEnd = Math.min(safePage * PANEL_PAGE_SIZE, mergedList.length);
+  useEffect(() => { setPage(1); }, [draft.id]);
   const toggle = (skill: typeof skills[number]) => {
     const exists = draft.tools.some((t) => t.id === skill.id);
     if (exists) {
@@ -385,7 +398,7 @@ export function DrawerPanelSkills({ draft, onChange }: { draft: AgentEntry; onCh
           </div>
         </header>
         <ul className="mt-3 space-y-2">
-          {[...mySkills, ...unbound].map((skill) => {
+          {paged.map((skill) => {
             const isMine = draft.tools.some((t) => t.id === skill.id);
             const enabled = enabledMap.get(skill.id) ?? false;
             const kindTone = skill.type === 'Skill' ? 'brand' : skill.type === 'MCP' ? 'purple' : 'info';
@@ -421,6 +434,14 @@ export function DrawerPanelSkills({ draft, onChange }: { draft: AgentEntry; onCh
             );
           })}
         </ul>
+        <PanelPagination
+          page={page}
+          totalPages={totalPages}
+          total={mergedList.length}
+          pageStart={pageStart}
+          pageEnd={pageEnd}
+          onPageChange={setPage}
+        />
       </section>
     </div>
   );
@@ -1034,6 +1055,16 @@ export function DrawerPanelKnowledge({ draft, onChange }: { draft: AgentEntry; o
     if (sourceFilter === '全部') return kbs;
     return kbs.filter((kb) => kb.scope === sourceFilter);
   }, [kbs, sourceFilter]);
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PANEL_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = useMemo(
+    () => filtered.slice((safePage - 1) * PANEL_PAGE_SIZE, safePage * PANEL_PAGE_SIZE),
+    [filtered, safePage],
+  );
+  const pageStart = filtered.length === 0 ? 0 : (safePage - 1) * PANEL_PAGE_SIZE + 1;
+  const pageEnd = Math.min(safePage * PANEL_PAGE_SIZE, filtered.length);
+  useEffect(() => { setPage(1); }, [sourceFilter, draft.id]);
   const toggle = (id: string) => {
     const next = draft.knowledgeRefs.find((r) => r.id === id)
       ? draft.knowledgeRefs.map((r) => r.id === id ? { ...r, enabled: !r.enabled } : r)
@@ -1078,9 +1109,9 @@ export function DrawerPanelKnowledge({ draft, onChange }: { draft: AgentEntry; o
           </label>
         </header>
         <ul className="mt-3 space-y-2">
-          {filtered.length === 0 ? (
+          {paged.length === 0 ? (
             <li className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-app)] p-4 text-center text-[11px] text-[var(--text-muted)]">该范围下暂无知识库</li>
-          ) : filtered.map((kb) => {
+          ) : paged.map((kb) => {
             const isBound = draft.knowledgeRefs.some((r) => r.id === kb.id);
             const enabled = enabledMap.get(kb.id) ?? false;
             return (
@@ -1115,6 +1146,14 @@ export function DrawerPanelKnowledge({ draft, onChange }: { draft: AgentEntry; o
             );
           })}
         </ul>
+        <PanelPagination
+          page={page}
+          totalPages={totalPages}
+          total={filtered.length}
+          pageStart={pageStart}
+          pageEnd={pageEnd}
+          onPageChange={setPage}
+        />
       </section>
     </div>
   );
@@ -1256,6 +1295,17 @@ export function DrawerPanelFlow({ draft, onChange }: { draft: AgentEntry; onChan
     onChange(next);
   };
   const unbound = useMemo(() => flows.filter((f) => !boundFlows.some((b) => b.id === f.id)), [flows, boundFlows]);
+  const mergedList = useMemo(() => [...boundFlows, ...unbound], [boundFlows, unbound]);
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(mergedList.length / PANEL_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = useMemo(
+    () => mergedList.slice((safePage - 1) * PANEL_PAGE_SIZE, safePage * PANEL_PAGE_SIZE),
+    [mergedList, safePage],
+  );
+  const pageStart = mergedList.length === 0 ? 0 : (safePage - 1) * PANEL_PAGE_SIZE + 1;
+  const pageEnd = Math.min(safePage * PANEL_PAGE_SIZE, mergedList.length);
+  useEffect(() => { setPage(1); }, [draft.id]);
   return (
     <div className="space-y-4">
       <PanelHero
@@ -1278,7 +1328,7 @@ export function DrawerPanelFlow({ draft, onChange }: { draft: AgentEntry; onChan
           <span className="text-[10px] text-[var(--text-muted)]">本智能体绑定 {draft.flowRefs.length} / {flows.length}</span>
         </header>
         <ul className="mt-3 space-y-2">
-          {[...boundFlows, ...unbound].map((flow) => {
+          {paged.map((flow) => {
             const isBound = draft.flowRefs.some((r) => r.id === flow.id);
             const enabled = enabledMap.get(flow.id) ?? false;
             return (
@@ -1313,6 +1363,14 @@ export function DrawerPanelFlow({ draft, onChange }: { draft: AgentEntry; onChan
             );
           })}
         </ul>
+        <PanelPagination
+          page={page}
+          totalPages={totalPages}
+          total={mergedList.length}
+          pageStart={pageStart}
+          pageEnd={pageEnd}
+          onPageChange={setPage}
+        />
       </section>
     </div>
   );

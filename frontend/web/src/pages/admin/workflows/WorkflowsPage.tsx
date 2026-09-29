@@ -1,41 +1,32 @@
 /**
  * WorkflowsPage — 工作流管理 list hub(纯列表,不再持有内嵌 editor 状态)。
  *
- * 5 tab:总览 / 节点库 / 集成 / 发布 / 版本。
+ * 5 tab(状态过滤器):全部 / 草稿 / 灰度中 / 已发布 / 已下线。
  * 3 入口跳转:
  * - 新建 → /admin/workflows/new(WorkflowCreatePage)
  * - 查看 → /admin/workflows/:id(WorkflowDetailPage 只读)
  * - 编辑 → /admin/workflows/:id?edit=1(WorkflowDetailPage 编辑模式)
  *
- * 列表内 modal:发布为工具 / 版本 / 节点配置(继续可用)。
+ * 列表内 modal:发布为工具(FlowCard 「发布为工具」触发)。
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Boxes } from 'lucide-react';
 import { NoticeBanner } from '@/components/feedback/NoticeBanner';
-import { useWorkflows, useWorkflowStats } from '@/api/admin/workflows';
-import type {
-  Flow, FlowNodeData, WorkflowTabId, NodeKind,
-} from '@/api/admin/workflows/schema';
+import { useWorkflows } from '@/api/admin/workflows';
+import type { Flow, FlowNodeData, NodeKind, WorkflowTabId } from '@/api/admin/workflows/schema';
 import type { Node } from 'reactflow';
-import { TABS, countForTab, uid } from './components/constants';
+import { TABS, countForTab, uid, NODE_TEMPLATES } from './components/constants';
 import { OverviewTab } from './components/tabs/OverviewTab';
-import { NodeLibraryTab } from './components/tabs/NodeLibraryTab';
-import { IntegrationsTab } from './components/tabs/IntegrationsTab';
-import { PublishTab } from './components/tabs/PublishTab';
-import { VersionsTab } from './components/tabs/VersionsTab';
 import { PublishAsToolModal } from './components/PublishAsToolModal';
-import { FlowVersionModal } from './components/FlowVersionModal';
-import { NodeConfigModal } from './components/NodeConfigModal';
 
 export default function WorkflowsPage() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<WorkflowTabId>('overview');
+  const [tab, setTab] = useState<WorkflowTabId>('all');
   const remoteFlows = useWorkflows().data ?? [];
   const [flows, setFlows] = useState<Flow[]>(remoteFlows);
   const [notice, setNotice] = useState('');
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<Flow['status'] | 'all'>('all');
 
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishFlow, setPublishFlow] = useState<Flow | null>(null);
@@ -44,23 +35,19 @@ export default function WorkflowsPage() {
   const [toolInput, setToolInput] = useState('query:string:true');
   const [toolOutput, setToolOutput] = useState('result:string:true');
 
-  const [versionOpen, setVersionOpen] = useState(false);
-  const [versionFlow, setVersionFlow] = useState<Flow | null>(null);
-
-  const [nodeConfigOpen, setNodeConfigOpen] = useState(false);
-  const [nodeConfigTarget, setNodeConfigTarget] = useState<Node<FlowNodeData> | null>(null);
-
   // 用 effects 同步远端数据(防止 stale state)
   useEffect(() => {
     setFlows(remoteFlows);
   }, [remoteFlows]);
 
-  const counts = useWorkflowStats(flows);
+  const publishedCount = useMemo(() => flows.filter((f) => f.status === 'published').length, [flows]);
 
-  const visibleFlows = useMemo(() => flows.filter((f) =>
-    (statusFilter === 'all' || f.status === statusFilter) &&
-    `${f.name} ${f.description} ${f.owner} ${f.scene}`.toLowerCase().includes(search.trim().toLowerCase()),
-  ), [flows, statusFilter, search]);
+  const visibleFlows = useMemo(() => {
+    const base = tab === 'all' ? flows : flows.filter((f) => f.status === tab);
+    if (!search.trim()) return base;
+    const q = search.trim().toLowerCase();
+    return base.filter((f) => `${f.name} ${f.description} ${f.owner} ${f.scene}`.toLowerCase().includes(q));
+  }, [flows, tab, search]);
 
   // ───────────── 路由入口(3 入口) ─────────────
   const goCreate = () => navigate('/admin/workflows/new');
@@ -106,29 +93,20 @@ export default function WorkflowsPage() {
     setNotice(`已复制为「${flow.name} · 副本」。`);
   };
 
-  // ───────────── 节点库 tab:加入画布 ─────────────
-  const addNodeToFlow = (seed: { kind: NodeKind; label: string; subtitle: string; defaults: Record<string, string> }, flow: Flow) => {
+  // ───────────── 列表侧添加节点(FlowCard 「+ 添加节点」) ─────────────
+  const addNodeToFlow = (flow: Flow, kind: NodeKind) => {
+    const template = NODE_TEMPLATES.find((t) => t.kind === kind);
+    if (!template) return;
     const id = uid('n');
     const node: Node<FlowNodeData> = {
       id, type: 'flowNode',
       position: { x: 200 + Math.random() * 200, y: 80 + Math.random() * 200 },
-      data: { label: seed.label, subtitle: seed.subtitle, kind: seed.kind, config: { ...seed.defaults } },
+      data: { label: template.label, subtitle: template.subtitle, kind: template.kind, config: { ...template.defaults } },
     };
     setFlows((prev) => prev.map((f) => f.id === flow.id ? {
       ...f, initialNodes: [...f.initialNodes, node], updatedAt: '刚刚',
     } : f));
-    setNotice(`已将「${seed.label}」节点加入「${flow.name}」画布。`);
-  };
-
-  // ───────────── 集成 tab:绑定智能体 ─────────────
-  const bindAgentToFlow = (flowId: string, agentId: string) => {
-    setFlows((prev) => prev.map((f) => {
-      if (f.id !== flowId) return f;
-      if (f.boundAgents.includes(agentId)) return f;
-      return { ...f, boundAgents: [...f.boundAgents, agentId], updatedAt: '刚刚' };
-    }));
-    const flow = flows.find((f) => f.id === flowId);
-    setNotice(`已绑定智能体到「${flow?.name ?? flowId}」。`);
+    setNotice(`已将「${template.label}」节点加入「${flow.name}」画布,可在「编辑」中调整位置。`);
   };
 
   return (
@@ -146,7 +124,7 @@ export default function WorkflowsPage() {
             </p>
           </div>
           <div className="flex items-center gap-1.5 self-end text-[10px] text-[var(--text-muted)]">
-            <Boxes className="h-3 w-3" />{flows.length} 个工作流 · 已发布 {counts.published}
+            <Boxes className="h-3 w-3" />{flows.length} 个工作流 · 已发布 {publishedCount}
           </div>
         </div>
       </section>
@@ -175,29 +153,19 @@ export default function WorkflowsPage() {
         })}
       </section>
 
-      {tab === 'overview' && (
-        <OverviewTab
-          flows={visibleFlows}
-          allFlows={flows}
-          search={search}
-          setSearch={setSearch}
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-          onView={goView}
-          onEdit={goEdit}
-          onCopy={copyFlow}
-          onPublish={openPublish}
-          onRetire={retireFlow}
-          onCreate={goCreate}
-          counts={counts}
-        />
-      )}
-      {tab === 'nodes' && <NodeLibraryTab flows={flows} onAddToFlow={addNodeToFlow} />}
-      {tab === 'integrations' && <IntegrationsTab flows={flows} onBindAgent={bindAgentToFlow} />}
-      {tab === 'publish' && (
-        <PublishTab flows={flows} onVersions={(f) => { setVersionFlow(f); setVersionOpen(true); }} onPublish={openPublish} />
-      )}
-      {tab === 'versions' && <VersionsTab flows={flows} />}
+      <OverviewTab
+        flows={visibleFlows}
+        search={search}
+        setSearch={setSearch}
+        statusTab={tab}
+        onView={goView}
+        onEdit={goEdit}
+        onCopy={copyFlow}
+        onPublish={openPublish}
+        onRetire={retireFlow}
+        onCreate={goCreate}
+        onAddNode={addNodeToFlow}
+      />
 
       <PublishAsToolModal
         open={publishOpen}
@@ -208,29 +176,6 @@ export default function WorkflowsPage() {
         toolInput={toolInput} setToolInput={setToolInput}
         toolOutput={toolOutput} setToolOutput={setToolOutput}
         onSubmit={submitPublish}
-      />
-
-      <FlowVersionModal
-        open={versionOpen}
-        onClose={() => setVersionOpen(false)}
-        flow={versionFlow}
-      />
-
-      <NodeConfigModal
-        open={nodeConfigOpen}
-        onClose={() => setNodeConfigOpen(false)}
-        node={nodeConfigTarget}
-        onSave={(updated) => {
-          setFlows((prev) => prev.map((f) => {
-            const hasNode = f.initialNodes.some((n) => n.id === updated.id);
-            if (!hasNode) return f;
-            return {
-              ...f, initialNodes: f.initialNodes.map((n) => n.id === updated.id ? updated : n),
-              updatedAt: '刚刚',
-            };
-          }));
-          setNotice(`已保存节点「${updated.data.label}」的配置。`);
-        }}
       />
     </div>
   );

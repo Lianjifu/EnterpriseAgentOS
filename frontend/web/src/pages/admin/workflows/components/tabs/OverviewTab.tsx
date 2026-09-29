@@ -1,44 +1,36 @@
 /**
- * OverviewTab — 工作流总览(搜索 + 状态过滤 + 卡片网格 + 「新建工作流」入口)。
+ * OverviewTab — 工作流总览(搜索 + FlowCard 网格 + 「新建工作流」入口)。
  *
- * 卡片 3 入口:
+ * 父级(WorkflowsPage)持有 5 个状态 tab 作为顶部导航,本组件根据 `statusTab`
+ * 渲染对应标题与空态文案。
+ *
+ * 卡片入口:
  * - 查看 → onView(id)
  * - 编辑 → onEdit(id)
- * - 新建工作流 → onCreate()(顶部按钮)
+ * - + 添加节点 → onAddNode(flow, kind)(列表侧快速添加)
  */
 import { Plus, Search, Workflow } from 'lucide-react';
-import type { Flow, FlowStatus, WorkflowStats } from '@/api/admin/workflows/schema';
+import type { Flow, NodeKind, WorkflowTabId } from '@/api/admin/workflows/schema';
 import { FlowCard } from '../FlowCard';
-
-const STATUSES: Array<{ id: FlowStatus | 'all'; label: string }> = [
-  { id: 'all', label: '全部' },
-  { id: 'draft', label: '草稿' },
-  { id: 'graying', label: '灰度中' },
-  { id: 'published', label: '已发布' },
-  { id: 'retired', label: '已下线' },
-];
 
 interface OverviewTabProps {
   flows: Flow[];
-  allFlows: Flow[];
   search: string;
   setSearch: (v: string) => void;
-  statusFilter: FlowStatus | 'all';
-  setStatusFilter: (v: FlowStatus | 'all') => void;
+  statusTab: WorkflowTabId;
   onView: (id: string) => void;
   onEdit: (id: string) => void;
   onCopy: (f: Flow) => void;
   onPublish: (f: Flow) => void;
   onRetire: (f: Flow) => void;
   onCreate: () => void;
-  counts: WorkflowStats;
+  onAddNode: (f: Flow, kind: NodeKind) => void;
 }
 
 export function OverviewTab({
-  flows, search, setSearch, statusFilter, setStatusFilter,
-  onView, onEdit, onCopy, onPublish, onRetire, onCreate, counts,
+  flows, search, setSearch, statusTab,
+  onView, onEdit, onCopy, onPublish, onRetire, onCreate, onAddNode,
 }: OverviewTabProps) {
-  void counts;
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5">
@@ -46,7 +38,7 @@ export function OverviewTab({
           <div>
             <h3 className="flex items-center gap-2 text-base font-semibold">
               <Workflow className="h-4 w-4 text-amber-600" />
-              工作流列表
+              {titleForTab(statusTab)}
             </h3>
             <p className="mt-1 text-xs text-[var(--text-muted)]">
               点击「查看」打开工作流详情页;点击「编辑」直接进入画布;点击右上「新建工作流」从空白开始。
@@ -72,21 +64,6 @@ export function OverviewTab({
             </button>
           </div>
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <div role="group" aria-label="工作流状态筛选" className="flex gap-1 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-1">
-            {STATUSES.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                aria-pressed={statusFilter === s.id}
-                onClick={() => setStatusFilter(s.id)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${statusFilter === s.id ? 'bg-[var(--text)] text-[var(--surface-1)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)]'}`}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-        </div>
 
         <div className="mt-5 grid gap-4 lg:grid-cols-2">
           {flows.map((flow) => (
@@ -98,17 +75,42 @@ export function OverviewTab({
               onCopy={onCopy}
               onPublish={onPublish}
               onRetire={onRetire}
+              onAddNode={onAddNode}
             />
           ))}
         </div>
         {flows.length === 0 && (
           <div className="mt-5 rounded-2xl border border-dashed border-[var(--border-strong)] bg-[var(--surface-1)] p-12 text-center">
             <Search className="mx-auto h-6 w-6 text-[var(--text-muted)]" />
-            <p className="mt-3 text-sm font-semibold">没有匹配的工作流</p>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">尝试其他关键词或状态。</p>
+            <p className="mt-3 text-sm font-semibold">{emptyTitleForTab(statusTab)}</p>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">{emptyHintForTab(statusTab)}</p>
           </div>
         )}
       </section>
     </div>
   );
+}
+
+function titleForTab(tab: WorkflowTabId): string {
+  if (tab === 'all') return '工作流列表';
+  if (tab === 'draft') return '草稿工作流';
+  if (tab === 'graying') return '灰度中的工作流';
+  if (tab === 'published') return '已发布的工作流';
+  return '已下线的工作流';
+}
+
+function emptyTitleForTab(tab: WorkflowTabId): string {
+  if (tab === 'draft') return '没有草稿工作流';
+  if (tab === 'graying') return '没有灰度中的工作流';
+  if (tab === 'published') return '没有已发布的工作流';
+  if (tab === 'retired') return '没有已下线的工作流';
+  return '没有匹配的工作流';
+}
+
+function emptyHintForTab(tab: WorkflowTabId): string {
+  if (tab === 'draft') return '新建一个工作流开始设计。';
+  if (tab === 'graying') return '从草稿发布为工具后会进入灰度。';
+  if (tab === 'published') return '发布为工具后,工作流会出现在这里。';
+  if (tab === 'retired') return '下线的工作流会在此处保留。';
+  return '尝试其他关键词。';
 }

@@ -1,5 +1,5 @@
 /**
- * AdminWorkflows — 渲染 + 5 tab 切换 + 3 入口跳转(mock useNavigate)。
+ * AdminWorkflows — 渲染 + 5 状态 tab 切换 + 3 入口跳转(mock useNavigate)。
  */
 import { describe, expect, it, afterEach, vi } from 'vitest';
 import { cleanup, screen, waitFor, within } from '@testing-library/react';
@@ -32,46 +32,19 @@ function renderPage() {
 }
 
 describe('AdminWorkflows', () => {
-  it('渲染 hero + 5 子模块标签 + 默认 overview', () => {
+  it('渲染 hero + 5 状态 tab + 默认 全部', () => {
     renderPage();
     expect(screen.getByText(/把可复用的工作流设计出来/)).toBeTruthy();
     expect(screen.getByText('工作流列表')).toBeTruthy();
-  });
-
-  it('切换到节点库 tab 显示 5 类节点', async () => {
-    renderPage();
     const nav = screen.getByLabelText('子模块导航');
-    within(nav).getByRole('button', { name: /节点库/ }).click();
-    await waitFor(() => {
-      expect(screen.getByText('节点库')).toBeTruthy();
+    ['全部', '草稿', '灰度中', '已发布', '已下线'].forEach((label) => {
+      expect(within(nav).getByRole('button', { name: new RegExp(label) })).toBeTruthy();
     });
   });
 
-  it('切换到集成 tab 显示绑定表', async () => {
+  it('默认 tab 是 全部 + 渲染 FlowCard', () => {
     renderPage();
-    const nav = screen.getByLabelText('子模块导航');
-    within(nav).getByRole('button', { name: /集成/ }).click();
-    await waitFor(() => {
-      expect(screen.getByText(/工作流 × 智能体 绑定/)).toBeTruthy();
-    });
-  });
-
-  it('切换到发布 tab 显示已发布区', async () => {
-    renderPage();
-    const nav = screen.getByLabelText('子模块导航');
-    within(nav).getByRole('button', { name: /发布/ }).click();
-    await waitFor(() => {
-      expect(screen.getByText('已发布为工具的工作流')).toBeTruthy();
-    });
-  });
-
-  it('切换到版本 tab 显示版本历史表', async () => {
-    renderPage();
-    const nav = screen.getByLabelText('子模块导航');
-    within(nav).getByRole('button', { name: /版本/ }).click();
-    await waitFor(() => {
-      expect(screen.getByText(/版本历史/)).toBeTruthy();
-    });
+    expect(screen.getByText('工作流列表')).toBeTruthy();
   });
 
   it('FlowCard 查看按钮 → /admin/workflows/:id', () => {
@@ -95,6 +68,19 @@ describe('AdminWorkflows', () => {
     const firstFlow = mockFlows[0];
     screen.getByRole('button', { name: firstFlow.name }).click();
     expect(navigateMock).toHaveBeenCalledWith(`/admin/workflows/${firstFlow.id}`);
+  });
+
+  it('FlowCard 「+ 添加节点」 弹出 5 类节点菜单', async () => {
+    renderPage();
+    const triggers = screen.getAllByRole('button', { name: /添加节点/ });
+    triggers[0].click();
+    await waitFor(() => {
+      expect(screen.getAllByRole('menuitem', { name: /触发器/ }).length).toBeGreaterThan(0);
+    });
+    expect(screen.getAllByRole('menuitem', { name: /^工具/ }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('menuitem', { name: /智能体/ }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('menuitem', { name: /条件/ }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('menuitem', { name: /结束/ }).length).toBeGreaterThan(0);
   });
 
   it('OverviewTab 新建工作流按钮 → /admin/workflows/new', () => {

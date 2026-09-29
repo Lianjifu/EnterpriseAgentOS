@@ -11,11 +11,11 @@ import type {
 } from '@/api/admin/workflows/schema';
 
 export const TABS: Array<{ id: WorkflowTabId; label: string }> = [
-  { id: 'overview', label: '总览' },
-  { id: 'nodes', label: '节点库' },
-  { id: 'integrations', label: '集成' },
-  { id: 'publish', label: '发布' },
-  { id: 'versions', label: '版本' },
+  { id: 'all', label: '全部' },
+  { id: 'draft', label: '草稿' },
+  { id: 'graying', label: '灰度中' },
+  { id: 'published', label: '已发布' },
+  { id: 'retired', label: '已下线' },
 ];
 
 export const TRIGGERS: TriggerType[] = ['消息触发', '定时触发', '事件触发', '手动触发'];
@@ -69,19 +69,9 @@ export function uid(prefix: string): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function countForTab(
-  tabId: WorkflowTabId,
-  flows: Array<{ status: FlowStatus; initialNodes: Array<{ data?: { kind?: NodeKind } }>; boundAgents?: string[]; versions?: unknown[] }>,
-): number {
-  if (tabId === 'overview') return flows.length;
-  if (tabId === 'nodes') return flows.length;
-  if (tabId === 'integrations') {
-    return flows.reduce((sum, f) => sum + (f.boundAgents?.length ?? 0), 0);
-  }
-  if (tabId === 'versions') {
-    return flows.reduce((sum, f) => sum + (f.versions?.length ?? 0), 0);
-  }
-  return flows.filter((f) => f.status === 'published').length;
+export function countForTab(tabId: WorkflowTabId, flows: Array<{ status: FlowStatus }>): number {
+  if (tabId === 'all') return flows.length;
+  return flows.filter((f) => f.status === tabId).length;
 }
 
 export function nodeKindIcon(kind: NodeKind) {

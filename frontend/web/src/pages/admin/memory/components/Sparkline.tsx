@@ -21,7 +21,7 @@ export function Sparkline({ values, tone = 'brand' }: { values: number[]; tone?:
         const heightPct = Math.max(6, Math.round((v / max) * 100));
         const isLatest = idx === list.length - 1;
         return (
-          <div key={idx} className="group relative flex flex-1 flex-col items-center justify-end">
+          <div key={idx} className="group relative flex h-full flex-1 flex-col items-center justify-end">
             <div
               className="w-full rounded-t transition-colors"
               style={{

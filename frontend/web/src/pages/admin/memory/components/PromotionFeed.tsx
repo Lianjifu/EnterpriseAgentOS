@@ -31,7 +31,7 @@ export function PromotionFeed({ events, limit = 8 }: { events: PromotionEvent[];
         ))}
       </ul>
       {events.length > visible.length && (
-        <p className="mt-3 text-center text-[11px] text-[var(--text-muted)]">还有 {events.length - visible.length} 条 · 前往 L1 / L2 / L3 Tab 查看完整时间线</p>
+        <p className="mt-3 text-center text-[11px] text-[var(--text-muted)]">还有 {events.length - visible.length} 条 · 前往 短期 / 长期 / 知识 Tab 查看完整时间线</p>
       )}
     </div>
   );

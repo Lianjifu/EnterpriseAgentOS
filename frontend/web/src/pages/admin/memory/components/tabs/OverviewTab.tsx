@@ -69,7 +69,7 @@ export function OverviewTab({
           <div className="grid gap-3 sm:grid-cols-3">
             <TrendCard
               icon={l1Meta.icon}
-              title={`L1 ${l1Meta.label} · 活跃`}
+              title={`${l1Meta.label} · 活跃`}
               current={l1Latest}
               unit="活跃会话"
               tone="info"
@@ -78,21 +78,21 @@ export function OverviewTab({
             />
             <TrendCard
               icon={l2Meta.icon}
-              title={`L2 ${l2Meta.label} · 命中`}
+              title={`${l2Meta.label} · 命中`}
               current={l2Latest}
               unit="本周命中"
               tone="purple"
               values={trend.l2Hits}
-              hint="8 期 L2 命中次数"
+              hint="8 期长期记忆命中次数"
             />
             <TrendCard
               icon={l3Meta.icon}
-              title={`L3 ${l3Meta.label} · 命中`}
+              title={`${l3Meta.label} · 命中`}
               current={l3Latest}
               unit="本周命中"
               tone="brand"
               values={trend.l3Hits}
-              hint="8 期 L3 命中次数"
+              hint="8 期知识记忆命中次数"
             />
           </div>
 
@@ -100,7 +100,7 @@ export function OverviewTab({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-semibold">待办工作流</h3>
-                <p className="mt-1 text-xs text-[var(--text-muted)]">从 L2 候选中快速放行,或将 L3 草稿发布上线</p>
+                <p className="mt-1 text-xs text-[var(--text-muted)]">从长期候选中快速放行,或将知识草稿发布上线</p>
               </div>
               <span className="text-[10px] text-[var(--text-muted)]">{pendingTotal} 项待处理</span>
             </div>
@@ -112,7 +112,7 @@ export function OverviewTab({
                     <span className={`grid h-5 w-5 place-items-center rounded ${toneClass.purple}`}>
                       <Brain className="h-3 w-3" />
                     </span>
-                    待确认 L2 事实
+                    待确认长期事实
                   </p>
                   <span className="text-[10px] text-[var(--text-muted)]">{pendingFacts.length} 条</span>
                 </div>
@@ -161,7 +161,7 @@ export function OverviewTab({
                     <span className={`grid h-5 w-5 place-items-center rounded ${toneClass.brand}`}>
                       <BookOpen className="h-3 w-3" />
                     </span>
-                    待发布 L3 草稿
+                    待发布知识草稿
                   </p>
                   <span className="text-[10px] text-[var(--text-muted)]">{pendingL3Drafts.length} 条</span>
                 </div>
@@ -246,9 +246,9 @@ export function OverviewTab({
 
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-2">
-            <KpiMini icon={Zap} label="L1 活跃" value={(trend.l1Active[trend.l1Active.length - 1] ?? 0).toLocaleString()} tone="info" />
-            <KpiMini icon={Brain} label="L2 命中" value={(trend.l2Hits[trend.l2Hits.length - 1] ?? 0).toLocaleString()} tone="purple" />
-            <KpiMini icon={BookOpen} label="L3 命中" value={(trend.l3Hits[trend.l3Hits.length - 1] ?? 0).toLocaleString()} tone="brand" />
+            <KpiMini icon={Zap} label="短期 · 活跃" value={(trend.l1Active[trend.l1Active.length - 1] ?? 0).toLocaleString()} tone="info" />
+            <KpiMini icon={Brain} label="长期 · 命中" value={(trend.l2Hits[trend.l2Hits.length - 1] ?? 0).toLocaleString()} tone="purple" />
+            <KpiMini icon={BookOpen} label="知识 · 命中" value={(trend.l3Hits[trend.l3Hits.length - 1] ?? 0).toLocaleString()} tone="brand" />
           </div>
           <PromotionFeed events={promotions} />
         </div>

@@ -16,9 +16,9 @@ import {
 } from '@/pages/admin/knowledge/components/DetailLayout';
 
 const LAYER_LABEL: Record<string, { label: string; className: string; full: string }> = {
-  l1: { label: '短期记忆', className: 'bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300', full: 'L1 短期记忆' },
-  l2: { label: '长期记忆', className: 'bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300', full: 'L2 长期记忆' },
-  l3: { label: '知识记忆', className: 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300', full: 'L3 知识记忆' },
+  l1: { label: '短期记忆', className: 'bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300', full: '短期记忆' },
+  l2: { label: '长期记忆', className: 'bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300', full: '长期记忆' },
+  l3: { label: '知识记忆', className: 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300', full: '知识记忆' },
 };
 
 const EVICTION_LABEL: Record<string, string> = {
@@ -51,9 +51,9 @@ export default function PolicyDetailPage() {
   const otherLayers = useMemo(() => {
     if (!policy) return [] as Array<{ key: string; label: string; count: number | undefined }>;
     const items: Array<{ key: string; label: string; count: number | undefined }> = [];
-    if (policy.layer !== 'l1') items.push({ key: 'l1', label: 'L1 短期记忆', count: l1Sessions?.filter((s) => s.status !== 'expired').length });
-    if (policy.layer !== 'l2') items.push({ key: 'l2', label: 'L2 长期记忆', count: l2Facts?.filter((f) => f.status !== 'retired').length });
-    if (policy.layer !== 'l3') items.push({ key: 'l3', label: 'L3 知识记忆', count: l3Entries?.filter((k) => k.status === 'published').length });
+    if (policy.layer !== 'l1') items.push({ key: 'l1', label: '短期记忆', count: l1Sessions?.filter((s) => s.status !== 'expired').length });
+    if (policy.layer !== 'l2') items.push({ key: 'l2', label: '长期记忆', count: l2Facts?.filter((f) => f.status !== 'retired').length });
+    if (policy.layer !== 'l3') items.push({ key: 'l3', label: '知识记忆', count: l3Entries?.filter((k) => k.status === 'published').length });
     return items;
   }, [policy, l1Sessions, l2Facts, l3Entries]);
 

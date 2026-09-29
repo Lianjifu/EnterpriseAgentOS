@@ -61,7 +61,7 @@ describe('L3DetailPage', () => {
     expect(screen.getByText('1280')).toBeTruthy();
     expect(screen.getByText(/内部术语、缩写/)).toBeTruthy();
     expect(screen.getAllByText('近 8 期').length).toBeGreaterThan(0);
-    const promoLink = screen.getByRole('link', { name: /查看 L2 →/ });
+    const promoLink = screen.getByRole('link', { name: /查看长期记忆 →/ });
     expect(promoLink.getAttribute('href')).toBe('/admin/memory/l2/f-3');
     const teamLinks = screen.getAllByRole('link', { name: /查看 →/ });
     const teamLink = teamLinks.find((a) => a.getAttribute('href') === '/admin/memory/l3/k-7');

@@ -200,7 +200,7 @@ export default function MemoryPage() {
         </div>
 
         <div className="relative mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <KpiTile label="总记忆条目" value={totalEntries} hint={`L1 ${counts.l1} · L2 ${counts.l2} · L3 ${counts.l3}`} />
+          <KpiTile label="总记忆条目" value={totalEntries} hint={`短期 ${counts.l1} · 长期 ${counts.l2} · 知识 ${counts.l3}`} />
           <KpiTile label="平均命中率" value={`${(avgHitRate * 100).toFixed(1)}%`} hint={`${RANGE_LABEL[range]} 区间`} />
           <KpiTile label="待办总数" value={pendingTotal} hint={`待确认 ${pendingCount} · 待发布 ${l3.filter((k) => k.status === 'draft').length}`} tone={pendingTotal > 0 ? 'warn' : undefined} />
           <KpiTile label="今日晋升" value={todayPromotions} hint={`总事件 ${counts.events}`} />

@@ -58,7 +58,7 @@ describe('PolicyDetailPage', () => {
     renderAt('%E9%95%BF%E6%9C%9F%E8%AE%B0%E5%BF%86');
 
     await waitFor(() => {
-      expect(screen.getByText('长期记忆')).toBeTruthy();
+      expect(screen.getAllByText('长期记忆').length).toBeGreaterThan(0);
     });
     expect(screen.getByText(/用户偏好与事实/)).toBeTruthy();
     expect(screen.getByText('88%')).toBeTruthy();

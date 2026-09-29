@@ -41,7 +41,7 @@ export function L2Tab({
             <CheckCircle2 className="h-4 w-4" />已选 {selectedIds.length} 项
           </span>
           <button type="button" onClick={onPromoteSelected} className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--brand)] bg-[var(--surface-1)] px-3 py-1.5 text-xs font-semibold text-[var(--brand)] hover:bg-[var(--brand)] hover:text-white">
-            <ArrowUpRight className="h-3.5 w-3.5" />批量晋升到 L3
+            <ArrowUpRight className="h-3.5 w-3.5" />批量晋升到知识
           </button>
           <button type="button" onClick={onClearSelect} className="ml-auto text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--brand)]">
             取消选择

@@ -120,15 +120,15 @@ export default function L3DetailPage() {
                   <span className="block truncate font-medium">{f.userName} · {f.key}</span>
                   <span className="mt-0.5 block truncate text-[11px] text-[var(--text-muted)]">{f.value}</span>
                 </span>
-                <Link to={`/admin/memory/l2/${f.id}`} className="shrink-0 text-[var(--brand)] hover:underline">查看 L2 →</Link>
+                <Link to={`/admin/memory/l2/${f.id}`} className="shrink-0 text-[var(--brand)] hover:underline">查看长期记忆 →</Link>
               </li>
             ))}
           </ul>
         ) : (
           <p className="text-xs text-[var(--text-muted)]">
             {entry.promotedFromL2Ids && entry.promotedFromL2Ids.length > 0
-              ? '晋升来源 L2 事实不存在或已被清空'
-              : '直接创建,未通过 L2 晋升'}
+              ? '晋升来源长期事实不存在或已被清空'
+              : '直接创建,未通过长期晋升'}
           </p>
         )}
       </DetailSection>

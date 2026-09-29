@@ -95,7 +95,7 @@ export default function AgentCreatePage() {
                   {i < STEPS.length - 1 && (
                     <span
                       aria-hidden="true"
-                      className={`absolute left-[19px] top-12 h-[calc(100%-1rem)] w-px ${done || active ? 'bg-[var(--brand)]' : 'bg-[var(--border)]'}`}
+                      className={`pointer-events-none absolute left-[19px] top-[28px] h-[calc(100%+0.5rem)] w-px ${done ? 'bg-[var(--brand)]' : 'bg-[var(--border)]'}`}
                     />
                   )}
                   <button

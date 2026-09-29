@@ -29,7 +29,7 @@ function renderAt() {
 describe('AdminKnowledgeKbCreate', () => {
   afterEach(() => cleanup());
 
-  it('renders header, sticky stepper, live preview, and create button', () => {
+  it('renders header, sticky stepper, and read-only live preview', () => {
     renderAt();
     expect(screen.getByRole('heading', { level: 1, name: '新建知识库' })).toBeTruthy();
     expect(screen.getByRole('link', { name: /返回知识管理/ })).toBeTruthy();
@@ -39,9 +39,9 @@ describe('AdminKnowledgeKbCreate', () => {
     expect(screen.getAllByText('数据源').length).toBeGreaterThan(0);
     expect(screen.getAllByText('检索设置').length).toBeGreaterThan(0);
     expect(screen.getByText('实时预览')).toBeTruthy();
-    expect(screen.getByRole('button', { name: /创建知识库/ })).toBeTruthy();
-    // step 1 底部应有「下一步」, 不应有「上一步」
+    // step 1 底部应有「下一步」, 不应有「上一步」; 预览面板只读, 不应有「创建知识库」
     expect(screen.getAllByRole('button', { name: /下一步/ }).length).toBeGreaterThan(0);
     expect(screen.queryAllByRole('button', { name: /上一步/ }).length).toBe(0);
+    expect(screen.queryByRole('button', { name: /创建知识库/ })).toBeNull();
   });
 });

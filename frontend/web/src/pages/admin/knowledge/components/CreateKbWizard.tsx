@@ -8,6 +8,7 @@
  * 取消动作走顶部返回 Link,wizard 自身无取消按钮。
  */
 import { useState } from 'react';
+import { Plus } from 'lucide-react';
 import type { Source, KbScope, CreateKbVars } from '@/api/admin/knowledge/schema';
 import { SOURCE_TYPE_META } from './constants';
 import CreateKbPreview, { type CreateKbDraft } from './CreateKbPreview';
@@ -213,26 +214,29 @@ export default function CreateKbWizard({
               下一步 →
             </button>
           ) : (
-            <span className="text-[11px] text-[var(--text-muted)]">请在右侧确认并创建</span>
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={() =>
+                onSubmit({
+                  name: name.trim(),
+                  description,
+                  scope,
+                  boundSources: pickedSources,
+                  retrieval,
+                  topK,
+                })
+              }
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)] disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {isSubmitting ? '创建中…' : '创建知识库'}
+            </button>
           )}
         </div>
       </div>
 
-      <CreateKbPreview
-        draft={draft}
-        sources={sources}
-        isSubmitting={isSubmitting}
-        onSubmit={() =>
-          onSubmit({
-            name: name.trim(),
-            description,
-            scope,
-            boundSources: pickedSources,
-            retrieval,
-            topK,
-          })
-        }
-      />
+      <CreateKbPreview draft={draft} sources={sources} />
     </div>
   );
 }

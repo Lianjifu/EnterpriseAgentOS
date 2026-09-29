@@ -1,13 +1,13 @@
 /**
  * 新建知识库 — 实时预览面板(由 CreateKbWizard 内嵌)。
  *
- * 受控组件:接 draft 快照(只读) + 单 onSubmit 回调;
- * 内部不持有任何 state,纯展示 + 创建按钮 disabled 派生。
- * 「创建」按钮集中在此,wizard 底部不再重复。
+ * 受控只读组件:接 draft 快照(只读),无任何操作按钮;
+ * 创建动作走 wizard 底部按钮。
  */
-import { Plus } from 'lucide-react';
-import type { Source, KbScope, Retrieval } from '@/api/admin/knowledge/schema';
+import type { Source, KbScope, CreateKbVars } from '@/api/admin/knowledge/schema';
 import { SOURCE_TYPE_META } from './constants';
+
+type Retrieval = CreateKbVars['retrieval'];
 
 const RETRIEVAL_LABEL: Record<Retrieval, string> = {
   hybrid: '混合检索',
@@ -27,19 +27,13 @@ export type CreateKbDraft = {
 export default function CreateKbPreview({
   draft,
   sources,
-  isSubmitting,
-  onSubmit,
 }: {
   draft: CreateKbDraft;
   sources: Source[];
-  isSubmitting: boolean;
-  onSubmit: () => void;
 }) {
   const pickedNames = draft.pickedSources
     .map((id) => sources.find((s) => s.id === id))
     .filter((s): s is Source => Boolean(s));
-
-  const canSubmit = draft.name.trim().length > 0 && draft.pickedSources.length > 0;
 
   return (
     <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5 lg:sticky lg:top-5">
@@ -77,16 +71,6 @@ export default function CreateKbPreview({
           ))}
         </ul>
       )}
-
-      <button
-        type="button"
-        onClick={onSubmit}
-        disabled={isSubmitting || !canSubmit}
-        className="mt-5 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)] disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <Plus className="h-3.5 w-3.5" />
-        {isSubmitting ? '创建中…' : '创建知识库'}
-      </button>
     </div>
   );
 }

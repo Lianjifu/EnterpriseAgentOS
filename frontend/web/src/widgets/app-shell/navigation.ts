@@ -63,10 +63,10 @@ export const adminNavigationSections: NavigationSection[] = [
   ] },
   { title: '能力建设', items: [
     { label: '智能体管理', href: '/admin/agents', icon: Bot, description: '创建、评测和发布企业智能体' },
+    { label: '技能管理', href: '/admin/tools', icon: Boxes, description: '管理 Skill / Tool / MCP 等技能能力' },
     { label: '知识管理', href: '/admin/knowledge', icon: FileText, description: '管理知识库、资料来源和访问权限' },
     { label: '记忆管理', href: '/admin/memory', icon: Brain, description: '管理智能体记忆、用户偏好与跨会话上下文' },
     { label: '工作流管理', href: '/admin/workflows', icon: Workflow, description: '设计、发布和分析自动化流程' },
-    { label: '技能管理', href: '/admin/tools', icon: Boxes, description: '管理 Skill / Tool / MCP 等技能能力' },
   ] },
   { title: '质量保障', items: [
     { label: '评测中心', href: '/admin/evaluations', icon: Beaker, description: '评测智能体、知识与流程的质量与对比' },

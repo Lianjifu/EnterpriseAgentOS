@@ -16,7 +16,13 @@ import {
   L2_CATEGORY_LABEL, L2_STATUS_BADGE, L3_STATUS_BADGE, LAYER_META, ttlLabel, toneClass,
 } from '../constants';
 import { PromotionFeed } from '../PromotionFeed';
-import { TrendCard } from '../Sparkline';
+import { Sparkline } from '../Sparkline';
+
+const TONE_CLASS: Record<'brand' | 'purple' | 'info', string> = {
+  brand: 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
+  info: 'bg-sky-50 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300',
+  purple: 'bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300',
+};
 
 export function OverviewTab({
   promotions, policies, pendingFacts, pendingL3Drafts, trend,
@@ -46,35 +52,39 @@ export function OverviewTab({
       <div className="grid gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="space-y-4">
           <div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <TrendCard
-                icon={l1Meta.icon}
-                title={l1Meta.label}
-                current={l1Latest}
-                unit="活跃会话"
-                tone="info"
-                values={trend.l1Active}
-                hint="近 8 期会话上下文"
-              />
-              <TrendCard
-                icon={l2Meta.icon}
-                title={l2Meta.label}
-                current={l2Latest}
-                unit="本周命中"
-                tone="purple"
-                values={trend.l2Hits}
-                hint="近 8 期长期记忆命中"
-              />
-              <TrendCard
-                icon={l3Meta.icon}
-                title={l3Meta.label}
-                current={l3Latest}
-                unit="本周命中"
-                tone="brand"
-                values={trend.l3Hits}
-                hint="近 8 期知识记忆命中"
-              />
-            </div>
+            <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
+              <div className="grid gap-6 px-5 py-5 sm:grid-cols-3 sm:divide-x sm:divide-[var(--border)]">
+                {[
+                  { meta: l1Meta, current: l1Latest, unit: '活跃会话', hint: '近 8 期会话上下文', values: trend.l1Active, tone: 'info' as const },
+                  { meta: l2Meta, current: l2Latest, unit: '本周命中', hint: '近 8 期长期记忆命中', values: trend.l2Hits, tone: 'purple' as const },
+                  { meta: l3Meta, current: l3Latest, unit: '本周命中', hint: '近 8 期知识记忆命中', values: trend.l3Hits, tone: 'brand' as const },
+                ].map((t) => {
+                  const Icon = t.meta.icon;
+                  return (
+                    <div key={t.meta.label} className="flex flex-col gap-3 sm:px-2 first:sm:pl-0 last:sm:pr-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${TONE_CLASS[t.tone]}`}>
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-[var(--text)]">{t.meta.label}</p>
+                          <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">{t.hint}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-end justify-between gap-3">
+                        <div className="shrink-0">
+                          <p className="text-xl font-semibold tabular-nums leading-none">{t.current.toLocaleString()}</p>
+                          <p className="mt-1 text-[10px] text-[var(--text-muted)]">{t.unit}</p>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <Sparkline values={t.values} tone={t.tone} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
           </div>
 
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4 sm:p-5">

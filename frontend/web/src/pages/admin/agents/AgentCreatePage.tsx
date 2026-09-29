@@ -86,18 +86,12 @@ export default function AgentCreatePage() {
         {/* 左 1/3 — 纵向 stepper */}
         <aside aria-label="创建步骤" className="lg:sticky lg:top-5 lg:self-start">
           <ol className="relative space-y-1">
-            {STEPS.map((s, i) => {
+            {STEPS.map((s) => {
               const active = step === s.index;
               const done = step > s.index;
               const Icon = s.icon;
               return (
                 <li key={s.key} className="relative">
-                  {i < STEPS.length - 1 && (
-                    <span
-                      aria-hidden="true"
-                      className={`pointer-events-none absolute left-[19px] top-[28px] h-[calc(100%+0.5rem)] w-px ${done ? 'bg-[var(--brand)]' : 'bg-[var(--border)]'}`}
-                    />
-                  )}
                   <button
                     type="button"
                     onClick={() => setStep(s.index)}

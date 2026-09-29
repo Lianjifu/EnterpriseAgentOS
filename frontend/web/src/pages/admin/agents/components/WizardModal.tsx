@@ -6,12 +6,32 @@
  * 当前 step 的表单 + 上一步/下一步/创建按钮。
  */
 import { useState, useEffect } from 'react';
-import { CheckCircle2, ChevronLeft, ChevronRight, Info, Plus, Square, CheckSquare } from 'lucide-react';
-import type { WizardDraft } from '@/api/admin/agents/schema';
+import { CheckCircle2, ChevronLeft, ChevronRight, Info, Plus, Sparkles, Square, CheckSquare } from 'lucide-react';
+import type { Tone, WizardDraft } from '@/api/admin/agents/schema';
 import { SCENES, WIZARD_TEMPLATES, WIZARD_ICONS, WIZARD_MODELS, WIZARD_SKILLS, INITIAL_WIZARD_DRAFT } from './constants';
 import { toneClass } from './constants';
 
 export type WizardStep = 1 | 2 | 3 | 4;
+
+function AvatarPreview({ name, iconName }: { name: string; iconName: string }) {
+  const meta = WIZARD_ICONS.find((i) => i.name === iconName);
+  const Icon = meta?.Icon ?? Sparkles;
+  const tone: Tone = meta?.tone ?? 'brand';
+  const trimmed = name.trim();
+  return (
+    <div className="flex w-28 shrink-0 flex-col items-center gap-2 rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-app)] p-3">
+      <span className={`grid h-14 w-14 place-items-center rounded-full ${toneClass[tone]}`}>
+        <Icon className="h-7 w-7" />
+      </span>
+      <span className="text-[10px] font-medium uppercase tracking-wide text-[var(--text-muted)]">
+        {meta?.label ?? '通用'}
+      </span>
+      <span className="line-clamp-1 max-w-full text-center text-[10px] text-[var(--text-muted)]">
+        {trimmed || '待命名'}
+      </span>
+    </div>
+  );
+}
 
 export function WizardBody({
   initialDraft,
@@ -89,22 +109,36 @@ export function WizardBody({
             </div>
           </div>
           <div>
-            <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">头像图标</label>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {WIZARD_ICONS.map(({ name, Icon }) => {
-                const active = draft.icon === name;
-                return (
-                  <button
-                    key={name}
-                    type="button"
-                    onClick={() => setDraft((d) => ({ ...d, icon: name }))}
-                    aria-pressed={active}
-                    className={`grid h-10 w-10 place-items-center rounded-xl border ${active ? 'border-[var(--brand)] bg-[var(--brand-light)] text-[var(--brand)]' : 'border-[var(--border)] bg-[var(--bg-elevated)] text-[var(--text-muted)] hover:border-[var(--brand)] hover:text-[var(--brand)]'}`}
-                  >
-                    <Icon className="h-5 w-5" />
-                  </button>
-                );
-              })}
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">头像图标</label>
+              <span className="text-[11px] text-[var(--text-muted)]">选择最能代表这个智能体角色的图标</span>
+            </div>
+            <div className="mt-2 flex items-start gap-4">
+              <div className="grid flex-1 grid-cols-3 gap-2 sm:grid-cols-6">
+                {WIZARD_ICONS.map(({ name, Icon, tone, label }) => {
+                  const active = draft.icon === name;
+                  return (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => setDraft((d) => ({ ...d, icon: name }))}
+                      aria-pressed={active}
+                      aria-label={`${label}角色`}
+                      className={`group flex flex-col items-center gap-1.5 rounded-xl border p-2.5 transition ${
+                        active
+                          ? 'border-[var(--brand)] bg-[var(--brand-light)]'
+                          : 'border-[var(--border)] bg-[var(--bg-elevated)] hover:border-[var(--brand)]'
+                      }`}
+                    >
+                      <span className={`grid h-9 w-9 place-items-center rounded-lg ${toneClass[tone]}`}>
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <span className={`text-[10px] font-medium ${active ? 'text-[var(--brand)]' : 'text-[var(--text-muted)]'}`}>{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <AvatarPreview name={draft.name} iconName={draft.icon} />
             </div>
           </div>
         </div>

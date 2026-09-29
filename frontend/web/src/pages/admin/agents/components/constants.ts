@@ -2,12 +2,12 @@
  * 管理侧「智能体工作台」常量 — Tab/状态徽章/排序/导出字段/向导/导入格式/drawer nav/Prompt 文档/记忆/流程触发器。
  */
 import {
-  Activity, AlertTriangle, Beaker, BookOpen, Bot, Brain, ChevronDown, ChevronLeft, ChevronRight, CheckCircle2, CheckSquare, Clock, Copy, Download, Edit3, FileJson, FileSpreadsheet, FileText, FolderTree, GitBranch, History, Info, Layers, MessageSquareText, MoreVertical, Play, Plus, RotateCcw, Save, Search, ShieldCheck, Sparkles, Square, Star, Tag, Timer, Trash2, TrendingUp, Upload, Workflow, X,
+  Activity, AlertTriangle, Beaker, BookOpen, Bot, Brain, ChevronDown, ChevronLeft, ChevronRight, CheckCircle2, CheckSquare, Clock, Copy, Download, Edit3, FileJson, FileSpreadsheet, FileText, FolderTree, GitBranch, Headphones, History, Info, Layers, LineChart, MessageSquareText, MoreVertical, PenLine, Play, Plus, RotateCcw, Save, Search, ShieldCheck, Sparkles, Square, Star, Tag, Timer, Trash2, TrendingUp, Upload, Workflow, X,
 } from 'lucide-react';
 import type { Tone, Status, TabId, SortKey, DrawerPanel, PromptKey, ExportField, ExportFormat, ExportScope, MemoryRetention, MemoryScope, FlowTrigger, ImportExtension, VisibleScope, WizardDraft, DeletePayload } from '@/api/admin/agents/schema';
 
 export {
-  Activity, AlertTriangle, Beaker, BookOpen, Bot, Brain, ChevronDown, ChevronLeft, ChevronRight, CheckCircle2, CheckSquare, Clock, Copy, Download, Edit3, FileJson, FileSpreadsheet, FileText, FolderTree, GitBranch, History, Info, Layers, MessageSquareText, MoreVertical, Play, Plus, RotateCcw, Save, Search, ShieldCheck, Sparkles, Square, Star, Tag, Timer, Trash2, TrendingUp, Upload, Workflow, X,
+  Activity, AlertTriangle, Beaker, BookOpen, Bot, Brain, ChevronDown, ChevronLeft, ChevronRight, CheckCircle2, CheckSquare, Clock, Copy, Download, Edit3, FileJson, FileSpreadsheet, FileText, FolderTree, GitBranch, Headphones, History, Info, Layers, LineChart, MessageSquareText, MoreVertical, PenLine, Play, Plus, RotateCcw, Save, Search, ShieldCheck, Sparkles, Square, Star, Tag, Timer, Trash2, TrendingUp, Upload, Workflow, X,
 };
 
 export const TABS: Array<{ id: TabId; label: string }> = [
@@ -60,13 +60,13 @@ export const WIZARD_TEMPLATES: Array<{ id: WizardDraft['template']; title: strin
   { id: 'sales-support', title: '销售支持模板', description: '内置 CRM 查询、报价引擎、合同条款检索。', icon: TrendingUp, tone: 'success' },
 ];
 
-export const WIZARD_ICONS: Array<{ name: string; Icon: typeof Bot }> = [
-  { name: 'Bot', Icon: Bot },
-  { name: 'Sparkles', Icon: Sparkles },
-  { name: 'MessageSquareText', Icon: MessageSquareText },
-  { name: 'TrendingUp', Icon: TrendingUp },
-  { name: 'Beaker', Icon: Beaker },
-  { name: 'ShieldCheck', Icon: ShieldCheck },
+export const WIZARD_ICONS: Array<{ name: string; Icon: typeof Bot; tone: Tone; label: string }> = [
+  { name: 'Bot', Icon: Bot, tone: 'brand', label: '通用' },
+  { name: 'Headphones', Icon: Headphones, tone: 'info', label: '客服' },
+  { name: 'LineChart', Icon: LineChart, tone: 'success', label: '数据' },
+  { name: 'PenLine', Icon: PenLine, tone: 'warn', label: '文案' },
+  { name: 'Workflow', Icon: Workflow, tone: 'purple', label: '流程' },
+  { name: 'ShieldCheck', Icon: ShieldCheck, tone: 'danger', label: '审批' },
 ];
 
 export const WIZARD_MODELS = ['GPT-4o (默认)', 'Claude Sonnet 4.5', 'Qwen 2.5 72B', 'DeepSeek V3', '混元 Pro'];

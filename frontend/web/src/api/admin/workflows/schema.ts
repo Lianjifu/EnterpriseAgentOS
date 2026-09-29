@@ -3,9 +3,9 @@
  */
 import type { Node, Edge } from 'reactflow';
 
-export type WorkflowTabId = 'all' | 'draft' | 'graying' | 'published' | 'retired';
+export type WorkflowTabId = 'all' | 'draft' | 'published' | 'retired';
 export type WorkflowViewMode = 'list' | 'editor';
-export type FlowStatus = 'draft' | 'graying' | 'published' | 'retired';
+export type FlowStatus = 'draft' | 'published' | 'retired';
 export type NodeKind = 'trigger' | 'tool' | 'agent' | 'condition' | 'end';
 export type TriggerType = '消息触发' | '定时触发' | '事件触发' | '手动触发';
 export type NodeTypeTabId = 'trigger' | 'action' | 'condition';

@@ -1,5 +1,5 @@
 /**
- * AdminWorkflows fixtures — 12 工作流,覆盖 5 个状态(全部/草稿/灰度中/已发布/已下线);
+ * AdminWorkflows fixtures — 12 工作流,覆盖 4 个状态(全部/草稿/已发布/已下线);
  * 「全部」tab 12 条 > PAGE_SIZE 8,使分页可见。其余 tab 多在 1 页。
  *
  * 节点附带 inputs/outputs(Dify 风格变量)用于画布上显示「输入 / 输出」列。
@@ -79,7 +79,7 @@ export const mockFlows: Flow[] = [
     owner: '销售协作组',
     scene: '销售',
     trigger: '事件触发',
-    status: 'graying',
+    status: 'published',
     callCount: 56,
     inputs: 1,
     outputs: 1,
@@ -87,7 +87,7 @@ export const mockFlows: Flow[] = [
     updatedAt: '2 小时前',
     boundAgents: ['sales-coach'],
     versions: [
-      { v: 'v0.9-灰度', at: '2 小时前', operator: '运营-王小华', note: '灰度 10% 流量' },
+      { v: 'v1.0', at: '2 小时前', operator: '运营-王小华', note: '正式发布' },
       { v: 'v0.5', at: '上周', operator: '运营-王小华', note: '内部测试版' },
     ],
     initialNodes: [
@@ -231,7 +231,7 @@ export const mockFlows: Flow[] = [
     owner: '客户成功',
     scene: '客户成功',
     trigger: '定时触发',
-    status: 'graying',
+    status: 'published',
     callCount: 23,
     inputs: 2,
     outputs: 2,
@@ -239,7 +239,7 @@ export const mockFlows: Flow[] = [
     updatedAt: '1 天前',
     boundAgents: ['support-bot'],
     versions: [
-      { v: 'v0.7-灰度', at: '1 天前', operator: '数据-周洋', note: '灰度 20% 客户群' },
+      { v: 'v1.0', at: '1 天前', operator: '数据-周洋', note: '正式发布' },
       { v: 'v0.4', at: '上周', operator: '数据-周洋', note: '模型调优中' },
     ],
     initialNodes: [

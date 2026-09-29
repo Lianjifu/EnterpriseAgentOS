@@ -13,7 +13,6 @@ import type {
 export const TABS: Array<{ id: WorkflowTabId; label: string }> = [
   { id: 'all', label: '全部' },
   { id: 'draft', label: '草稿' },
-  { id: 'graying', label: '灰度中' },
   { id: 'published', label: '已发布' },
   { id: 'retired', label: '已下线' },
 ];
@@ -38,7 +37,6 @@ export const NODE_TONE_CLASS: Record<NodeKind, { wrap: string; text: string; sub
 
 export const STATUS_BADGE: Record<FlowStatus, { label: string; className: string; dot: string }> = {
   draft: { label: '草稿', className: 'bg-[var(--bg-elevated)] text-[var(--text-secondary)]', dot: 'bg-[var(--text-muted)]' },
-  graying: { label: '灰度中', className: 'bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300', dot: 'bg-sky-500' },
   published: { label: '已发布', className: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300', dot: 'bg-emerald-500' },
   retired: { label: '已下线', className: 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300', dot: 'bg-rose-500' },
 };

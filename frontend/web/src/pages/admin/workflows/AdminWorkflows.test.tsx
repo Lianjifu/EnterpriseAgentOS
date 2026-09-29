@@ -37,7 +37,7 @@ describe('AdminWorkflows', () => {
     expect(screen.getByText(/把可复用的工作流设计出来/)).toBeTruthy();
     expect(screen.getByText('工作流列表')).toBeTruthy();
     const nav = screen.getByLabelText('子模块导航');
-    ['全部', '草稿', '灰度中', '已发布', '已下线'].forEach((label) => {
+    ['全部', '草稿', '已发布', '已下线'].forEach((label) => {
       expect(within(nav).getByRole('button', { name: new RegExp(label) })).toBeTruthy();
     });
   });

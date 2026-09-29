@@ -119,14 +119,12 @@ export function OverviewTab({
 function titleForTab(tab: WorkflowTabId): string {
   if (tab === 'all') return '工作流列表';
   if (tab === 'draft') return '草稿工作流';
-  if (tab === 'graying') return '灰度中的工作流';
   if (tab === 'published') return '已发布的工作流';
   return '已下线的工作流';
 }
 
 function emptyTitleForTab(tab: WorkflowTabId): string {
   if (tab === 'draft') return '没有草稿工作流';
-  if (tab === 'graying') return '没有灰度中的工作流';
   if (tab === 'published') return '没有已发布的工作流';
   if (tab === 'retired') return '没有已下线的工作流';
   return '没有匹配的工作流';
@@ -134,7 +132,6 @@ function emptyTitleForTab(tab: WorkflowTabId): string {
 
 function emptyHintForTab(tab: WorkflowTabId): string {
   if (tab === 'draft') return '新建一个工作流开始设计。';
-  if (tab === 'graying') return '从草稿发布为工具后会进入灰度。';
   if (tab === 'published') return '发布为工具后,工作流会出现在这里。';
   if (tab === 'retired') return '下线的工作流会在此处保留。';
   return '尝试其他关键词。';

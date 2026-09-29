@@ -1,7 +1,7 @@
 /**
  * WorkflowsPage — 工作流管理 list hub(纯列表,不再持有内嵌 editor 状态)。
  *
- * 5 tab(状态过滤器):全部 / 草稿 / 灰度中 / 已发布 / 已下线。
+ * 4 tab(状态过滤器):全部 / 草稿 / 已发布 / 已下线。
  * 3 入口跳转:
  * - 新建 → /admin/workflows/new(WorkflowCreatePage)
  * - 查看 → /admin/workflows/:id(WorkflowDetailPage 只读)

@@ -34,7 +34,7 @@ export default function KbCard({
         </button>
         <Sparkline data={sparkData} stroke="var(--brand)" />
       </div>
-      <button type="button" onClick={() => onOpen(kb)} className="text-left">
+      <button type="button" onClick={() => onOpen(kb)} aria-label={`查看 ${kb.name} 详情`} className="text-left">
         <div className="flex items-center gap-2">
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[var(--brand-light)] text-[var(--brand)]">
             <Icon className="h-4 w-4" />

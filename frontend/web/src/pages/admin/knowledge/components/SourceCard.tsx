@@ -16,18 +16,28 @@ const SOURCE_ICON: Record<SourceType, typeof Database> = {
 
 export default function SourceCard({
   source,
+  onOpen,
   onSync,
   onConfig,
 }: {
   source: Source;
+  onOpen?: (source: Source) => void;
   onSync: (id: string) => void;
   onConfig: (source: Source) => void;
 }) {
   const badge = SOURCE_STATUS_BADGE[source.status];
   const meta = SOURCE_TYPE_META[source.type];
   const Icon = SOURCE_ICON[source.type];
+  const handleCardClick = () => onOpen?.(source);
   return (
-    <article className="group flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5 transition hover:-translate-y-0.5 hover:border-[var(--brand)] hover:shadow-[var(--shadow-sm)]">
+    <article
+      role={onOpen ? 'button' : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      aria-label={onOpen ? `查看 ${source.name} 详情` : undefined}
+      onClick={onOpen ? handleCardClick : undefined}
+      onKeyDown={onOpen ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardClick(); } } : undefined}
+      className="group flex cursor-pointer flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5 transition hover:-translate-y-0.5 hover:border-[var(--brand)] hover:shadow-[var(--shadow-sm)]"
+    >
       <div className="flex items-center gap-3">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[var(--brand-light)] text-[var(--brand)]">
           <Icon className="h-5 w-5" />
@@ -56,7 +66,7 @@ export default function SourceCard({
       <div className="mt-auto flex justify-end gap-2 border-t border-[var(--border)] pt-3">
         <button
           type="button"
-          onClick={() => onSync(source.id)}
+          onClick={(e) => { e.stopPropagation(); onSync(source.id); }}
           disabled={source.status === 'syncing'}
           className="inline-flex items-center justify-center rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-50"
         >
@@ -64,7 +74,7 @@ export default function SourceCard({
         </button>
         <button
           type="button"
-          onClick={() => onConfig(source)}
+          onClick={(e) => { e.stopPropagation(); onConfig(source); }}
           className="inline-flex items-center justify-center rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]"
         >
           配置

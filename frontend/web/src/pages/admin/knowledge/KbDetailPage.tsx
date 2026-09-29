@@ -82,13 +82,9 @@ export default function KbDetailPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1440px] space-y-4 p-5 pb-16 sm:p-8 xl:px-6">
-      <button
-        type="button"
-        onClick={() => { window.location.href = '/admin/knowledge'; }}
-        className="inline-flex w-fit items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--brand)]"
-      >
+      <Link to="/admin/knowledge" className="inline-flex w-fit items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--brand)]">
         <ArrowLeft className="h-3.5 w-3.5" />返回知识管理
-      </button>
+      </Link>
 
       <header className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] px-5 py-4">
         <div className="flex items-start gap-3">

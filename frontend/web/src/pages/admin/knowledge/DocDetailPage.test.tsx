@@ -1,0 +1,43 @@
+/**
+ * DocDetailPage 测试 — 路由 /admin/knowledge/docs/:id
+ */
+import { describe, expect, it, afterEach } from 'vitest';
+import { cleanup, screen } from '@testing-library/react';
+import { Route, Routes } from 'react-router-dom';
+import { qk } from '@/api/shared/query-keys';
+import { renderWithProviders } from '@/test-utils/seed';
+import DocDetailPage from './DocDetailPage';
+import { mockKbs, mockDocs } from '@/mock/admin/knowledge.fixtures';
+
+function renderAt(id: string) {
+  return renderWithProviders(
+    <Routes>
+      <Route path="/admin/knowledge/docs/:id" element={<DocDetailPage />} />
+    </Routes>,
+    {
+      initialEntries: [`/admin/knowledge/docs/${id}`],
+      seeds: [
+        { key: [...qk.admin.knowledge.root, 'kbs', 'w1'], data: mockKbs },
+        { key: [...qk.admin.knowledge.root, 'docs', 'w1'], data: mockDocs },
+      ],
+    },
+  );
+}
+
+describe('AdminKnowledgeDocDetail', () => {
+  afterEach(() => cleanup());
+
+  it('renders doc name and stat trio for known id', () => {
+    renderAt('doc-001');
+    expect(screen.getByRole('heading', { level: 1, name: '产品手册 v3.pdf' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /返回知识管理/ })).toBeTruthy();
+    expect(screen.getByText('大小')).toBeTruthy();
+    expect(screen.getByText('切片')).toBeTruthy();
+    expect(screen.getByText('引用')).toBeTruthy();
+  });
+
+  it('shows not-found when id is unknown', () => {
+    renderAt('doc-does-not-exist');
+    expect(screen.getByText('文档不存在或已被删除')).toBeTruthy();
+  });
+});

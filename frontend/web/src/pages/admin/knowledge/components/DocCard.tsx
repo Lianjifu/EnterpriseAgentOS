@@ -16,7 +16,7 @@ export default function DocCard({ doc, onOpen }: { doc: Doc; onOpen: (doc: Doc) 
         </span>
         <span className={`ml-auto inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.className}`}>{badge.label}</span>
       </div>
-      <button type="button" onClick={() => onOpen(doc)} className="text-left">
+      <button type="button" onClick={() => onOpen(doc)} aria-label={`查看 ${doc.name} 详情`} className="text-left">
         <h4 className="truncate text-sm font-semibold group-hover:text-[var(--brand)]">{doc.name}</h4>
         <div className="mt-2 grid grid-cols-3 gap-2 text-[11px]">
           <div>

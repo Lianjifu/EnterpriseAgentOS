@@ -1,21 +1,22 @@
 /**
- * AdminKnowledge — 知识管理编排:Hero + 5 子模块 + SideDrawer 详情 + 创建向导 + 数据源新增。
+ * AdminKnowledge — 知识管理编排:Hero + 5 子模块 + 卡片列表。
+ *
+ * 详情/新建都迁到独立页面(/admin/knowledge/kbs/:id、docs/:id、sources/:id、kbs/new、sources/new),
+ * 本页只负责列表 + 筛选 + 批量操作。
  */
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BookOpen, Database, FileText, Filter, ListChecks, Plus, RefreshCw, TrendingUp } from 'lucide-react';
-import { SideDrawer } from '@/components/feedback/SideDrawer';
 import {
   useKnowledgeBases,
   useKnowledgeDocs,
   useKnowledgeSources,
   useKnowledgeTasks,
   useKnowledgeEvalCases,
-  useCreateKb,
-  useCreateSource,
   useToggleKbStatus,
   useBatchKb,
 } from '@/api/admin/knowledge';
-import type { Kb, Doc, Range, TabId, Tone } from '@/api/admin/knowledge/schema';
+import type { Kb, TabId, Tone } from '@/api/admin/knowledge/schema';
 import {
   KB_STATUS_BADGE,
   TASK_STATUS_BADGE,
@@ -33,24 +34,17 @@ import {
 import KbCard from './components/KbCard';
 import DocCard from './components/DocCard';
 import SourceCard from './components/SourceCard';
-import { KbDetail } from './components/KbDetail';
-import { DocDetail } from './components/DocDetail';
-import SourceCreateModal from './components/SourceCreateModal';
-import CreateKbWizard from './components/CreateKbWizard';
 import QualityChart from './components/QualityChart';
 
 export default function KnowledgePage() {
   const [tab, setTab] = useState<TabId>('kb');
-  const [range, setRange] = useState<Range>('7d');
+  const [range, setRange] = useState<'7d' | '30d' | '90d'>('7d');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [notice, setNotice] = useState<string | null>(null);
-
-  const [detailKb, setDetailKb] = useState<Kb | null>(null);
-  const [detailDoc, setDetailDoc] = useState<Doc | null>(null);
-  const [createSourceOpen, setCreateSourceOpen] = useState(false);
-  const [wizardOpen, setWizardOpen] = useState(false);
   const [selectedKbIds, setSelectedKbIds] = useState<string[]>([]);
+
+  const navigate = useNavigate();
 
   const kbsQuery = useKnowledgeBases();
   const docsQuery = useKnowledgeDocs();
@@ -64,8 +58,6 @@ export default function KnowledgePage() {
   const tasks = tasksQuery.data ?? [];
   const evalCases = evalQuery.data ?? [];
 
-  const createKb = useCreateKb();
-  const createSource = useCreateSource();
   const toggleKbStatus = useToggleKbStatus();
   const batchKb = useBatchKb();
 
@@ -134,18 +126,6 @@ export default function KnowledgePage() {
     );
   };
 
-  const kbEyebrow = detailKb ? (
-    <span className={`inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold ${KB_STATUS_BADGE[detailKb.status].className}`}>
-      {KB_STATUS_BADGE[detailKb.status].label} · {detailKb.scope}
-    </span>
-  ) : null;
-
-  const docEyebrow = detailDoc ? (
-    <span className={`inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold ${KB_STATUS_BADGE.indexed.className}`}>
-      {detailDoc.id}
-    </span>
-  ) : null;
-
   return (
     <div className="mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-10">
       <section className="relative overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--surface-1)] px-6 py-8 shadow-[var(--shadow-sm)] sm:px-8">
@@ -180,7 +160,7 @@ export default function KnowledgePage() {
             </button>
             <button
               type="button"
-              onClick={() => setWizardOpen(true)}
+              onClick={() => navigate('/admin/knowledge/kbs/new')}
               className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]"
             >
               <Plus className="h-4 w-4" />
@@ -268,7 +248,7 @@ export default function KnowledgePage() {
                 kb={kb}
                 selected={selectedKbIds.includes(kb.id)}
                 onToggleSelect={toggleSelectKb}
-                onOpen={setDetailKb}
+                onOpen={(k) => navigate(`/admin/knowledge/kbs/${k.id}`)}
                 onTogglePause={handleTogglePause}
               />
             ))}
@@ -310,7 +290,7 @@ export default function KnowledgePage() {
           </section>
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {visibleDocs.map((doc) => (
-              <DocCard key={doc.id} doc={doc} onOpen={setDetailDoc} />
+              <DocCard key={doc.id} doc={doc} onOpen={(d) => navigate(`/admin/knowledge/docs/${d.id}`)} />
             ))}
           </section>
         </>
@@ -327,7 +307,7 @@ export default function KnowledgePage() {
                 </div>
                 <p className="mt-1 text-xs text-[var(--text-muted)]">{sources.length} 个数据源 · 同步频率 / 状态监控</p>
               </div>
-              <button type="button" onClick={() => setCreateSourceOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
+              <button type="button" onClick={() => navigate('/admin/knowledge/sources/new')} className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
                 <Plus className="h-4 w-4" />
                 新增数据源
               </button>
@@ -338,6 +318,7 @@ export default function KnowledgePage() {
               <SourceCard
                 key={s.id}
                 source={s}
+                onOpen={(src) => navigate(`/admin/knowledge/sources/${src.id}`)}
                 onSync={() => flash(`已触发 ${s.name} 同步`)}
                 onConfig={(src) => flash(`配置 ${src.name}(占位)`)}
               />
@@ -482,56 +463,6 @@ export default function KnowledgePage() {
             </div>
           </section>
         </>
-      )}
-
-      <SideDrawer
-        open={detailKb != null}
-        onClose={() => setDetailKb(null)}
-        ariaLabel={detailKb?.name ?? '知识库详情'}
-        eyebrow={kbEyebrow}
-      >
-        {detailKb && <KbDetail kb={detailKb} docs={docs} tasks={tasks} evalCases={evalCases} />}
-      </SideDrawer>
-
-      <SideDrawer
-        open={detailDoc != null}
-        onClose={() => setDetailDoc(null)}
-        ariaLabel={detailDoc?.name ?? '文档详情'}
-        eyebrow={docEyebrow}
-      >
-        {detailDoc && <DocDetail doc={detailDoc} kbs={kbs} />}
-      </SideDrawer>
-
-      {createSourceOpen && (
-        <SourceCreateModal
-          onClose={() => setCreateSourceOpen(false)}
-          onSubmit={(vars) =>
-            createSource.mutate(vars, {
-              onSuccess: () => {
-                setCreateSourceOpen(false);
-                flash('数据源已创建');
-              },
-              onError: () => flash('创建失败'),
-            })
-          }
-          isPending={createSource.isPending}
-        />
-      )}
-      {wizardOpen && (
-        <CreateKbWizard
-          sources={sources}
-          onClose={() => setWizardOpen(false)}
-          onSubmit={(vars) =>
-            createKb.mutate(vars, {
-              onSuccess: () => {
-                setWizardOpen(false);
-                flash('知识库已创建,正在初始化索引');
-              },
-              onError: () => flash('创建失败'),
-            })
-          }
-          isPending={createKb.isPending}
-        />
       )}
 
       <p className="text-center text-xs text-[var(--text-muted)]">本页为前端演示数据,生产环境将接入 EOS 知识中台。</p>

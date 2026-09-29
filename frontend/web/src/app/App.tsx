@@ -24,6 +24,10 @@ const AdminAgentDetail = lazy(() => import('@/pages/admin/agents/AgentDetailPage
 const AdminAgentCreate = lazy(() => import('@/pages/admin/agents/AgentCreatePage'));
 const AdminKnowledge = lazy(() => import('@/pages/admin/knowledge'));
 const AdminKnowledgeKbDetail = lazy(() => import('@/pages/admin/knowledge/KbDetailPage'));
+const AdminKnowledgeDocDetail = lazy(() => import('@/pages/admin/knowledge/DocDetailPage'));
+const AdminKnowledgeSourceDetail = lazy(() => import('@/pages/admin/knowledge/SourceDetailPage'));
+const AdminKnowledgeKbCreate = lazy(() => import('@/pages/admin/knowledge/KbCreatePage'));
+const AdminKnowledgeSourceCreate = lazy(() => import('@/pages/admin/knowledge/SourceCreatePage'));
 const AdminMemory = lazy(() => import('@/pages/admin/memory'));
 const AdminMemoryPolicyDetail = lazy(() => import('@/pages/admin/memory/PolicyDetailPage'));
 const AdminWorkflows = lazy(() => import('@/pages/admin/workflows'));
@@ -103,7 +107,11 @@ export default function App() {
             <Route path="/admin/agents/new" element={<AdminAgentCreate />} />
             <Route path="/admin/agents/:id" element={<AdminAgentDetail />} />
             <Route path="/admin/knowledge" element={<AdminKnowledge />} />
+            <Route path="/admin/knowledge/kbs/new" element={<AdminKnowledgeKbCreate />} />
             <Route path="/admin/knowledge/kbs/:id" element={<AdminKnowledgeKbDetail />} />
+            <Route path="/admin/knowledge/docs/:id" element={<AdminKnowledgeDocDetail />} />
+            <Route path="/admin/knowledge/sources/new" element={<AdminKnowledgeSourceCreate />} />
+            <Route path="/admin/knowledge/sources/:id" element={<AdminKnowledgeSourceDetail />} />
             <Route path="/admin/memory" element={<AdminMemory />} />
             <Route path="/admin/memory/policies/:id" element={<AdminMemoryPolicyDetail />} />
             <Route path="/admin/workflows" element={<AdminWorkflows />} />

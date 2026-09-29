@@ -53,7 +53,7 @@ export function OverviewTab({
         <div className="space-y-4">
           <div>
             <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
-              <div className="grid gap-6 px-5 py-5 sm:grid-cols-3 sm:divide-x sm:divide-[var(--border)]">
+              <div className="grid gap-6 px-5 py-5 sm:grid-cols-3 sm:divide-x sm:divide-[var(--border-strong)]">
                 {[
                   { meta: l1Meta, current: l1Latest, unit: '活跃会话', hint: '近 8 期会话上下文', values: trend.l1Active, tone: 'info' as const },
                   { meta: l2Meta, current: l2Latest, unit: '本周命中', hint: '近 8 期长期记忆命中', values: trend.l2Hits, tone: 'purple' as const },

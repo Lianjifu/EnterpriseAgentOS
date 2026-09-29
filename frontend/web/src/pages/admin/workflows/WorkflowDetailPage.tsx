@@ -19,7 +19,7 @@ import { FlowEditor } from './components/FlowEditor';
 
 function NotFound() {
   return (
-    <div className="mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-6">
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 p-5 pb-16 sm:p-8 xl:px-8">
       <Link to="/admin/workflows" className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--brand)]">
         <ArrowLeft className="h-3.5 w-3.5" />返回工作流管理
       </Link>
@@ -68,7 +68,7 @@ export default function WorkflowDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto w-full max-w-[1440px] p-5 pb-16 sm:p-8 xl:px-6">
+      <div className="mx-auto w-full max-w-[1600px] p-5 pb-16 sm:p-8 xl:px-8">
         <p className="text-sm text-[var(--text-muted)]">加载中…</p>
       </div>
     );
@@ -77,6 +77,14 @@ export default function WorkflowDetailPage() {
   if (!flow) return <NotFound />;
 
   const badge = STATUS_BADGE[flow.status];
+
+  if (isEditMode) {
+    return (
+      <div className="mx-auto w-full max-w-[1600px] space-y-3 p-4 sm:p-6 xl:px-8">
+        <EditorModeBody flow={flow} />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-[1440px] space-y-4 p-5 pb-16 sm:p-8 xl:px-6">
@@ -182,9 +190,9 @@ function EditorModeBody({ flow }: { flow: NonNullable<ReturnType<typeof useWorkf
   return (
     <>
       {notice && (
-        <div className="flex items-start gap-2 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+        <div className="flex items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
           <span className="flex-1">{notice}</span>
-          <button type="button" onClick={() => setNotice('')} aria-label="关闭提示"><X className="h-3.5 w-3.5" /></button>
+          <button type="button" onClick={() => setNotice('')} aria-label="关闭提示" className="rounded p-0.5 hover:bg-amber-100 dark:hover:bg-amber-500/20"><X className="h-3.5 w-3.5" /></button>
         </div>
       )}
       <FlowEditor

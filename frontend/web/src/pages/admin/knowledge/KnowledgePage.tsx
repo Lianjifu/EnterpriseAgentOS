@@ -4,9 +4,9 @@
  * 详情/新建都迁到独立页面(/admin/knowledge/kbs/:id、docs/:id、sources/:id、kbs/new、sources/new),
  * 本页只负责列表 + 筛选 + 批量操作。
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BookOpen, Database, FileText, Filter, ListChecks, Plus, RefreshCw, TrendingUp } from 'lucide-react';
+import { BookOpen, ChevronLeft, ChevronRight, Database, FileText, Filter, ListChecks, Plus, RefreshCw, TrendingUp } from 'lucide-react';
 import {
   useKnowledgeBases,
   useKnowledgeDocs,
@@ -36,6 +36,8 @@ import DocCard from './components/DocCard';
 import SourceCard from './components/SourceCard';
 import QualityChart, { type QualityPoint } from './components/QualityChart';
 
+const PAGE_SIZE = 8;
+
 function buildQualityTrend(evalCases: Array<{ status: string; mrr: number; latency: number }>): QualityPoint[] {
   const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
   const passRate = evalCases.length === 0
@@ -53,6 +55,19 @@ function buildQualityTrend(evalCases: Array<{ status: string; mrr: number; laten
   });
 }
 
+function paginate<T>(items: T[], page: number): { slice: T[]; totalPages: number; pageStart: number; pageEnd: number } {
+  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const pageStart = (safePage - 1) * PAGE_SIZE;
+  const pageEnd = Math.min(pageStart + items.slice(pageStart, pageStart + PAGE_SIZE).length, items.length);
+  return {
+    slice: items.slice(pageStart, pageStart + PAGE_SIZE),
+    totalPages,
+    pageStart: items.length === 0 ? 0 : pageStart + 1,
+    pageEnd,
+  };
+}
+
 export default function KnowledgePage() {
   const [tab, setTab] = useState<TabId>('kb');
   const [range, setRange] = useState<'7d' | '30d' | '90d'>('7d');
@@ -60,6 +75,11 @@ export default function KnowledgePage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [notice, setNotice] = useState<string | null>(null);
   const [selectedKbIds, setSelectedKbIds] = useState<string[]>([]);
+  const [kbPage, setKbPage] = useState(1);
+  const [docPage, setDocPage] = useState(1);
+  const [sourcePage, setSourcePage] = useState(1);
+  const [taskPage, setTaskPage] = useState(1);
+  const [evalPage, setEvalPage] = useState(1);
 
   const navigate = useNavigate();
 
@@ -127,10 +147,20 @@ export default function KnowledgePage() {
 
   const kbById = useMemo(() => new Map(kbs.map((k) => [k.id, k])), [kbs]);
 
+  const kbPageItems = useMemo(() => paginate(visibleKbs, kbPage), [visibleKbs, kbPage]);
+  const docPageItems = useMemo(() => paginate(visibleDocs, docPage), [visibleDocs, docPage]);
+  const sourcePageItems = useMemo(() => paginate(sources, sourcePage), [sources, sourcePage]);
+  const taskPageItems = useMemo(() => paginate(tasks, taskPage), [tasks, taskPage]);
+  const evalPageItems = useMemo(() => paginate(evalCases, evalPage), [evalCases, evalPage]);
+
   const flash = (text: string) => {
     setNotice(text);
     window.setTimeout(() => setNotice(null), 2400);
   };
+
+  useEffect(() => { setKbPage(1); }, [search, statusFilter]);
+  useEffect(() => { setDocPage(1); }, [search, statusFilter]);
+  useEffect(() => { setTaskPage(1); }, [statusFilter]);
 
   const refreshAll = () => {
     kbsQuery.refetch();
@@ -290,7 +320,7 @@ export default function KnowledgePage() {
             )}
           </section>
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            {visibleKbs.map((kb) => (
+            {kbPageItems.slice.map((kb) => (
               <KbCard
                 key={kb.id}
                 kb={kb}
@@ -301,6 +331,14 @@ export default function KnowledgePage() {
               />
             ))}
           </section>
+          <PaginationBar
+            page={kbPage}
+            totalPages={kbPageItems.totalPages}
+            total={visibleKbs.length}
+            pageStart={kbPageItems.pageStart}
+            pageEnd={kbPageItems.pageEnd}
+            onPageChange={setKbPage}
+          />
         </>
       )}
 
@@ -337,10 +375,18 @@ export default function KnowledgePage() {
             </div>
           </section>
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            {visibleDocs.map((doc) => (
+            {docPageItems.slice.map((doc) => (
               <DocCard key={doc.id} doc={doc} onOpen={(d) => navigate(`/admin/knowledge/docs/${d.id}`)} />
             ))}
           </section>
+          <PaginationBar
+            page={docPage}
+            totalPages={docPageItems.totalPages}
+            total={visibleDocs.length}
+            pageStart={docPageItems.pageStart}
+            pageEnd={docPageItems.pageEnd}
+            onPageChange={setDocPage}
+          />
         </>
       )}
 
@@ -362,7 +408,7 @@ export default function KnowledgePage() {
             </div>
           </section>
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {sources.map((s) => (
+            {sourcePageItems.slice.map((s) => (
               <SourceCard
                 key={s.id}
                 source={s}
@@ -372,6 +418,14 @@ export default function KnowledgePage() {
               />
             ))}
           </section>
+          <PaginationBar
+            page={sourcePage}
+            totalPages={sourcePageItems.totalPages}
+            total={sources.length}
+            pageStart={sourcePageItems.pageStart}
+            pageEnd={sourcePageItems.pageEnd}
+            onPageChange={setSourcePage}
+          />
         </>
       )}
 
@@ -406,7 +460,7 @@ export default function KnowledgePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border)]">
-                  {tasks.map((t) => {
+                  {taskPageItems.slice.map((t) => {
                     const badge = TASK_STATUS_BADGE[t.status];
                     const targetKb = kbById.get(t.kbId);
                     return (
@@ -448,6 +502,14 @@ export default function KnowledgePage() {
               </table>
             </div>
           </section>
+          <PaginationBar
+            page={taskPage}
+            totalPages={taskPageItems.totalPages}
+            total={tasks.length}
+            pageStart={taskPageItems.pageStart}
+            pageEnd={taskPageItems.pageEnd}
+            onPageChange={setTaskPage}
+          />
         </>
       )}
 
@@ -499,7 +561,7 @@ export default function KnowledgePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border)]">
-                  {evalCases.map((e) => {
+                  {evalPageItems.slice.map((e) => {
                     const badge = EVAL_STATUS_BADGE[e.status];
                     const expected = kbs.find((k) => k.id === e.expectedKb);
                     const actual = kbs.find((k) => k.id === e.actualKb);
@@ -537,6 +599,14 @@ export default function KnowledgePage() {
               </table>
             </div>
           </section>
+          <PaginationBar
+            page={evalPage}
+            totalPages={evalPageItems.totalPages}
+            total={evalCases.length}
+            pageStart={evalPageItems.pageStart}
+            pageEnd={evalPageItems.pageEnd}
+            onPageChange={setEvalPage}
+          />
           <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
             <div className="flex items-center gap-2 border-b border-[var(--border)] px-5 py-4">
               <TrendingUp className="h-5 w-5 text-[var(--brand)]" />
@@ -588,5 +658,60 @@ function KpiBlock({ label, value, tone, small }: { label: string; value: string 
       <span className="text-[10px] uppercase tracking-wide opacity-70">{label}</span>
       <span className={`font-semibold tabular-nums ${small ? 'text-xl' : 'text-2xl'}`}>{value}</span>
     </div>
+  );
+}
+
+function PaginationBar({ page, totalPages, total, pageStart, pageEnd, onPageChange }: {
+  page: number;
+  totalPages: number;
+  total: number;
+  pageStart: number;
+  pageEnd: number;
+  onPageChange: (next: number) => void;
+}) {
+  if (totalPages <= 1) return null;
+  const safePage = Math.min(page, totalPages);
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
+  return (
+    <nav aria-label="分页" className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] px-4 py-2.5 text-xs">
+      <span className="text-[var(--text-muted)]">
+        第 <span className="font-semibold tabular-nums text-[var(--text)]">{pageStart}-{pageEnd}</span> 个 / 共 <span className="font-semibold tabular-nums text-[var(--text)]">{total}</span> 个
+      </span>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => onPageChange(Math.max(1, safePage - 1))}
+          disabled={safePage <= 1}
+          aria-label="上一页"
+          className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <ChevronLeft className="h-3 w-3" />上一页
+        </button>
+        {pageNumbers.map((n) => {
+          const active = n === safePage;
+          return (
+            <button
+              key={n}
+              type="button"
+              onClick={() => onPageChange(n)}
+              aria-current={active ? 'page' : undefined}
+              aria-label={`第 ${n} 页`}
+              className={`grid h-7 w-7 place-items-center rounded-lg text-[11px] font-semibold transition ${active ? 'bg-[var(--brand)] text-white' : 'border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]'}`}
+            >
+              {n}
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
+          disabled={safePage >= totalPages}
+          aria-label="下一页"
+          className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          下一页<ChevronRight className="h-3 w-3" />
+        </button>
+      </div>
+    </nav>
   );
 }

@@ -131,6 +131,25 @@ describe('AdminKnowledge', () => {
     expect(screen.getAllByRole('link', { name: /产品手册 v3/ }).length).toBeGreaterThan(0);
   });
 
+  it('shows pagination bar when fixture count exceeds page size', () => {
+    renderPage();
+    const taskTab = screen.getAllByRole('button', { name: /任务/ })[0];
+    fireEvent.click(taskTab);
+    const nav = screen.getByRole('navigation', { name: '分页' });
+    expect(nav.textContent).toMatch(/1-8/);
+    expect(nav.textContent).toMatch(/共\s*14/);
+    expect(screen.getAllByRole('button', { name: /第 2 页/ }).length).toBeGreaterThan(0);
+  });
+
+  it('switching page on task tab reveals later tasks', () => {
+    renderPage();
+    fireEvent.click(screen.getAllByRole('button', { name: /任务/ })[0]);
+    expect(screen.getByText('产品手册 v3 全文索引')).toBeTruthy();
+    fireEvent.click(screen.getAllByRole('button', { name: /第 2 页/ })[0]);
+    const nav = screen.getByRole('navigation', { name: '分页' });
+    expect(nav.textContent).toMatch(/9-14/);
+  });
+
   it('eval tab shows linked expected/actual kb names and per-kb aggregation table', () => {
     renderPage();
     const evalTab = screen.getAllByRole('button', { name: /评测/ })[0];

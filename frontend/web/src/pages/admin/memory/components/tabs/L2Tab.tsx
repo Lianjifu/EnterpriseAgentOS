@@ -1,11 +1,15 @@
 /**
  * L2Tab — 长期记忆(批量选择 + 卡片网格 + 筛选)。
+ *
+ * 卡片布局:外层 rounded-2xl + 顶部筛选 header(border-b) + 卡片网格 + 底部分页(border-t 内联)。
+ * 选中态 toolbar 仍作为 sticky 顶部条独立在外。
+ * 与 /admin/workflows 列表卡片结构对齐。
  */
 import { ArrowUpRight, CheckCircle2 } from 'lucide-react';
-import type { L2Category, L2Fact, L2Status } from '@/api/admin/memory/schema';
-import { L2_CATEGORY_LABEL, L2_STATUS_BADGE } from '../constants';
+import type { L2Category, L2Fact } from '@/api/admin/memory/schema';
+import { L2_CATEGORY_LABEL } from '../constants';
 import { L2Card } from '../Cards';
-import { PaginationBar } from '../PaginationBar';
+import { InlinePagination } from '../InlinePagination';
 
 export function L2Tab({
   facts, users, selectedIds,
@@ -48,8 +52,8 @@ export function L2Tab({
           </button>
         </div>
       )}
-      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4 sm:p-5">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
+        <div className="flex flex-col gap-3 border-b border-[var(--border)] px-5 py-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex flex-1 flex-wrap items-center gap-2">
             <input
               value={query}
@@ -80,26 +84,26 @@ export function L2Tab({
           </div>
           <p className="text-[11px] text-[var(--text-muted)]">{facts.length} 条事实 · 过滤后</p>
         </div>
+        <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
+          {facts.map((f) => (
+            <L2Card
+              key={f.id}
+              fact={f}
+              onOpen={() => onOpen(f)}
+              onPromote={() => onPromote(f.id)}
+              onConfirm={() => onConfirm(f.id)}
+              selected={selectedIds.includes(f.id)}
+              onToggle={() => onToggleSelect(f.id)}
+            />
+          ))}
+          {facts.length === 0 && (
+            <p className="md:col-span-2 xl:col-span-3 rounded-2xl border border-dashed border-[var(--border)] p-12 text-center text-xs text-[var(--text-muted)]">
+              没有匹配的事实,试试调整筛选条件。
+            </p>
+          )}
+        </div>
+        {pagination && <InlinePagination {...pagination} />}
       </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {facts.map((f) => (
-          <L2Card
-            key={f.id}
-            fact={f}
-            onOpen={() => onOpen(f)}
-            onPromote={() => onPromote(f.id)}
-            onConfirm={() => onConfirm(f.id)}
-            selected={selectedIds.includes(f.id)}
-            onToggle={() => onToggleSelect(f.id)}
-          />
-        ))}
-        {facts.length === 0 && (
-          <p className="md:col-span-2 xl:col-span-3 rounded-2xl border border-dashed border-[var(--border)] p-12 text-center text-xs text-[var(--text-muted)]">
-            没有匹配的事实,试试调整筛选条件。
-          </p>
-        )}
-      </div>
-      {pagination && <PaginationBar {...pagination} />}
     </section>
   );
 }

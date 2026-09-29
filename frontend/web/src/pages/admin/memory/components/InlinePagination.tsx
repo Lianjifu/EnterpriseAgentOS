@@ -1,10 +1,14 @@
 /**
- * PaginationBar — AdminMemory 通用分页条(本地版,不复用 PanelPagination)。
- * 第 X-Y / 共 N + 数字按钮 + 上下页;totalPages ≤ 1 不渲染。
+ * InlinePagination — AdminMemory 通用分页行(border-t divider,无外卡片)。
+ *
+ * 供 L1Tab / L2Tab / L3Tab 在统一外层卡片内部作为底部分页使用,
+ * 样式与 /admin/workflows 列表底部对齐。
+ *
+ * totalPages ≤ 1 不渲染(数据不够时占位都省)。
  */
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-export function PaginationBar({ page, totalPages, total, pageStart, pageEnd, onPageChange }: {
+export function InlinePagination({ page, totalPages, total, pageStart, pageEnd, onPageChange }: {
   page: number;
   totalPages: number;
   total: number;
@@ -16,10 +20,12 @@ export function PaginationBar({ page, totalPages, total, pageStart, pageEnd, onP
   const safePage = Math.min(page, totalPages);
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
   return (
-    <nav aria-label="分页" className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] px-4 py-2.5 text-xs">
-      <span className="text-[var(--text-muted)]">
-        第 <span className="font-semibold tabular-nums text-[var(--text)]">{pageStart}-{pageEnd}</span> 个 / 共 <span className="font-semibold tabular-nums text-[var(--text)]">{total}</span> 个
-      </span>
+    <div className="flex items-center justify-between border-t border-[var(--border)] px-5 py-3 text-xs">
+      <p className="text-[var(--text-muted)]">
+        第 <span className="font-semibold tabular-nums text-[var(--text-secondary)]">{pageStart}</span>-
+        <span className="font-semibold tabular-nums text-[var(--text-secondary)]">{pageEnd}</span> 个 / 共
+        <span className="font-semibold tabular-nums text-[var(--text-secondary)]">{total}</span> 个
+      </p>
       <div className="flex items-center gap-1">
         <button
           type="button"
@@ -55,6 +61,6 @@ export function PaginationBar({ page, totalPages, total, pageStart, pageEnd, onP
           下一页<ChevronRight className="h-3 w-3" />
         </button>
       </div>
-    </nav>
+    </div>
   );
 }

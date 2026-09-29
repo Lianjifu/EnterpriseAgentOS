@@ -68,15 +68,15 @@ export const adminNavigationSections: NavigationSection[] = [
     { label: '记忆管理', href: '/admin/memory', icon: Brain, description: '管理智能体记忆、用户偏好与跨会话上下文' },
     { label: '工作流管理', href: '/admin/workflows', icon: Workflow, description: '设计、发布和分析自动化流程' },
   ] },
-  { title: '质量保障', items: [
-    { label: '评测中心', href: '/admin/evaluations', icon: Beaker, description: '评测智能体、知识与流程的质量与对比' },
-    { label: '回归追踪', href: '/admin/regressions', icon: History, description: '版本变更后自动跑回归用例，发现质量退化' },
-    { label: '用户反馈', href: '/admin/feedback', icon: ThumbsUp, description: '收集用户对智能体回答的赞踩与修正建议' },
-  ] },
   { title: '平台治理', items: [
     { label: '模型配置', href: '/admin/models', icon: CloudCog, description: '配置模型服务、路由策略与健康监控' },
     { label: '额度管理', href: '/admin/quotas', icon: CircleDollarSign, description: '管理企业用量、预算与成本执行' },
     { label: '渠道管理', href: '/admin/notifications', icon: Megaphone, description: '邮件、IM、Webhook 与告警接收人' },
+  ] },
+  { title: '质量保障', items: [
+    { label: '评测中心', href: '/admin/evaluations', icon: Beaker, description: '评测智能体、知识与流程的质量与对比' },
+    { label: '回归追踪', href: '/admin/regressions', icon: History, description: '版本变更后自动跑回归用例，发现质量退化' },
+    { label: '用户反馈', href: '/admin/feedback', icon: ThumbsUp, description: '收集用户对智能体回答的赞踩与修正建议' },
   ] },
   { title: '可观测', items: [
     { label: '调用链路', href: '/admin/operations', icon: Activity, description: '会话追溯：还原智能体 / 工具 / MCP 的完整调用链与上下文' },

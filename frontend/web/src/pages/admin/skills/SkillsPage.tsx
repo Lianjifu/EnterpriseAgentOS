@@ -249,7 +249,7 @@ export default function SkillsPage() {
         </NoticeBanner>
       )}
 
-      <section aria-label="子模块导航" className="flex flex-wrap items-center gap-2 overflow-x-auto pb-1">
+      <nav aria-label="子模块导航" className="flex flex-wrap items-center gap-1 border-b border-[var(--border)]">
         {TABS.map((t) => {
           const count = tabCounts[t.id];
           return (
@@ -258,14 +258,14 @@ export default function SkillsPage() {
               type="button"
               onClick={() => setTab(t.id)}
               aria-pressed={tab === t.id}
-              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-semibold transition ${tab === t.id ? 'border-[var(--brand)] bg-[var(--brand-light)] text-[var(--brand)]' : 'border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]'}`}
+              className={`inline-flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-semibold transition ${tab === t.id ? 'border-[var(--brand)] text-[var(--brand)]' : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--brand)]'}`}
             >
               {t.label}
-              <span className="rounded bg-[var(--bg-elevated)] px-1.5 py-0.5 text-[10px] tabular-nums">{count}</span>
+              <span className={`rounded px-1.5 py-0.5 text-[10px] tabular-nums ${tab === t.id ? 'bg-[var(--brand-light)] text-[var(--brand)]' : 'bg-[var(--bg-elevated)] text-[var(--text-muted)]'}`}>{count}</span>
             </button>
           );
         })}
-      </section>
+      </nav>
 
       {tab === 'overview' && (
         <>

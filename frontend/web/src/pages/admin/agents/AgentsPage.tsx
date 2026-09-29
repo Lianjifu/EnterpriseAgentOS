@@ -219,8 +219,8 @@ export default function AgentsPage() {
       )}
 
       {/* Tab + Filter Bar */}
-      <section className="flex flex-wrap items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-3">
-        <nav aria-label="状态过滤" className="flex flex-wrap gap-1">
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-3">
+        <nav aria-label="状态过滤" className="flex flex-wrap items-center gap-1 border-b border-[var(--border)] pb-1">
           {TABS.map((tab: { id: TabId; label: string }) => {
             const active = (filters.tab ?? 'all') === tab.id;
             const count = tab.id === 'all' ? list.length : list.filter((a) => a.status === tab.id).length;
@@ -230,10 +230,10 @@ export default function AgentsPage() {
                 type="button"
                 onClick={() => setFilters((f) => ({ ...f, tab: tab.id }))}
                 aria-pressed={active}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${active ? 'bg-[var(--brand-light)] text-[var(--brand)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'}`}
+                className={`inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-semibold transition ${active ? 'border-[var(--brand)] text-[var(--brand)]' : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--brand)]'}`}
               >
                 {tab.label}
-                <span className="rounded bg-[var(--bg-elevated)] px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-[var(--text-muted)]">{count}</span>
+                <span className={`rounded px-1.5 py-0.5 text-[10px] tabular-nums ${active ? 'bg-[var(--brand-light)] text-[var(--brand)]' : 'bg-[var(--bg-elevated)] text-[var(--text-muted)]'}`}>{count}</span>
               </button>
             );
           })}

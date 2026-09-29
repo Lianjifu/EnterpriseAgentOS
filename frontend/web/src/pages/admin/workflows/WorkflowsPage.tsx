@@ -130,47 +130,43 @@ export default function WorkflowsPage() {
         </NoticeBanner>
       )}
 
-      <section aria-label="子模块导航" className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex items-center gap-1 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] p-1">
-          {TABS.map((t) => {
-            const count = countForTab(t.id, flows);
-            const active = tab === t.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTab(t.id)}
-                aria-pressed={active}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${active ? 'bg-[var(--brand)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-1)] hover:text-[var(--brand)]'}`}
-              >
-                {t.label}
-                <span className={`inline-flex min-w-[1.25rem] items-center justify-center rounded-md px-1 py-px text-[10px] font-bold tabular-nums ${active ? 'bg-white/20 text-white' : 'bg-[var(--surface-1)] text-[var(--text-muted)] group-hover:text-[var(--brand)]'}`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+      <nav aria-label="子模块导航" className="flex flex-wrap items-center gap-1 border-b border-[var(--border)]">
+        {TABS.map((t) => {
+          const count = countForTab(t.id, flows);
+          const active = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              aria-pressed={active}
+              className={`inline-flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2.5 text-xs font-semibold transition ${active ? 'border-[var(--brand)] text-[var(--brand)]' : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--brand)]'}`}
+            >
+              {t.label}
+              <span className={`rounded px-1.5 py-0.5 text-[10px] tabular-nums ${active ? 'bg-[var(--brand-light)] text-[var(--brand)]' : 'bg-[var(--bg-elevated)] text-[var(--text-muted)]'}`}>{count}</span>
+            </button>
+          );
+        })}
+        <div className="ml-auto flex flex-wrap items-center gap-2 pb-1.5">
           <div className="relative w-full sm:w-64">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="搜索工作流名 / 团队 / 场景"
-              className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-1)] pl-10 pr-3 text-sm outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--brand)]"
+              className="h-9 w-full rounded-xl border border-[var(--border)] bg-[var(--surface-1)] pl-10 pr-3 text-xs outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--brand)]"
             />
           </div>
           <button
             type="button"
             onClick={goCreate}
-            className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]"
+            className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]"
           >
             <Plus className="h-4 w-4" />
             新建工作流
           </button>
         </div>
-      </section>
+      </nav>
 
       <OverviewTab
         flows={visibleFlows}

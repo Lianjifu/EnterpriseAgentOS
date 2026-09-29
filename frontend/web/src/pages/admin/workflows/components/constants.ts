@@ -86,6 +86,17 @@ export const NODE_TYPE_TREE: NodeTypeGroup[] = [
         inputs: [{ name: 'params', type: 'object', required: false, description: '调用方传入参数' }],
         outputs: [{ name: 'params', type: 'object' }],
       },
+      {
+        id: 'start-form', label: '表单提交', subtitle: '用户填表后启动',
+        defaults: { trigger: '表单提交' },
+        inputs: [{ name: 'form_id', type: 'string', required: true }],
+        outputs: [{ name: 'form_data', type: 'object', description: '表单字段' }, { name: 'submitter', type: 'string', description: '提交人 id' }],
+      },
+      {
+        id: 'start-im', label: 'IM 群消息', subtitle: '群内 @机器人或关键词触发',
+        defaults: { trigger: 'IM 触发' },
+        outputs: [{ name: 'message', type: 'string' }, { name: 'group_id', type: 'string' }, { name: 'sender', type: 'string' }],
+      },
     ],
   },
   {
@@ -94,14 +105,14 @@ export const NODE_TYPE_TREE: NodeTypeGroup[] = [
     children: [
       {
         id: 'tool-kb', label: '知识库检索', subtitle: '从 KB 检索片段',
-        defaults: { tool: 'knowledge_search', input: '{query}' },
-        inputs: [{ name: 'query', type: 'string', required: true }],
+        defaults: { tool: 'knowledge_search' },
+        inputs: [{ name: 'query', type: 'string', required: true }, { name: 'kb_id', type: 'string', required: true }],
         outputs: [{ name: 'chunks', type: 'array', description: '命中的片段' }, { name: 'score', type: 'number' }],
       },
       {
         id: 'tool-http', label: 'HTTP 请求', subtitle: '调外部 API',
         defaults: { tool: 'http_request', method: 'POST', url: 'https://api.example.com' },
-        inputs: [{ name: 'body', type: 'object', required: false }, { name: 'headers', type: 'object', required: false }],
+        inputs: [{ name: 'url', type: 'string', required: true }, { name: 'method', type: 'string' }, { name: 'body', type: 'object', required: false }, { name: 'headers', type: 'object', required: false }],
         outputs: [{ name: 'status', type: 'number' }, { name: 'data', type: 'object' }],
       },
       {
@@ -112,9 +123,45 @@ export const NODE_TYPE_TREE: NodeTypeGroup[] = [
       },
       {
         id: 'tool-email', label: '发送邮件', subtitle: 'SMTP 发邮件',
-        defaults: { tool: 'send_email', to: '{user.email}' },
+        defaults: { tool: 'send_email' },
         inputs: [{ name: 'to', type: 'string', required: true }, { name: 'subject', type: 'string', required: true }, { name: 'body', type: 'string', required: true }],
         outputs: [{ name: 'message_id', type: 'string' }],
+      },
+      {
+        id: 'tool-im', label: 'IM 推送', subtitle: '飞书 / 钉钉 / 企微',
+        defaults: { tool: 'im_push', channel: 'feishu' },
+        inputs: [{ name: 'channel', type: 'string', required: true }, { name: 'target', type: 'string', required: true }, { name: 'message', type: 'string', required: true }],
+        outputs: [{ name: 'message_id', type: 'string' }, { name: 'delivered', type: 'boolean' }],
+      },
+      {
+        id: 'tool-file', label: '文件解析', subtitle: 'PDF / Word / Excel 提取文本',
+        defaults: { tool: 'file_parse' },
+        inputs: [{ name: 'file', type: 'file', required: true }, { name: 'parser', type: 'string', required: false, description: 'auto / pdf / docx / xlsx' }],
+        outputs: [{ name: 'text', type: 'string' }, { name: 'pages', type: 'number' }],
+      },
+      {
+        id: 'tool-ocr', label: 'OCR 识别', subtitle: '从图片提取文字',
+        defaults: { tool: 'ocr' },
+        inputs: [{ name: 'image', type: 'file', required: true }, { name: 'lang', type: 'string', required: false }],
+        outputs: [{ name: 'text', type: 'string' }, { name: 'confidence', type: 'number' }],
+      },
+      {
+        id: 'tool-vector', label: '向量检索', subtitle: 'Milvus / Pinecone 语义查',
+        defaults: { tool: 'vector_search', index: 'default' },
+        inputs: [{ name: 'embedding', type: 'array', required: true }, { name: 'top_k', type: 'number', required: false }],
+        outputs: [{ name: 'matches', type: 'array' }, { name: 'scores', type: 'array' }],
+      },
+      {
+        id: 'tool-fn', label: '函数计算', subtitle: '跑一段 JS / Python',
+        defaults: { tool: 'fn_eval', runtime: 'js' },
+        inputs: [{ name: 'code', type: 'string', required: true }, { name: 'args', type: 'object', required: false }],
+        outputs: [{ name: 'result', type: 'object' }],
+      },
+      {
+        id: 'tool-mcp', label: 'MCP 服务', subtitle: '连接外部 MCP 工具集',
+        defaults: { tool: 'mcp_call', server: 'mcp-default' },
+        inputs: [{ name: 'server', type: 'string', required: true }, { name: 'method', type: 'string', required: true }, { name: 'params', type: 'object', required: false }],
+        outputs: [{ name: 'result', type: 'object' }],
       },
     ],
   },
@@ -147,6 +194,24 @@ export const NODE_TYPE_TREE: NodeTypeGroup[] = [
         outputs: [{ name: 'copy', type: 'string' }],
       },
       {
+        id: 'agent-llm', label: '通用 LLM', subtitle: '裸调大模型,可指定 system',
+        defaults: { agent: 'llm-default', system: 'You are a helpful assistant.' },
+        inputs: [{ name: 'prompt', type: 'string', required: true }, { name: 'system', type: 'string', required: false }],
+        outputs: [{ name: 'text', type: 'string' }, { name: 'tokens', type: 'number' }],
+      },
+      {
+        id: 'agent-code', label: '代码助手', subtitle: 'coder · 写 / 解释 / 改代码',
+        defaults: { agent: 'coder' },
+        inputs: [{ name: 'task', type: 'string', required: true, description: '写 / 解释 / 重构' }, { name: 'language', type: 'string', required: false }],
+        outputs: [{ name: 'code', type: 'string' }, { name: 'language', type: 'string' }],
+      },
+      {
+        id: 'agent-translator', label: '翻译助手', subtitle: 'translator · 多语种互译',
+        defaults: { agent: 'translator' },
+        inputs: [{ name: 'text', type: 'string', required: true }, { name: 'target_lang', type: 'string', required: true }],
+        outputs: [{ name: 'translation', type: 'string' }, { name: 'detected_lang', type: 'string' }],
+      },
+      {
         id: 'agent-custom', label: '+ 新建智能体', subtitle: '跳到智能体管理',
         defaults: { agent: '__new__' },
       },
@@ -165,7 +230,7 @@ export const NODE_TYPE_TREE: NodeTypeGroup[] = [
       {
         id: 'cond-switch', label: 'Switch 多路', subtitle: '按枚举分派',
         defaults: { mode: 'switch' },
-        inputs: [{ name: 'value', type: 'string', required: true }],
+        inputs: [{ name: 'value', type: 'string', required: true }, { name: 'cases', type: 'array', required: false, description: '可选枚举' }],
         outputs: [{ name: 'branch', type: 'string', description: '命中的分支 id' }],
       },
       {
@@ -173,6 +238,24 @@ export const NODE_TYPE_TREE: NodeTypeGroup[] = [
         defaults: { mode: 'loop' },
         inputs: [{ name: 'items', type: 'array', required: true }],
         outputs: [{ name: 'item', type: 'object', description: '当前项' }, { name: 'index', type: 'number' }, { name: 'done', type: 'object', description: '循环结束出口' }],
+      },
+      {
+        id: 'cond-parallel', label: '并行分支', subtitle: '同时跑多条子链',
+        defaults: { mode: 'parallel' },
+        inputs: [{ name: 'branches', type: 'array', required: true, description: 'N 条并行任务' }],
+        outputs: [{ name: 'results', type: 'array', description: 'N 个结果按序' }, { name: 'failed', type: 'array', description: '失败分支索引' }],
+      },
+      {
+        id: 'cond-wait', label: '等待信号', subtitle: '挂起直到外部事件或超时',
+        defaults: { mode: 'wait', timeout_sec: '3600' },
+        inputs: [{ name: 'event', type: 'string', required: true }, { name: 'timeout', type: 'number', required: false }],
+        outputs: [{ name: 'payload', type: 'object' }, { name: 'timed_out', type: 'boolean' }],
+      },
+      {
+        id: 'cond-try', label: '异常捕获', subtitle: 'try / catch 子链',
+        defaults: { mode: 'try' },
+        inputs: [{ name: 'try_chain', type: 'object', required: true }],
+        outputs: [{ name: 'success', type: 'object', description: '正常出口' }, { name: 'error', type: 'object', description: '异常出口' }],
       },
     ],
   },
@@ -182,21 +265,33 @@ export const NODE_TYPE_TREE: NodeTypeGroup[] = [
     children: [
       {
         id: 'end-return', label: '返回结果', subtitle: '把结果回传给调用方',
-        defaults: { action: 'return', target: 'caller' },
+        defaults: { action: 'return' },
         inputs: [{ name: 'result', type: 'object', required: true, description: '工作流输出' }],
         outputs: [],
       },
       {
         id: 'end-notify', label: '发送通知', subtitle: '邮件 / 站内 / IM',
-        defaults: { action: 'notify', target: 'caller' },
-        inputs: [{ name: 'to', type: 'string', required: true }, { name: 'message', type: 'string', required: true }],
+        defaults: { action: 'notify' },
+        inputs: [{ name: 'to', type: 'string', required: true }, { name: 'message', type: 'string', required: true }, { name: 'channel', type: 'string', required: false }],
         outputs: [{ name: 'message_id', type: 'string' }],
       },
       {
         id: 'end-writeback', label: '写库', subtitle: '把结果写回 DB',
-        defaults: { action: 'writeback', target: 'caller' },
+        defaults: { action: 'writeback' },
         inputs: [{ name: 'table', type: 'string', required: true }, { name: 'row', type: 'object', required: true }],
         outputs: [{ name: 'row_id', type: 'string' }],
+      },
+      {
+        id: 'end-chain', label: '触发下个流', subtitle: '调用另一个工作流',
+        defaults: { action: 'chain', target_flow: '' },
+        inputs: [{ name: 'flow_id', type: 'string', required: true }, { name: 'args', type: 'object', required: false }],
+        outputs: [{ name: 'sub_result', type: 'object' }],
+      },
+      {
+        id: 'end-archive', label: '入归档', subtitle: '把本次执行归档',
+        defaults: { action: 'archive' },
+        inputs: [{ name: 'payload', type: 'object', required: false }],
+        outputs: [{ name: 'archive_id', type: 'string' }],
       },
     ],
   },

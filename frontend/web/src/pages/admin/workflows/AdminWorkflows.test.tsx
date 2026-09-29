@@ -45,6 +45,7 @@ describe('AdminWorkflows', () => {
 
   it('默认 tab 是 全部 + 渲染 FlowCard', () => {
     renderPage();
+    expect(screen.getByText('工作流列表')).toBeTruthy();
     expect(screen.getAllByText(/销售周报自动整理/).length).toBeGreaterThan(0);
   });
 

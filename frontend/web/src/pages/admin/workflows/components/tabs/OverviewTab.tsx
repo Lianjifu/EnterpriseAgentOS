@@ -11,7 +11,7 @@
  * - + 添加节点 → onAddNode(flow, kind)(列表侧快速添加)
  */
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Workflow } from 'lucide-react';
 import type { Flow, NodeKind, WorkflowTabId } from '@/api/admin/workflows/schema';
 import { FlowCard } from '../FlowCard';
 
@@ -46,6 +46,15 @@ export function OverviewTab({
 
   return (
     <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
+      <div className="border-b border-[var(--border)] px-5 py-4">
+        <h3 className="flex items-center gap-2 text-base font-semibold">
+          <Workflow className="h-4 w-4 text-amber-600" />
+          {titleForTab(statusTab)}
+        </h3>
+        <p className="mt-1 text-xs text-[var(--text-muted)]">
+          点击「查看」打开工作流详情页;点击「编辑」直接进入画布;点击右上「新建工作流」从空白开始。
+        </p>
+      </div>
       <div className="grid gap-4 p-5 lg:grid-cols-2">
         {pagedFlows.map((flow) => (
           <FlowCard
@@ -112,6 +121,13 @@ export function OverviewTab({
       )}
     </section>
   );
+}
+
+function titleForTab(tab: WorkflowTabId): string {
+  if (tab === 'all') return '工作流列表';
+  if (tab === 'draft') return '草稿工作流';
+  if (tab === 'published') return '已发布的工作流';
+  return '已下线的工作流';
 }
 
 function emptyTitleForTab(tab: WorkflowTabId): string {

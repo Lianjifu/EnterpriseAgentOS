@@ -7,7 +7,7 @@
  * 下方展示策略全部字段 + 反向引用 agent 列表。
  */
 import { useMemo } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Brain, Layers, Clock, Hash, HardDrive, Percent, Users, Trash2 } from 'lucide-react';
 import { useRetentionPolicy } from '@/api/admin/memory/useMemory';
 import { mockAgents } from '@/mock/admin/agents.fixtures';
@@ -60,6 +60,7 @@ export default function PolicyDetailPage() {
   const { id = '' } = useParams<{ id: string }>();
   const decoded = useMemo(() => decodeURIComponent(id), [id]);
   const { data: policy, isLoading } = useRetentionPolicy(decoded || null);
+  const navigate = useNavigate();
 
   const boundAgents = useMemo(() => {
     if (!policy) return [] as typeof mockAgents;
@@ -82,7 +83,7 @@ export default function PolicyDetailPage() {
     <div className="mx-auto w-full max-w-[1440px] space-y-4 p-5 pb-16 sm:p-8 xl:px-6">
       <button
         type="button"
-        onClick={() => { window.location.href = '/admin/memory'; }}
+        onClick={() => { navigate('/admin/memory'); }}
         className="inline-flex w-fit items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--brand)]"
       >
         <ArrowLeft className="h-3.5 w-3.5" />返回记忆管理

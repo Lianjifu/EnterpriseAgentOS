@@ -1,48 +1,31 @@
 /**
  * L1Tab — 短期记忆(会话缓冲列表 + 筛选 + 全部 flush)。
+ *
+ * 筛选上游由 MemoryPage 处理;本组件只负责渲染。
  */
-import { Search, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import type { L1Session, L1Status } from '@/api/admin/memory/schema';
 import { L1Row } from '../Cards';
+import { PaginationBar } from '../PaginationBar';
 
-export function L1Tab({ sessions, query, onQuery, statusFilter, onStatusFilter, onFlushAll, onFlushOne, onOpen }: {
+export function L1Tab({ sessions, onFlushAll, onFlushOne, onOpen, pagination }: {
   sessions: L1Session[];
-  query: string;
-  onQuery: (next: string) => void;
-  statusFilter: 'all' | L1Status;
-  onStatusFilter: (next: 'all' | L1Status) => void;
   onFlushAll: () => void;
   onFlushOne: (id: string) => void;
   onOpen: (s: L1Session) => void;
+  pagination?: { page: number; totalPages: number; total: number; pageStart: number; pageEnd: number; onPageChange: (next: number) => void };
 }) {
-  const text = query.trim().toLowerCase();
-  const filtered = sessions.filter((s) => {
-    if (statusFilter !== 'all' && s.status !== statusFilter) return false;
-    if (text && !`${s.userName} ${s.agentName}`.toLowerCase().includes(text)) return false;
-    return true;
-  });
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:p-5">
-        <div className="flex flex-1 flex-wrap items-center gap-2">
-          <div className="relative min-w-[200px] flex-1 sm:max-w-[300px]">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-            <input value={query} onChange={(e) => onQuery(e.target.value)} placeholder="搜索用户 / 智能体" className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none focus:border-blue-400 dark:border-slate-700 dark:bg-slate-900" />
-          </div>
-          <select value={statusFilter} onChange={(e) => onStatusFilter(e.target.value as 'all' | L1Status)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium outline-none focus:border-blue-400 dark:border-slate-700 dark:bg-slate-900">
-            <option value="all">全部状态</option>
-            <option value="active">活跃</option>
-            <option value="paused">已暂停</option>
-            <option value="expired">已过期</option>
-          </select>
-        </div>
-        <button type="button" onClick={onFlushAll} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold hover:border-rose-400 hover:text-rose-600 dark:border-slate-700">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4 sm:p-5">
+        <p className="text-xs text-[var(--text-muted)]">{sessions.length} 条会话 · 过滤后</p>
+        <button type="button" onClick={onFlushAll} className="inline-flex items-center gap-2 rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-semibold hover:border-[var(--danger)] hover:text-[var(--danger)]">
           <Trash2 className="h-4 w-4" />全部 flush
         </button>
       </div>
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <div className="overflow-x-auto rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
         <table className="w-full min-w-[920px] text-xs">
-          <thead className="bg-slate-50 text-slate-500 dark:bg-slate-900/40">
+          <thead className="bg-[var(--bg-app)] text-[var(--text-muted)]">
             <tr>
               <th className="px-4 py-3 text-left font-semibold">会话</th>
               <th className="px-4 py-3 text-left font-semibold">用户</th>
@@ -56,11 +39,16 @@ export function L1Tab({ sessions, query, onQuery, statusFilter, onStatusFilter, 
             </tr>
           </thead>
           <tbody>
-            {filtered.map((s) => <L1Row key={s.id} session={s} onFlush={() => onFlushOne(s.id)} onOpen={() => onOpen(s)} />)}
+            {sessions.map((s) => (
+              <L1Row key={s.id} session={s} onFlush={() => onFlushOne(s.id)} onOpen={() => onOpen(s)} />
+            ))}
           </tbody>
         </table>
-        {filtered.length === 0 && <p className="px-4 py-12 text-center text-xs text-slate-500 dark:text-slate-400">没有匹配的会话,试试调整筛选条件。</p>}
+        {sessions.length === 0 && (
+          <p className="px-4 py-12 text-center text-xs text-[var(--text-muted)]">没有匹配的会话,试试调整筛选条件。</p>
+        )}
       </div>
+      {pagination && <PaginationBar {...pagination} />}
     </section>
   );
 }

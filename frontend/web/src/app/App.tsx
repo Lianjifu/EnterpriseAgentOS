@@ -30,6 +30,9 @@ const AdminKnowledgeKbCreate = lazy(() => import('@/pages/admin/knowledge/KbCrea
 const AdminKnowledgeSourceCreate = lazy(() => import('@/pages/admin/knowledge/SourceCreatePage'));
 const AdminMemory = lazy(() => import('@/pages/admin/memory'));
 const AdminMemoryPolicyDetail = lazy(() => import('@/pages/admin/memory/PolicyDetailPage'));
+const AdminMemoryL1Detail = lazy(() => import('@/pages/admin/memory/L1DetailPage'));
+const AdminMemoryL2Detail = lazy(() => import('@/pages/admin/memory/L2DetailPage'));
+const AdminMemoryL3Detail = lazy(() => import('@/pages/admin/memory/L3DetailPage'));
 const AdminWorkflows = lazy(() => import('@/pages/admin/workflows'));
 const AdminWorkflowDetail = lazy(() => import('@/pages/admin/workflows/WorkflowDetailPage'));
 const AdminSkills = lazy(() => import('@/pages/admin/skills'));
@@ -120,6 +123,9 @@ export default function App() {
             <Route path="/admin/knowledge/sources/:id" element={<AdminKnowledgeSourceDetail />} />
             <Route path="/admin/memory" element={<AdminMemory />} />
             <Route path="/admin/memory/policies/:id" element={<AdminMemoryPolicyDetail />} />
+            <Route path="/admin/memory/l1/:id" element={<AdminMemoryL1Detail />} />
+            <Route path="/admin/memory/l2/:id" element={<AdminMemoryL2Detail />} />
+            <Route path="/admin/memory/l3/:id" element={<AdminMemoryL3Detail />} />
             <Route path="/admin/workflows" element={<AdminWorkflows />} />
             <Route path="/admin/workflows/:id" element={<AdminWorkflowDetail />} />
             <Route path="/admin/tools" element={<AdminSkills />} />

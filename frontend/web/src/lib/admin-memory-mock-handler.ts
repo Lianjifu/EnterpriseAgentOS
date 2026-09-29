@@ -25,6 +25,30 @@ export function wrapMockHandlerWithAdminMemory(fallback: (path: string, opts: an
       if (!policy) throw Object.assign(new Error('policy not found'), { status: 404 });
       return withDelay(policy);
     }
+    const l1DetailMatch = /^\/api\/admin\/memory\/l1\/(.+)$/.exec(path);
+    if (l1DetailMatch) {
+      const id = decodeURIComponent(l1DetailMatch[1]);
+      if (id === '__noop__') return withDelay(null);
+      const item = mockL1Sessions.find((s) => s.id === id);
+      if (!item) throw Object.assign(new Error('l1 session not found'), { status: 404 });
+      return withDelay(item);
+    }
+    const l2DetailMatch = /^\/api\/admin\/memory\/l2\/(.+)$/.exec(path);
+    if (l2DetailMatch) {
+      const id = decodeURIComponent(l2DetailMatch[1]);
+      if (id === '__noop__') return withDelay(null);
+      const item = mockL2Facts.find((f) => f.id === id);
+      if (!item) throw Object.assign(new Error('l2 fact not found'), { status: 404 });
+      return withDelay(item);
+    }
+    const l3DetailMatch = /^\/api\/admin\/memory\/l3\/(.+)$/.exec(path);
+    if (l3DetailMatch) {
+      const id = decodeURIComponent(l3DetailMatch[1]);
+      if (id === '__noop__') return withDelay(null);
+      const item = mockL3Entries.find((k) => k.id === id);
+      if (!item) throw Object.assign(new Error('l3 entry not found'), { status: 404 });
+      return withDelay(item);
+    }
     return fallback(path, opts);
   };
 }

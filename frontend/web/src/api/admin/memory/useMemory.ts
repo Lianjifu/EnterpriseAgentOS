@@ -36,6 +36,33 @@ export function useRetentionPolicy(label: string | null) {
   );
 }
 
+export function useL1Session(id: string | null) {
+  return useApiQuery<L1Session | null>(
+    qk.admin.memory.l1Detail(id ?? 'none'),
+    id ? `/api/admin/memory/l1/${encodeURIComponent(id)}` : '/api/admin/memory/l1/__noop__',
+    undefined,
+    { enabled: Boolean(id), staleTime: 30_000 },
+  );
+}
+
+export function useL2Fact(id: string | null) {
+  return useApiQuery<L2Fact | null>(
+    qk.admin.memory.l2Detail(id ?? 'none'),
+    id ? `/api/admin/memory/l2/${encodeURIComponent(id)}` : '/api/admin/memory/l2/__noop__',
+    undefined,
+    { enabled: Boolean(id), staleTime: 30_000 },
+  );
+}
+
+export function useL3Entry(id: string | null) {
+  return useApiQuery<L3Entry | null>(
+    qk.admin.memory.l3Detail(id ?? 'none'),
+    id ? `/api/admin/memory/l3/${encodeURIComponent(id)}` : '/api/admin/memory/l3/__noop__',
+    undefined,
+    { enabled: Boolean(id), staleTime: 30_000 },
+  );
+}
+
 export function useMemoryStats(l1: L1Session[], l2: L2Fact[], l3: L3Entry[], events: PromotionEvent[]): MemoryStats {
   return {
     l1Active: l1.filter((s) => s.status !== 'expired').length,

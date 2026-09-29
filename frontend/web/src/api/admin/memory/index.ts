@@ -1,9 +1,9 @@
 export * from './schema';
 export {
-  useL1Sessions,
-  useL2Facts,
-  useL3Entries,
+  useL1Sessions, useL1Session,
+  useL2Facts, useL2Fact,
+  useL3Entries, useL3Entry,
   usePromotions,
-  useRetentionPolicies,
+  useRetentionPolicies, useRetentionPolicy,
   useMemoryStats,
 } from './useMemory';

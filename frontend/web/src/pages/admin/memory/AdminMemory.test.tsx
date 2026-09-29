@@ -28,7 +28,8 @@ describe('AdminMemory', () => {
   it('渲染 hero + 5 子模块标签 + 默认 overview', () => {
     renderPage();
     expect(screen.getByText(/把企业记忆资产管起来/)).toBeTruthy();
-    expect(screen.getByText('三层职责')).toBeTruthy();
+    expect(screen.getByText('总记忆条目')).toBeTruthy();
+    expect(screen.getByText('平均命中率')).toBeTruthy();
   });
 
   it('切换到 L1 tab 显示会话表格', async () => {

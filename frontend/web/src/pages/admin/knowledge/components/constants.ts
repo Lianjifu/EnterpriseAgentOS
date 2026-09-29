@@ -12,9 +12,9 @@ export const TABS: { id: TabId; label: string }[] = [
 ];
 
 export const RANGES: { id: Range; label: string }[] = [
-  { id: '7d', label: '7 天' },
-  { id: '30d', label: '30 天' },
-  { id: '90d', label: '90 天' },
+  { id: '7d', label: '最近 7 天' },
+  { id: '30d', label: '最近 30 天' },
+  { id: '90d', label: '最近 90 天' },
 ];
 
 export const DOC_TYPE_LABEL: Record<DocType, string> = {

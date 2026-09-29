@@ -34,6 +34,7 @@ const AdminMemoryL1Detail = lazy(() => import('@/pages/admin/memory/L1DetailPage
 const AdminMemoryL2Detail = lazy(() => import('@/pages/admin/memory/L2DetailPage'));
 const AdminMemoryL3Detail = lazy(() => import('@/pages/admin/memory/L3DetailPage'));
 const AdminWorkflows = lazy(() => import('@/pages/admin/workflows'));
+const AdminWorkflowCreate = lazy(() => import('@/pages/admin/workflows/WorkflowCreatePage'));
 const AdminWorkflowDetail = lazy(() => import('@/pages/admin/workflows/WorkflowDetailPage'));
 const AdminSkills = lazy(() => import('@/pages/admin/skills'));
 const AdminSkillDetail = lazy(() => import('@/pages/admin/skills/SkillDetailPage'));
@@ -127,6 +128,7 @@ export default function App() {
             <Route path="/admin/memory/l2/:id" element={<AdminMemoryL2Detail />} />
             <Route path="/admin/memory/l3/:id" element={<AdminMemoryL3Detail />} />
             <Route path="/admin/workflows" element={<AdminWorkflows />} />
+            <Route path="/admin/workflows/new" element={<AdminWorkflowCreate />} />
             <Route path="/admin/workflows/:id" element={<AdminWorkflowDetail />} />
             <Route path="/admin/tools" element={<AdminSkills />} />
             <Route path="/admin/tools/:id" element={<AdminSkillDetail />} />

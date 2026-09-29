@@ -1,7 +1,7 @@
 /**
  * AdminWorkflows hooks — useApiQuery 拉取工作流列表; mutation 走本地 mock 包装。
  */
-import { useApiQuery } from '@/services/query';
+import { useApiMutation, useApiQuery } from '@/services/query';
 import { qk } from '@/api/shared/query-keys';
 import type { Flow, WorkflowStats } from './schema';
 
@@ -20,6 +20,13 @@ export function useWorkflow(id: string | null) {
     id ? `/api/admin/workflows/${id}` : '/api/admin/workflows/__noop__',
     undefined,
     { enabled: Boolean(id), staleTime: 60_000 },
+  );
+}
+
+export function useCreateWorkflow() {
+  return useApiMutation<Flow, Flow>(
+    '/api/admin/workflows',
+    { invalidateKeys: [qk.admin.workflows.root] },
   );
 }
 

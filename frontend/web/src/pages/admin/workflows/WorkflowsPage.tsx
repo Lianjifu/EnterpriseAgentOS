@@ -2,11 +2,12 @@
  * WorkflowsPage — 工作流管理 orchestrator(list + editor 视图, 5 tab + 4 modal + 1 drawer)。
  */
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Boxes, CirclePlay, Plus } from 'lucide-react';
 import { NoticeBanner } from '@/components/feedback/NoticeBanner';
 import { useWorkflows, useWorkflowStats } from '@/api/admin/workflows';
 import type {
-  Flow, NodeTemplate, TriggerType, WorkflowTabId, WorkflowViewMode,
+  Flow, NodeTemplate, WorkflowTabId, WorkflowViewMode,
 } from '@/api/admin/workflows/schema';
 import type { Node } from 'reactflow';
 import type { FlowNodeData } from '@/api/admin/workflows/schema';
@@ -16,12 +17,12 @@ import { NodeTypeTab } from './components/tabs/NodeTypeTab';
 import { PublishTab } from './components/tabs/PublishTab';
 import { FlowEditor } from './components/FlowEditor';
 import { FlowDetailDrawer } from './components/FlowDetailDrawer';
-import { CreateFlowWizard } from './components/CreateFlowWizard';
 import { PublishAsToolModal } from './components/PublishAsToolModal';
 import { FlowVersionModal } from './components/FlowVersionModal';
 import { NodeConfigModal } from './components/NodeConfigModal';
 
 export default function WorkflowsPage() {
+  const navigate = useNavigate();
   const [view, setView] = useState<WorkflowViewMode>('list');
   const [tab, setTab] = useState<WorkflowTabId>('overview');
   const remoteFlows = useWorkflows().data ?? [];
@@ -30,13 +31,6 @@ export default function WorkflowsPage() {
   const [notice, setNotice] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<Flow['status'] | 'all'>('all');
-
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createStep, setCreateStep] = useState(1);
-  const [draftName, setDraftName] = useState('');
-  const [draftDesc, setDraftDesc] = useState('');
-  const [draftTrigger, setDraftTrigger] = useState<TriggerType>('消息触发');
-  const [draftTemplate, setDraftTemplate] = useState<string>('blank');
 
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishFlow, setPublishFlow] = useState<Flow | null>(null);
@@ -68,30 +62,7 @@ export default function WorkflowsPage() {
     `${f.name} ${f.description} ${f.owner} ${f.scene}`.toLowerCase().includes(search.trim().toLowerCase()),
   ), [flows, statusFilter, search]);
 
-  const openCreate = () => {
-    setCreateStep(1); setDraftName(''); setDraftDesc(''); setDraftTrigger('消息触发'); setDraftTemplate('blank');
-    setCreateOpen(true);
-  };
-
-  const submitCreate = () => {
-    const id = uid('wf');
-    const next: Flow = {
-      id, name: draftName.trim() || '未命名工作流', description: draftDesc.trim() || '尚未填写描述',
-      owner: '当前管理员', scene: '团队协作', trigger: draftTrigger, status: 'draft', callCount: 0,
-      inputs: 1, outputs: 1, createdAt: '今天', updatedAt: '刚刚', boundAgents: [],
-      versions: [{ v: 'v0.1-草稿', at: '刚刚', operator: '当前管理员', note: '新建工作流' }],
-      initialNodes: [
-        { id: 'n-trigger', type: 'flowNode', position: { x: 40, y: 120 }, data: { label: draftTrigger, subtitle: '工作流入口', kind: 'trigger', config: { trigger: draftTrigger } } },
-      ],
-      initialEdges: [],
-    };
-    setFlows((prev) => [next, ...prev]);
-    setActiveFlowId(id);
-    setCreateOpen(false);
-    setView('editor');
-    setTab('overview');
-    setNotice(`已新建工作流「${next.name}」,可在画布上继续编排。`);
-  };
+  const goCreate = () => navigate('/admin/workflows/new');
 
   const openPublish = (flow: Flow) => {
     setPublishFlow(flow);
@@ -189,7 +160,7 @@ export default function WorkflowsPage() {
               </button>
               <button
                 type="button"
-                onClick={openCreate}
+                onClick={goCreate}
                 className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[var(--brand)] px-4 text-xs font-semibold text-white transition hover:bg-[var(--brand-hover)]"
               >
                 <Plus className="h-4 w-4" />新建工作流
@@ -253,7 +224,7 @@ export default function WorkflowsPage() {
               onPublish={openPublish}
               onRetire={retireFlow}
               onView={setDetailFlow}
-              onCreate={openCreate}
+              onCreate={goCreate}
               counts={counts}
             />
           )}
@@ -265,18 +236,6 @@ export default function WorkflowsPage() {
           )}
         </>
       )}
-
-      <CreateFlowWizard
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        step={createStep}
-        setStep={setCreateStep}
-        name={draftName} setName={setDraftName}
-        desc={draftDesc} setDesc={setDraftDesc}
-        trigger={draftTrigger} setTrigger={setDraftTrigger}
-        template={draftTemplate} setTemplate={setDraftTemplate}
-        onSubmit={submitCreate}
-      />
 
       <PublishAsToolModal
         open={publishOpen}

@@ -4,13 +4,18 @@
  * 顶部返回按钮回到 /admin/workflows;
  * 头部展示名称 + 触发器 + 关键 KPI;
  * 下方展示工作流全部字段 + 反向引用 agent 列表。
+ *
+ * ?edit=1 query param 启用编辑器视图(由 WorkflowCreatePage 创建后跳转):
+ * - 只读 body 折叠为可关闭横幅
+ * - 渲染 FlowEditor + 占位回调(save toast / publish 占位)
  */
-import { useMemo } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Workflow, Tag, Hash, Clock, Activity, Zap, Users, Calendar } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Workflow, Tag, Hash, Clock, Activity, Zap, Users, Calendar, X, Workflow as WorkflowIcon } from 'lucide-react';
 import { useWorkflow } from '@/api/admin/workflows/useWorkflows';
 import { mockAgents } from '@/mock/admin/agents.fixtures';
 import { STATUS_BADGE } from '@/pages/admin/workflows/components/constants';
+import { FlowEditor } from './components/FlowEditor';
 
 function NotFound() {
   return (
@@ -52,6 +57,8 @@ function Field({ icon, label, children }: { icon: React.ReactNode; label: string
 
 export default function WorkflowDetailPage() {
   const { id = '' } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isEditMode = searchParams.get('edit') === '1';
   const { data: flow, isLoading } = useWorkflow(id || null);
 
   const boundAgents = useMemo(() => {
@@ -98,53 +105,99 @@ export default function WorkflowDetailPage() {
             <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{flow.description}</p>
           </div>
         </div>
+        <button
+          type="button"
+          onClick={() => {
+            if (isEditMode) setSearchParams({});
+            else setSearchParams({ edit: '1' });
+          }}
+          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 text-xs font-semibold text-[var(--text-secondary)] transition hover:border-[var(--brand)] hover:text-[var(--brand)]"
+        >
+          {isEditMode ? <><ArrowLeft className="h-3.5 w-3.5" />查看详情</> : <><WorkflowIcon className="h-3.5 w-3.5" />继续编辑</>}
+        </button>
       </header>
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="调用次数" value={flow.callCount} hint={`${flow.outputs} 输出`} />
-        <Stat label="入参字段" value={flow.inputs} />
-        <Stat label="被 Agent 引用" value={flow.boundAgents.length} />
-        <Stat label="版本数" value={flow.versions.length} hint={flow.owner} />
-      </section>
+      {isEditMode && (
+        <EditorModeBody flow={flow} />
+      )}
 
-      <section className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <Field icon={<Hash className="h-3.5 w-3.5" />} label="工作流 ID">
-          <code className="text-xs">{flow.id}</code>
-        </Field>
-        <Field icon={<Tag className="h-3.5 w-3.5" />} label="业务场景">
-          {flow.scene}
-        </Field>
-        <Field icon={<Zap className="h-3.5 w-3.5" />} label="触发方式">
-          {flow.trigger}
-        </Field>
-        <Field icon={<Activity className="h-3.5 w-3.5" />} label="状态">
-          {badge.label}
-        </Field>
-        <Field icon={<Calendar className="h-3.5 w-3.5" />} label="创建时间">
-          {flow.createdAt}
-        </Field>
-        <Field icon={<Clock className="h-3.5 w-3.5" />} label="最近更新">
-          {flow.updatedAt}
-        </Field>
-      </section>
+      {!isEditMode && (
+        <>
+          <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Stat label="调用次数" value={flow.callCount} hint={`${flow.outputs} 输出`} />
+            <Stat label="入参字段" value={flow.inputs} />
+            <Stat label="被 Agent 引用" value={flow.boundAgents.length} />
+            <Stat label="版本数" value={flow.versions.length} hint={flow.owner} />
+          </section>
 
-      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
-        <div className="flex items-center gap-2 text-xs font-semibold text-[var(--text)]">
-          <Users className="h-3.5 w-3.5 text-[var(--brand)]" />被以下 Agent 引用
-        </div>
-        {boundAgents.length === 0 ? (
-          <p className="mt-2 text-xs text-[var(--text-muted)]">暂无 Agent 引用</p>
-        ) : (
-          <ul className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {boundAgents.map((a) => (
-              <li key={a.id} className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--bg-app)] px-3 py-2 text-xs">
-                <span className="font-medium">{a.name}</span>
-                <Link to={`/admin/agents/${a.id}`} className="text-[var(--brand)] hover:underline">查看 →</Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+          <section className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <Field icon={<Hash className="h-3.5 w-3.5" />} label="工作流 ID">
+              <code className="text-xs">{flow.id}</code>
+            </Field>
+            <Field icon={<Tag className="h-3.5 w-3.5" />} label="业务场景">
+              {flow.scene}
+            </Field>
+            <Field icon={<Zap className="h-3.5 w-3.5" />} label="触发方式">
+              {flow.trigger}
+            </Field>
+            <Field icon={<Activity className="h-3.5 w-3.5" />} label="状态">
+              {badge.label}
+            </Field>
+            <Field icon={<Calendar className="h-3.5 w-3.5" />} label="创建时间">
+              {flow.createdAt}
+            </Field>
+            <Field icon={<Clock className="h-3.5 w-3.5" />} label="最近更新">
+              {flow.updatedAt}
+            </Field>
+          </section>
+
+          <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
+            <div className="flex items-center gap-2 text-xs font-semibold text-[var(--text)]">
+              <Users className="h-3.5 w-3.5 text-[var(--brand)]" />被以下 Agent 引用
+            </div>
+            {boundAgents.length === 0 ? (
+              <p className="mt-2 text-xs text-[var(--text-muted)]">暂无 Agent 引用</p>
+            ) : (
+              <ul className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {boundAgents.map((a) => (
+                  <li key={a.id} className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--bg-app)] px-3 py-2 text-xs">
+                    <span className="font-medium">{a.name}</span>
+                    <Link to={`/admin/agents/${a.id}`} className="text-[var(--brand)] hover:underline">查看 →</Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </>
+      )}
     </div>
+  );
+}
+
+function EditorModeBody({ flow }: { flow: NonNullable<ReturnType<typeof useWorkflow>['data']> }) {
+  const [notice, setNotice] = useState('');
+  const [localFlows, setLocalFlows] = useState([flow]);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+  return (
+    <>
+      {notice && (
+        <div className="flex items-start gap-2 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+          <span className="flex-1">{notice}</span>
+          <button type="button" onClick={() => setNotice('')} aria-label="关闭提示"><X className="h-3.5 w-3.5" /></button>
+        </div>
+      )}
+      <FlowEditor
+        flow={localFlows[0]}
+        selectedNodeId={selectedNodeId}
+        setSelectedNodeId={setSelectedNodeId}
+        setFlows={setLocalFlows}
+        onOpenNodeConfig={() => setNotice('演示版本暂不支持节点配置编辑,请回到列表进行完整编辑。')}
+        onPublish={() => setNotice('演示版本暂不支持发布,请回到工作流管理进行完整流程。')}
+        onVersions={() => setNotice('演示版本暂不支持版本管理,请回到工作流管理查看历史版本。')}
+        onBack={() => { window.location.href = '/admin/workflows'; }}
+        setNotice={setNotice}
+      />
+    </>
   );
 }

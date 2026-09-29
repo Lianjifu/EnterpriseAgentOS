@@ -28,12 +28,12 @@ export const NODE_KIND_LABEL: Record<NodeKind, string> = {
   end: '结束',
 };
 
-export const NODE_TONE_CLASS: Record<NodeKind, { wrap: string; text: string; sub: string; handle: string }> = {
-  trigger: { wrap: 'border-sky-300 bg-sky-50', text: 'text-sky-700', sub: 'text-sky-500', handle: '!bg-sky-500' },
-  tool: { wrap: 'border-[var(--brand)]/40 bg-[var(--brand-light)]', text: 'text-[var(--brand)]', sub: 'text-[var(--brand)]/70', handle: '!bg-[var(--brand)]' },
-  agent: { wrap: 'border-emerald-300 bg-emerald-50', text: 'text-emerald-700', sub: 'text-emerald-500', handle: '!bg-emerald-500' },
-  condition: { wrap: 'border-amber-300 bg-amber-50', text: 'text-amber-700', sub: 'text-amber-500', handle: '!bg-amber-500' },
-  end: { wrap: 'border-violet-300 bg-violet-50', text: 'text-violet-700', sub: 'text-violet-500', handle: '!bg-violet-500' },
+export const NODE_TONE_CLASS: Record<NodeKind, { wrap: string; text: string; sub: string; handle: string; iconBg: string }> = {
+  trigger: { wrap: 'border-sky-300 bg-sky-50 dark:border-sky-500/40 dark:bg-sky-500/10', text: 'text-sky-700 dark:text-sky-300', sub: 'text-sky-500 dark:text-sky-400', handle: '!bg-sky-500', iconBg: 'bg-white/70 dark:bg-sky-500/20' },
+  tool: { wrap: 'border-[var(--brand)]/40 bg-[var(--brand-light)] dark:bg-[var(--brand)]/15', text: 'text-[var(--brand)]', sub: 'text-[var(--brand)]/70', handle: '!bg-[var(--brand)]', iconBg: 'bg-white/70 dark:bg-[var(--brand)]/15' },
+  agent: { wrap: 'border-emerald-300 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-300', sub: 'text-emerald-500 dark:text-emerald-400', handle: '!bg-emerald-500', iconBg: 'bg-white/70 dark:bg-emerald-500/20' },
+  condition: { wrap: 'border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10', text: 'text-amber-700 dark:text-amber-300', sub: 'text-amber-500 dark:text-amber-400', handle: '!bg-amber-500', iconBg: 'bg-white/70 dark:bg-amber-500/20' },
+  end: { wrap: 'border-violet-300 bg-violet-50 dark:border-violet-500/40 dark:bg-violet-500/10', text: 'text-violet-700 dark:text-violet-300', sub: 'text-violet-500 dark:text-violet-400', handle: '!bg-violet-500', iconBg: 'bg-white/70 dark:bg-violet-500/20' },
 };
 
 export const STATUS_BADGE: Record<FlowStatus, { label: string; className: string; dot: string }> = {

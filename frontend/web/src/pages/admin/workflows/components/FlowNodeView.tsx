@@ -12,7 +12,7 @@ export function FlowNodeView({ data, selected }: NodeProps<FlowNodeData>) {
     <div className={`workflow-node min-w-[180px] rounded-xl border-2 px-3 py-2 shadow-sm transition ${tone.wrap} ${selected ? 'ring-2 ring-offset-2 ring-[var(--brand)]' : ''}`}>
       <Handle type="target" position={Position.Left} className={`!h-3 !w-3 ${tone.handle}`} />
       <div className="flex items-center gap-2">
-        <span className={`grid h-6 w-6 place-items-center rounded-md bg-white/70 ${tone.text}`}>
+        <span className={`grid h-6 w-6 place-items-center rounded-md ${tone.iconBg} ${tone.text}`}>
           <Icon className="h-3.5 w-3.5" />
         </span>
         <div className="min-w-0">

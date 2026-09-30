@@ -383,6 +383,8 @@ export default function KnowledgePage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
+              </div>
+              <div className="flex items-center gap-2">
                 <select
                   value={sourceStatusFilter}
                   onChange={(e) => setSourceStatusFilter(e.target.value)}
@@ -394,8 +396,6 @@ export default function KnowledgePage() {
                   <option value="error">异常</option>
                   <option value="paused">已暂停</option>
                 </select>
-              </div>
-              <div className="flex items-center gap-2">
                 <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border)] px-2.5 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]">
                   <Filter className="h-3.5 w-3.5" />
                   筛选

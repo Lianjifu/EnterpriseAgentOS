@@ -515,28 +515,32 @@ export default function KnowledgePage() {
       )}
 
       {tab === 'eval' && (
-        <>
-          <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5 sm:p-7">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
+          {/* 段 1 — Hero + 4 KPI */}
+          <header className="border-b border-[var(--border)] p-5 sm:p-7">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">评测中心</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight">检索质量可观测,失败用例可追溯。</h2>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">实时命中、延迟、MRR,以及按 KB 拆分的命中分布;命中行可直跳知识库详情。</p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <EvalKpiCard
                 tone="success"
                 label="通过率"
                 value={`${((evalCases.filter((e) => e.status === 'pass').length / Math.max(evalCases.length, 1)) * 100).toFixed(0)}%`}
-                meta={`${evalCases.filter((e) => e.status === 'pass').length} / ${evalCases.length} 用例`}
+                meta={`${evalCases.filter((e) => e.status === 'pass').length} / ${evalCases.length}`}
                 trend={qualityTrend.map((p) => p.hit)}
               />
               <EvalKpiCard
                 tone="info"
                 label="平均 MRR"
                 value={`${((evalCases.reduce((s, e) => s + e.mrr, 0) / Math.max(evalCases.length, 1)) * 100).toFixed(0)}%`}
-                meta="按全部用例加权"
+                meta="加权平均"
                 trend={qualityTrend.map((p) => p.mrr)}
               />
               <EvalKpiCard
                 tone="warn"
                 label="平均延迟"
                 value={`${(evalCases.reduce((s, e) => s + e.latency, 0) / Math.max(evalCases.length, 1)).toFixed(2)}s`}
-                meta={`覆盖 ${evalCases.length} 条查询`}
+                meta={`${evalCases.length} 条查询`}
                 trend={evalCases.slice(-7).map((e) => e.latency)}
                 trendInverted
               />
@@ -548,106 +552,118 @@ export default function KnowledgePage() {
                 trend={evalCases.slice(-7).map((e) => (e.status === 'fail' ? 1 : 0))}
               />
             </div>
-          </section>
-          <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-[var(--bg-elevated)] text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
-                  <tr>
-                    <th className="px-4 py-2.5 text-left">用例</th>
-                    <th className="px-4 py-2.5 text-left">查询</th>
-                    <th className="px-4 py-2.5 text-left">预期</th>
-                    <th className="px-4 py-2.5 text-left">实际</th>
-                    <th className="px-4 py-2.5 text-left">结果</th>
-                    <th className="px-4 py-2.5 text-left">MRR</th>
-                    <th className="px-4 py-2.5 text-left">延迟</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--border)]">
-                  {evalPageItems.slice.map((e) => {
-                    const badge = EVAL_STATUS_BADGE[e.status];
-                    const expected = kbs.find((k) => k.id === e.expectedKb);
-                    const actual = kbs.find((k) => k.id === e.actualKb);
-                    return (
-                      <tr key={e.id} className="transition hover:bg-[var(--bg-hover)]">
-                        <td className="px-4 py-3 font-medium">{e.name}</td>
-                        <td className="px-4 py-3 text-[var(--text-muted)]">{e.query}</td>
-                        <td className="px-4 py-3">
-                          {expected ? (
-                            <Link to={`/admin/knowledge/kbs/${expected.id}`} className="font-medium text-[var(--brand)] hover:underline">
-                              {expected.name}
-                            </Link>
-                          ) : (
-                            <span className="text-[var(--text-muted)]">{e.expectedKb}</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          {actual ? (
-                            <Link to={`/admin/knowledge/kbs/${actual.id}`} className="font-medium text-[var(--brand)] hover:underline">
-                              {actual.name}
-                            </Link>
-                          ) : (
-                            <span className="text-[var(--text-muted)]">{e.actualKb}</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.className}`}>{badge.label}</span>
-                        </td>
-                        <td className="px-4 py-3 tabular-nums">{(e.mrr * 100).toFixed(0)}%</td>
-                        <td className="px-4 py-3 tabular-nums">{e.latency.toFixed(2)}s</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <PaginationBar
-              page={evalPage}
-              totalPages={evalPageItems.totalPages}
-              total={evalCases.length}
-              pageStart={evalPageItems.pageStart}
-              pageEnd={evalPageItems.pageEnd}
-              onPageChange={setEvalPage}
-            />
-          </section>
-          <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
-            <div className="flex items-center gap-2 border-b border-[var(--border)] px-5 py-4">
-              <TrendingUp className="h-5 w-5 text-[var(--brand)]" />
-              <div>
-                <h3 className="text-base font-semibold">知识库命中率分布 ({kbEvalStats.length})</h3>
-                <p className="text-xs text-[var(--text-muted)]">按通过率倒序 · 命中行可跳到 KB 详情</p>
+          </header>
+
+          {/* 段 2 — 用例状态分布 + KB 命中 TOP 5 */}
+          <div className="grid gap-6 border-b border-[var(--border)] p-5 sm:p-7 xl:grid-cols-2">
+            <div>
+              <h3 className="text-sm font-semibold">用例状态分布</h3>
+              <p className="mt-1 text-xs text-[var(--text-muted)]">通过 / 失败 / 部分命中 · 当期全部评测</p>
+              <div className="mt-4 space-y-3">
+                {(['pass', 'fail', 'skipped'] as const).map((status) => {
+                  const total = evalCases.length;
+                  const count = evalCases.filter((e) => e.status === status).length;
+                  const pct = total === 0 ? 0 : (count / total) * 100;
+                  const badge = EVAL_STATUS_BADGE[status];
+                  const barTone = status === 'pass' ? 'bg-emerald-500' : status === 'fail' ? 'bg-rose-500' : 'bg-slate-400';
+                  return (
+                    <div key={status}>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.className}`}>{badge.label}</span>
+                        <span className="tabular-nums font-semibold text-[var(--text-secondary)]">{count} · {pct.toFixed(0)}%</span>
+                      </div>
+                      <div className="mt-1 h-2 overflow-hidden rounded-full bg-[var(--bg-elevated)]">
+                        <div className={`h-full ${barTone}`} style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-[var(--bg-elevated)] text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
-                  <tr>
-                    <th className="px-4 py-2.5 text-left">知识库</th>
-                    <th className="px-4 py-2.5 text-left">用例数</th>
-                    <th className="px-4 py-2.5 text-left">通过率</th>
-                    <th className="px-4 py-2.5 text-left">平均 MRR</th>
-                    <th className="px-4 py-2.5 text-left">平均延迟</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--border)]">
-                  {kbEvalStats.map(({ kb, cases, passRate, avgMrr, avgLat }) => (
-                    <tr key={kb.id} className="transition hover:bg-[var(--bg-hover)]">
-                      <td className="px-4 py-3">
-                        <Link to={`/admin/knowledge/kbs/${kb.id}`} className="font-medium text-[var(--brand)] hover:underline">
-                          {kb.name}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3 tabular-nums">{cases}</td>
-                      <td className="px-4 py-3 tabular-nums">{(passRate * 100).toFixed(0)}%</td>
-                      <td className="px-4 py-3 tabular-nums">{(avgMrr * 100).toFixed(0)}%</td>
-                      <td className="px-4 py-3 tabular-nums">{avgLat.toFixed(2)}s</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div>
+              <h3 className="text-sm font-semibold">知识库命中 TOP {Math.min(kbEvalStats.length, 5)}</h3>
+              <p className="mt-1 text-xs text-[var(--text-muted)]">按通过率倒序 · 点击跳知识库详情</p>
+              <ul className="mt-4 divide-y divide-[var(--border)]">
+                {kbEvalStats.slice(0, 5).map(({ kb, cases, passRate, avgMrr }) => (
+                  <li key={kb.id}>
+                    <Link to={`/admin/knowledge/kbs/${kb.id}`} className="flex items-center justify-between gap-3 py-2.5 transition hover:bg-[var(--bg-hover)]">
+                      <span className="truncate text-sm font-medium text-[var(--brand)] hover:underline">{kb.name}</span>
+                      <div className="flex shrink-0 items-center gap-3 text-xs tabular-nums text-[var(--text-secondary)]">
+                        <span>{(passRate * 100).toFixed(0)}%</span>
+                        <span className="text-[var(--text-muted)]">MRR {(avgMrr * 100).toFixed(0)}%</span>
+                        <span className="text-[var(--text-muted)]">{cases} 用例</span>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+                {kbEvalStats.length === 0 && (
+                  <li className="py-6 text-center text-xs text-[var(--text-muted)]">暂无评测命中</li>
+                )}
+              </ul>
             </div>
-          </section>
-        </>
+          </div>
+
+          {/* 段 3 — 用例主表 */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-[var(--bg-elevated)] text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
+                <tr>
+                  <th className="px-4 py-2.5 text-left">用例</th>
+                  <th className="px-4 py-2.5 text-left">查询</th>
+                  <th className="px-4 py-2.5 text-left">预期 KB</th>
+                  <th className="px-4 py-2.5 text-left">实际 KB</th>
+                  <th className="px-4 py-2.5 text-left">结果</th>
+                  <th className="px-4 py-2.5 text-left">MRR</th>
+                  <th className="px-4 py-2.5 text-left">延迟</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border)]">
+                {evalPageItems.slice.map((e) => {
+                  const badge = EVAL_STATUS_BADGE[e.status];
+                  const expected = kbs.find((k) => k.id === e.expectedKb);
+                  const actual = kbs.find((k) => k.id === e.actualKb);
+                  return (
+                    <tr key={e.id} className="transition hover:bg-[var(--bg-hover)]">
+                      <td className="px-4 py-3 font-medium">{e.name}</td>
+                      <td className="px-4 py-3 max-w-[280px] truncate text-[var(--text-muted)]" title={e.query}>{e.query}</td>
+                      <td className="px-4 py-3">
+                        {expected ? (
+                          <Link to={`/admin/knowledge/kbs/${expected.id}`} className="font-medium text-[var(--brand)] hover:underline">
+                            {expected.name}
+                          </Link>
+                        ) : (
+                          <span className="text-[var(--text-muted)]">{e.expectedKb}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {actual ? (
+                          <Link to={`/admin/knowledge/kbs/${actual.id}`} className="font-medium text-[var(--brand)] hover:underline">
+                            {actual.name}
+                          </Link>
+                        ) : (
+                          <span className="text-[var(--text-muted)]">{e.actualKb}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.className}`}>{badge.label}</span>
+                      </td>
+                      <td className="px-4 py-3 tabular-nums">{(e.mrr * 100).toFixed(0)}%</td>
+                      <td className="px-4 py-3 tabular-nums">{e.latency.toFixed(2)}s</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <PaginationBar
+            page={evalPage}
+            totalPages={evalPageItems.totalPages}
+            total={evalCases.length}
+            pageStart={evalPageItems.pageStart}
+            pageEnd={evalPageItems.pageEnd}
+            onPageChange={setEvalPage}
+          />
+        </section>
       )}
 
       <p className="text-center text-xs text-[var(--text-muted)]">本页为前端演示数据,生产环境将接入 EOS 知识中台。</p>

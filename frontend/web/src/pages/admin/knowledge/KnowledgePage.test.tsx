@@ -157,8 +157,7 @@ describe('AdminKnowledge', () => {
     expect(screen.getByText(/预期/)).toBeTruthy();
     expect(screen.getByText(/实际/)).toBeTruthy();
     expect(screen.getAllByRole('link', { name: /员工手册/ }).length).toBeGreaterThan(0);
-    expect(screen.getByText(/知识库命中率分布/)).toBeTruthy();
-    expect(screen.getByText('用例数')).toBeTruthy();
+    expect(screen.getByText(/知识库命中 TOP/)).toBeTruthy();
     expect(screen.getAllByText('通过率').length).toBeGreaterThan(0);
     expect(screen.getAllByText('平均 MRR').length).toBeGreaterThan(0);
     expect(screen.getAllByText('平均延迟').length).toBeGreaterThan(0);

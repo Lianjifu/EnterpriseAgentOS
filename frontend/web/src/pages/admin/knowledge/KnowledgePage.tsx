@@ -237,8 +237,8 @@ export default function KnowledgePage() {
 
       {tab === 'kb' && (
         <>
-          <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5 sm:p-7">
-            <div className="flex flex-wrap items-end justify-between gap-3">
+          <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
+            <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] p-5 sm:p-7">
               <div className="flex flex-1 items-center gap-2">
                 <input
                   className="w-56 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-sm focus:border-[var(--brand)] focus:outline-none"
@@ -274,7 +274,7 @@ export default function KnowledgePage() {
               </div>
             </div>
             {selectedKbIds.length > 0 && (
-              <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-4 py-2.5 text-xs">
+              <div className="flex flex-wrap items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-elevated)] px-5 py-2.5 text-xs sm:px-7">
                 <span className="font-semibold text-[var(--text-secondary)]">已选 {selectedKbIds.length} 个</span>
                 <button type="button" onClick={() => handleBatch('rebuild')} className="rounded-md border border-[var(--border)] px-2.5 py-1 hover:border-[var(--brand)] hover:text-[var(--brand)]">批量重建</button>
                 <button type="button" onClick={() => handleBatch('pause')} className="rounded-md border border-[var(--border)] px-2.5 py-1 hover:border-[var(--brand)] hover:text-[var(--brand)]">批量暂停</button>
@@ -282,8 +282,6 @@ export default function KnowledgePage() {
                 <button type="button" onClick={() => setSelectedKbIds([])} className="rounded-md border border-[var(--border)] px-2.5 py-1 hover:border-[var(--brand)] hover:text-[var(--brand)]">清空选择</button>
               </div>
             )}
-          </section>
-          <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
             <div className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 sm:p-7">
               {kbPageItems.slice.map((kb) => (
                 <KbCard
@@ -310,8 +308,8 @@ export default function KnowledgePage() {
 
       {tab === 'docs' && (
         <>
-          <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5 sm:p-7">
-            <div className="flex flex-wrap items-end justify-between gap-3">
+          <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
+            <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] p-5 sm:p-7">
               <div className="flex flex-1 items-center gap-2">
                 <input
                   className="w-56 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-sm focus:border-[var(--brand)] focus:outline-none"
@@ -346,8 +344,6 @@ export default function KnowledgePage() {
                 </button>
               </div>
             </div>
-          </section>
-          <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
             <div className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 sm:p-7">
               {docPageItems.slice.map((doc) => (
                 <DocCard key={doc.id} doc={doc} onOpen={(d) => navigate(`/admin/knowledge/docs/${d.id}`)} />
@@ -367,8 +363,8 @@ export default function KnowledgePage() {
 
       {tab === 'sources' && (
         <>
-          <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5 sm:p-7">
-            <div className="flex flex-wrap items-end justify-between gap-3">
+          <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
+            <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] p-5 sm:p-7">
               <div>
                 <div className="flex items-center gap-2">
                   <Database className="h-5 w-5 text-[var(--brand)]" />
@@ -381,8 +377,6 @@ export default function KnowledgePage() {
                 新增数据源
               </button>
             </div>
-          </section>
-          <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
             <div className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-3 sm:p-7">
               {sourcePageItems.slice.map((s) => (
                 <SourceCard

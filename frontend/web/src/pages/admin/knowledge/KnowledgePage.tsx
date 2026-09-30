@@ -518,10 +518,7 @@ export default function KnowledgePage() {
         <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
           {/* 段 1 — Hero + 4 KPI */}
           <header className="border-b border-[var(--border)] p-5 sm:p-7">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">评测中心</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight">检索质量可观测,失败用例可追溯。</h2>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">实时命中、延迟、MRR,以及按 KB 拆分的命中分布;命中行可直跳知识库详情。</p>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <EvalKpiCard
                 tone="success"
                 label="通过率"

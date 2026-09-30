@@ -6,7 +6,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BookOpen, ChevronLeft, ChevronRight, Filter, ListChecks, Plus, RefreshCw, TrendingUp } from 'lucide-react';
+import { BookOpen, ChevronLeft, ChevronRight, Filter, ListChecks, Plus, RefreshCw } from 'lucide-react';
 import {
   useKnowledgeBases,
   useKnowledgeDocs,
@@ -431,87 +431,81 @@ export default function KnowledgePage() {
       )}
 
       {tab === 'tasks' && (
-        <>
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <KpiBlock label="已完成" value={tasks.filter((t) => t.status === 'success').length} tone="success" />
-            <KpiBlock label="进行中" value={tasks.filter((t) => t.status === 'running').length} tone="info" />
-            <KpiBlock label="排队" value={tasks.filter((t) => t.status === 'pending').length} tone="warn" />
-            <KpiBlock label="失败" value={tasks.filter((t) => t.status === 'failed').length} tone="danger" />
-          </section>
-          <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
-            <div className="flex items-center gap-2 border-b border-[var(--border)] px-5 py-4">
-              <ListChecks className="h-5 w-5 text-[var(--brand)]" />
-              <div>
-                <h3 className="text-base font-semibold">任务列表</h3>
-                <p className="text-xs text-[var(--text-muted)]">索引 / 增量 / 重建任务的实时进度</p>
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-[var(--bg-elevated)] text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
-                  <tr>
-                    <th className="px-4 py-2.5 text-left">任务</th>
-                    <th className="px-4 py-2.5 text-left">类型</th>
-                    <th className="px-4 py-2.5 text-left">目标 KB</th>
-                    <th className="px-4 py-2.5 text-left">进度</th>
-                    <th className="px-4 py-2.5 text-left">状态</th>
-                    <th className="px-4 py-2.5 text-left">开始</th>
-                    <th className="px-4 py-2.5 text-left">耗时</th>
-                    <th className="px-4 py-2.5 text-left">操作</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--border)]">
-                  {taskPageItems.slice.map((t) => {
-                    const badge = TASK_STATUS_BADGE[t.status];
-                    const targetKb = kbById.get(t.kbId);
-                    return (
-                      <tr key={t.id} className="transition hover:bg-[var(--bg-hover)]" title={t.failureReason}>
-                        <td className="px-4 py-3 font-medium">{t.name}</td>
-                        <td className="px-4 py-3 text-[var(--text-secondary)]">{TASK_KIND_LABEL[t.kind]}</td>
-                        <td className="px-4 py-3">
-                          {targetKb ? (
-                            <Link to={`/admin/knowledge/kbs/${targetKb.id}`} className="font-medium text-[var(--brand)] hover:underline">
-                              {targetKb.name}
-                            </Link>
-                          ) : (
-                            <span className="text-[var(--text-muted)]">{t.kbId}</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <ProgressBar
-                            value={t.progress}
-                            tone={t.status === 'failed' ? 'danger' : t.status === 'success' ? 'success' : 'brand'}
-                          />
-                          <span className="mt-1 block text-[11px] text-[var(--text-muted)]">{t.progress}% · {t.items} 项</span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.className}`}>{badge.label}</span>
-                        </td>
-                        <td className="px-4 py-3 text-[var(--text-secondary)]">{t.startedAt}</td>
-                        <td className="px-4 py-3 text-[var(--text-secondary)]">{t.duration}</td>
-                        <td className="px-4 py-3">
-                          {t.status === 'failed' && (
-                            <button type="button" onClick={() => flash(`已重试 ${t.name}`)} className="inline-flex items-center rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-semibold hover:border-[var(--brand)] hover:text-[var(--brand)]">
-                              重试
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <PaginationBar
-              page={taskPage}
-              totalPages={taskPageItems.totalPages}
-              total={tasks.length}
-              pageStart={taskPageItems.pageStart}
-              pageEnd={taskPageItems.pageEnd}
-              onPageChange={setTaskPage}
-            />
-          </section>
-        </>
+        <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
+          {/* 段 1 — 4 KPI 横向 */}
+          <div className="grid gap-3 border-b border-[var(--border)] p-5 sm:grid-cols-2 xl:grid-cols-4 sm:p-7">
+            <TasksKpiCard tone="success" label="已完成" count={tasks.filter((t) => t.status === 'success').length} total={tasks.length} icon="check" />
+            <TasksKpiCard tone="info" label="进行中" count={tasks.filter((t) => t.status === 'running').length} total={tasks.length} icon="loader" />
+            <TasksKpiCard tone="warn" label="排队" count={tasks.filter((t) => t.status === 'pending').length} total={tasks.length} icon="clock" />
+            <TasksKpiCard tone="danger" label="失败" count={tasks.filter((t) => t.status === 'failed').length} total={tasks.length} icon="alert" />
+          </div>
+
+          {/* 段 2 — 任务列表 */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-[var(--bg-elevated)] text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
+                <tr>
+                  <th className="px-4 py-2.5 text-left">任务</th>
+                  <th className="px-4 py-2.5 text-left">类型</th>
+                  <th className="px-4 py-2.5 text-left">目标 KB</th>
+                  <th className="px-4 py-2.5 text-left">进度</th>
+                  <th className="px-4 py-2.5 text-left">状态</th>
+                  <th className="px-4 py-2.5 text-left">开始</th>
+                  <th className="px-4 py-2.5 text-left">耗时</th>
+                  <th className="px-4 py-2.5 text-left">操作</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border)]">
+                {taskPageItems.slice.map((t) => {
+                  const badge = TASK_STATUS_BADGE[t.status];
+                  const targetKb = kbById.get(t.kbId);
+                  return (
+                    <tr key={t.id} className="transition hover:bg-[var(--bg-hover)]" title={t.failureReason}>
+                      <td className="px-4 py-3 font-medium">{t.name}</td>
+                      <td className="px-4 py-3 text-[var(--text-secondary)]">{TASK_KIND_LABEL[t.kind]}</td>
+                      <td className="px-4 py-3">
+                        {targetKb ? (
+                          <Link to={`/admin/knowledge/kbs/${targetKb.id}`} className="font-medium text-[var(--brand)] hover:underline">
+                            {targetKb.name}
+                          </Link>
+                        ) : (
+                          <span className="text-[var(--text-muted)]">{t.kbId}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 min-w-[140px]">
+                        <ProgressBar
+                          value={t.progress}
+                          tone={t.status === 'failed' ? 'danger' : t.status === 'success' ? 'success' : 'brand'}
+                        />
+                        <span className="mt-1 block text-[11px] text-[var(--text-muted)]">{t.progress}% · {t.items} 项</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.className}`}>{badge.label}</span>
+                      </td>
+                      <td className="px-4 py-3 text-[var(--text-secondary)]">{t.startedAt}</td>
+                      <td className="px-4 py-3 text-[var(--text-secondary)]">{t.duration}</td>
+                      <td className="px-4 py-3">
+                        {t.status === 'failed' && (
+                          <button type="button" onClick={() => flash(`已重试 ${t.name}`)} className="inline-flex items-center rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-semibold hover:border-[var(--brand)] hover:text-[var(--brand)]">
+                            重试
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <PaginationBar
+            page={taskPage}
+            totalPages={taskPageItems.totalPages}
+            total={tasks.length}
+            pageStart={taskPageItems.pageStart}
+            pageEnd={taskPageItems.pageEnd}
+            onPageChange={setTaskPage}
+          />
+        </section>
       )}
 
       {tab === 'eval' && (
@@ -673,6 +667,30 @@ function KpiBlock({ label, value, tone, small }: { label: string; value: string 
     <div className={`flex flex-col gap-1 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] ${TONE_CLASS[tone]} ${small ? 'px-4 py-3' : 'px-5 py-4'}`}>
       <span className="text-[10px] uppercase tracking-wide opacity-70">{label}</span>
       <span className={`font-semibold tabular-nums ${small ? 'text-xl' : 'text-2xl'}`}>{value}</span>
+    </div>
+  );
+}
+
+function TasksKpiCard({ tone, label, count, total, icon }: { tone: Tone; label: string; count: number; total: number; icon: 'check' | 'loader' | 'clock' | 'alert' }) {
+  const pct = total === 0 ? 0 : Math.round((count / total) * 100);
+  const iconColor = tone === 'success' ? 'text-emerald-600' : tone === 'info' ? 'text-sky-600' : tone === 'warn' ? 'text-amber-600' : 'text-rose-600';
+  const barColor = tone === 'success' ? 'bg-emerald-500' : tone === 'info' ? 'bg-sky-500' : tone === 'warn' ? 'bg-amber-500' : 'bg-rose-500';
+  return (
+    <div className={`flex flex-col gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] p-4 ${TONE_CLASS[tone]}`}>
+      <div className="flex items-center justify-between">
+        <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-[var(--bg-elevated)]">
+          {icon === 'check' && <ListChecks className={`h-3.5 w-3.5 ${iconColor}`} />}
+          {icon === 'loader' && <RefreshCw className={`h-3.5 w-3.5 ${iconColor}`} />}
+          {icon === 'clock' && <ChevronRight className={`h-3.5 w-3.5 ${iconColor}`} />}
+          {icon === 'alert' && <ChevronRight className={`h-3.5 w-3.5 ${iconColor}`} />}
+        </span>
+        <span className="text-[10px] uppercase tracking-wide opacity-70">{label}</span>
+      </div>
+      <span className="text-2xl font-semibold tabular-nums leading-none">{count}</span>
+      <div className="h-1 overflow-hidden rounded-full bg-[var(--bg-elevated)]">
+        <div className={`h-full ${barColor}`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-[10px] tabular-nums text-[var(--text-muted)]">{pct}% · {total} 总</span>
     </div>
   );
 }

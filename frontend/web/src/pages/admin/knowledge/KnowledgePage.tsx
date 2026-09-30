@@ -6,7 +6,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BookOpen, ChevronLeft, ChevronRight, Database, FileText, Filter, ListChecks, Plus, RefreshCw, TrendingUp } from 'lucide-react';
+import { BookOpen, ChevronLeft, ChevronRight, Filter, ListChecks, Plus, RefreshCw, TrendingUp } from 'lucide-react';
 import {
   useKnowledgeBases,
   useKnowledgeDocs,
@@ -74,6 +74,7 @@ export default function KnowledgePage() {
   const [range, setRange] = useState<'7d' | '30d' | '90d'>('7d');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [sourceStatusFilter, setSourceStatusFilter] = useState('all');
   const [notice, setNotice] = useState<string | null>(null);
   const [selectedKbIds, setSelectedKbIds] = useState<string[]>([]);
   const [kbPage, setKbPage] = useState(1);
@@ -117,6 +118,15 @@ export default function KnowledgePage() {
     });
   }, [docs, search, statusFilter]);
 
+  const visibleSources = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return sources.filter((s) => {
+      if (sourceStatusFilter !== 'all' && s.status !== sourceStatusFilter) return false;
+      if (q && !s.name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [sources, search, sourceStatusFilter]);
+
   const qualityTrend = useMemo(() => buildQualityTrend(evalCases), [evalCases]);
 
   const kbEvalStats = useMemo(() => {
@@ -150,7 +160,7 @@ export default function KnowledgePage() {
 
   const kbPageItems = useMemo(() => paginate(visibleKbs, kbPage), [visibleKbs, kbPage]);
   const docPageItems = useMemo(() => paginate(visibleDocs, docPage), [visibleDocs, docPage]);
-  const sourcePageItems = useMemo(() => paginate(sources, sourcePage), [sources, sourcePage]);
+  const sourcePageItems = useMemo(() => paginate(visibleSources, sourcePage), [visibleSources, sourcePage]);
   const taskPageItems = useMemo(() => paginate(tasks, taskPage), [tasks, taskPage]);
   const evalPageItems = useMemo(() => paginate(evalCases, evalPage), [evalCases, evalPage]);
 
@@ -161,6 +171,7 @@ export default function KnowledgePage() {
 
   useEffect(() => { setKbPage(1); }, [search, statusFilter]);
   useEffect(() => { setDocPage(1); }, [search, statusFilter]);
+  useEffect(() => { setSourcePage(1); }, [search, sourceStatusFilter]);
   useEffect(() => { setTaskPage(1); }, [statusFilter]);
 
   const toggleSelectKb = (id: string) =>
@@ -365,17 +376,35 @@ export default function KnowledgePage() {
         <>
           <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
             <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border)] p-5 sm:p-7">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Database className="h-5 w-5 text-[var(--brand)]" />
-                  <h3 className="text-base font-semibold">数据源</h3>
-                </div>
-                <p className="mt-1 text-xs text-[var(--text-muted)]">{sources.length} 个数据源 · 同步频率 / 状态监控</p>
+              <div className="flex flex-1 items-center gap-2">
+                <input
+                  className="w-56 rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-sm focus:border-[var(--brand)] focus:outline-none"
+                  placeholder="搜索数据源…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                <select
+                  value={sourceStatusFilter}
+                  onChange={(e) => setSourceStatusFilter(e.target.value)}
+                  className="rounded-xl border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 text-sm focus:border-[var(--brand)] focus:outline-none"
+                >
+                  <option value="all">全部状态</option>
+                  <option value="online">在线</option>
+                  <option value="syncing">同步中</option>
+                  <option value="error">异常</option>
+                  <option value="paused">已暂停</option>
+                </select>
               </div>
-              <button type="button" onClick={() => navigate('/admin/knowledge/sources/new')} className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
-                <Plus className="h-4 w-4" />
-                新增数据源
-              </button>
+              <div className="flex items-center gap-2">
+                <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border)] px-2.5 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]">
+                  <Filter className="h-3.5 w-3.5" />
+                  筛选
+                </button>
+                <button type="button" onClick={() => navigate('/admin/knowledge/sources/new')} className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
+                  <Plus className="h-4 w-4" />
+                  新增数据源
+                </button>
+              </div>
             </div>
             <div className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-3 sm:p-7">
               {sourcePageItems.slice.map((s) => (
@@ -391,7 +420,7 @@ export default function KnowledgePage() {
             <PaginationBar
               page={sourcePage}
               totalPages={sourcePageItems.totalPages}
-              total={sources.length}
+              total={visibleSources.length}
               pageStart={sourcePageItems.pageStart}
               pageEnd={sourcePageItems.pageEnd}
               onPageChange={setSourcePage}

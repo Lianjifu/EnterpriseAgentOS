@@ -518,12 +518,12 @@ export default function KnowledgePage() {
           <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5 sm:p-7">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-[var(--brand)]" />
-              <h3 className="text-base font-semibold">命中率 · MRR · 延迟趋势</h3>
+              <h3 className="text-base font-semibold">命中率 · MRR 趋势</h3>
+              <span className="ml-1 text-xs text-[var(--text-muted)]">7 天窗口 · 数据由当前评测用例派生</span>
             </div>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">7 天窗口 · 实线为命中率,虚线为平均 MRR · 数据由当前评测用例派生</p>
-            <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(280px,1fr)]">
+            <div className="mt-5 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,420px)]">
               <QualityChart data={qualityTrend} />
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 xl:grid-cols-1">
                 <KpiBlock
                   label="通过率"
                   value={`${((evalCases.filter((e) => e.status === 'pass').length / Math.max(evalCases.length, 1)) * 100).toFixed(0)}%`}

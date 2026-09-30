@@ -34,10 +34,11 @@ import {
 import KbCard from './components/KbCard';
 import DocCard from './components/DocCard';
 import SourceCard from './components/SourceCard';
-import QualityChart, { type QualityPoint } from './components/QualityChart';
 import { TimeRangeDropdown } from './components/TimeRangeDropdown';
 
 const PAGE_SIZE = 8;
+
+type QualityPoint = { label: string; hit: number; mrr: number };
 
 function buildQualityTrend(evalCases: Array<{ status: string; mrr: number; latency: number }>): QualityPoint[] {
   const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
@@ -516,34 +517,36 @@ export default function KnowledgePage() {
       {tab === 'eval' && (
         <>
           <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5 sm:p-7">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-[var(--brand)]" />
-              <h3 className="text-base font-semibold">命中率 · MRR 趋势</h3>
-              <span className="ml-1 text-xs text-[var(--text-muted)]">7 天窗口 · 数据由当前评测用例派生</span>
-            </div>
-            <div className="mt-5 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,420px)]">
-              <QualityChart data={qualityTrend} />
-              <div className="grid grid-cols-2 gap-3 xl:grid-cols-1">
-                <KpiBlock
-                  label="通过率"
-                  value={`${((evalCases.filter((e) => e.status === 'pass').length / Math.max(evalCases.length, 1)) * 100).toFixed(0)}%`}
-                  tone="success"
-                  small
-                />
-                <KpiBlock
-                  label="平均 MRR"
-                  value={`${((evalCases.reduce((s, e) => s + e.mrr, 0) / Math.max(evalCases.length, 1)) * 100).toFixed(0)}%`}
-                  tone="info"
-                  small
-                />
-                <KpiBlock
-                  label="平均延迟"
-                  value={`${(evalCases.reduce((s, e) => s + e.latency, 0) / Math.max(evalCases.length, 1)).toFixed(2)}s`}
-                  tone="warn"
-                  small
-                />
-                <KpiBlock label="未命中" value={evalCases.filter((e) => e.status === 'fail').length} tone="danger" small />
-              </div>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <EvalKpiCard
+                tone="success"
+                label="通过率"
+                value={`${((evalCases.filter((e) => e.status === 'pass').length / Math.max(evalCases.length, 1)) * 100).toFixed(0)}%`}
+                meta={`${evalCases.filter((e) => e.status === 'pass').length} / ${evalCases.length} 用例`}
+                trend={qualityTrend.map((p) => p.hit)}
+              />
+              <EvalKpiCard
+                tone="info"
+                label="平均 MRR"
+                value={`${((evalCases.reduce((s, e) => s + e.mrr, 0) / Math.max(evalCases.length, 1)) * 100).toFixed(0)}%`}
+                meta="按全部用例加权"
+                trend={qualityTrend.map((p) => p.mrr)}
+              />
+              <EvalKpiCard
+                tone="warn"
+                label="平均延迟"
+                value={`${(evalCases.reduce((s, e) => s + e.latency, 0) / Math.max(evalCases.length, 1)).toFixed(2)}s`}
+                meta={`覆盖 ${evalCases.length} 条查询`}
+                trend={evalCases.slice(-7).map((e) => e.latency)}
+                trendInverted
+              />
+              <EvalKpiCard
+                tone="danger"
+                label="未命中"
+                value={evalCases.filter((e) => e.status === 'fail').length}
+                meta={`占比 ${((evalCases.filter((e) => e.status === 'fail').length / Math.max(evalCases.length, 1)) * 100).toFixed(0)}%`}
+                trend={evalCases.slice(-7).map((e) => (e.status === 'fail' ? 1 : 0))}
+              />
             </div>
           </section>
           <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
@@ -657,6 +660,59 @@ function KpiBlock({ label, value, tone, small }: { label: string; value: string 
     <div className={`flex flex-col gap-1 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] ${TONE_CLASS[tone]} ${small ? 'px-4 py-3' : 'px-5 py-4'}`}>
       <span className="text-[10px] uppercase tracking-wide opacity-70">{label}</span>
       <span className={`font-semibold tabular-nums ${small ? 'text-xl' : 'text-2xl'}`}>{value}</span>
+    </div>
+  );
+}
+
+function Sparkline({ values, stroke }: { values: number[]; stroke: string }) {
+  if (values.length < 2) return null;
+  const W = 88;
+  const H = 28;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const stepX = W / (values.length - 1);
+  const points = values
+    .map((v, i) => `${i * stepX},${H - 4 - ((v - min) / range) * (H - 8)}`)
+    .join(' ');
+  return (
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
+      <polyline points={points} fill="none" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function EvalKpiCard({
+  tone, label, value, meta, trend, trendInverted = false,
+}: {
+  tone: Tone;
+  label: string;
+  value: string | number;
+  meta: string;
+  trend: number[];
+  trendInverted?: boolean;
+}) {
+  const trendColor = trendInverted ? 'var(--warning)' : `var(--chart-${tone === 'danger' ? 'danger' : tone === 'success' ? 'success' : tone === 'warn' ? 'warning' : 'info'})`;
+  const first = trend[0];
+  const last = trend[trend.length - 1];
+  const delta = first !== undefined && last !== undefined ? last - first : 0;
+  const arrowUp = (delta > 0 && !trendInverted) || (delta < 0 && trendInverted);
+  const arrowDown = (delta < 0 && !trendInverted) || (delta > 0 && trendInverted);
+  return (
+    <div className={`flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5 ${TONE_CLASS[tone]}`}>
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] uppercase tracking-wide opacity-70">{label}</span>
+        {trend.length >= 2 && delta !== 0 && (
+          <span className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${arrowUp ? 'bg-emerald-100 text-emerald-700' : arrowDown ? 'bg-rose-100 text-rose-700' : 'bg-[var(--bg-elevated)] text-[var(--text-muted)]'}`}>
+            {arrowUp ? '↑' : arrowDown ? '↓' : '·'}{Math.abs(delta).toFixed(delta > 1 || delta < -1 ? 0 : 2)}
+          </span>
+        )}
+      </div>
+      <div className="flex items-end justify-between gap-2">
+        <span className="text-3xl font-semibold tabular-nums leading-none">{value}</span>
+        {trend.length >= 2 && <Sparkline values={trend} stroke={trendColor} />}
+      </div>
+      <span className="text-[11px] opacity-70">{meta}</span>
     </div>
   );
 }

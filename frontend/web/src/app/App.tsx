@@ -14,45 +14,50 @@ const MyAutomations = lazy(() => import('@/pages/user/automations'));
 const MyTeam = lazy(() => import('@/pages/user/team'));
 const MySkills = lazy(() => import('@/pages/user/skills'));
 const MyTasks = lazy(() => import('@/pages/user/tasks'));
-const HelpCenter = lazy(() => import('@/pages/user/help'));
 const AccountSettings = lazy(() => import('@/pages/user/account'));
-const AdminHelp = lazy(() => import('@/pages/admin/help'));
-const AdminSettings = lazy(() => import('@/pages/admin/settings'));
-const AdminOverview = lazy(() => import('@/pages/admin/overview'));
-const AdminAgents = lazy(() => import('@/pages/admin/agents'));
-const AdminAgentDetail = lazy(() => import('@/pages/admin/agents/AgentDetailPage'));
-const AdminAgentCreate = lazy(() => import('@/pages/admin/agents/AgentCreatePage'));
-const AdminKnowledge = lazy(() => import('@/pages/admin/knowledge'));
-const AdminKnowledgeKbDetail = lazy(() => import('@/pages/admin/knowledge/KbDetailPage'));
-const AdminKnowledgeDocDetail = lazy(() => import('@/pages/admin/knowledge/DocDetailPage'));
-const AdminKnowledgeSourceDetail = lazy(() => import('@/pages/admin/knowledge/SourceDetailPage'));
-const AdminKnowledgeKbCreate = lazy(() => import('@/pages/admin/knowledge/KbCreatePage'));
-const AdminKnowledgeSourceCreate = lazy(() => import('@/pages/admin/knowledge/SourceCreatePage'));
-const AdminMemory = lazy(() => import('@/pages/admin/memory'));
-const AdminMemoryPolicyDetail = lazy(() => import('@/pages/admin/memory/PolicyDetailPage'));
-const AdminMemoryL1Detail = lazy(() => import('@/pages/admin/memory/L1DetailPage'));
-const AdminMemoryL2Detail = lazy(() => import('@/pages/admin/memory/L2DetailPage'));
-const AdminMemoryL3Detail = lazy(() => import('@/pages/admin/memory/L3DetailPage'));
-const AdminWorkflows = lazy(() => import('@/pages/admin/workflows'));
-const AdminWorkflowCreate = lazy(() => import('@/pages/admin/workflows/WorkflowCreatePage'));
-const AdminWorkflowDetail = lazy(() => import('@/pages/admin/workflows/WorkflowDetailPage'));
-const AdminSkills = lazy(() => import('@/pages/admin/skills'));
-const AdminSkillDetail = lazy(() => import('@/pages/admin/skills/SkillDetailPage'));
-const AdminEvaluations = lazy(() => import('@/pages/admin/evaluations'));
-const AdminEvaluationDetail = lazy(() => import('@/pages/admin/evaluations/EvaluationDetailPage'));
-const AdminRegressions = lazy(() => import('@/pages/admin/regressions'));
-const AdminRegressionDetail = lazy(() => import('@/pages/admin/regressions/RegressionDetailPage'));
-const AdminRegressionCreate = lazy(() => import('@/pages/admin/regressions/RegressionCreatePage'));
-const AdminFeedback = lazy(() => import('@/pages/admin/feedback'));
-const AdminFeedbackDetail = lazy(() => import('@/pages/admin/feedback/FeedbackDetailPage'));
-const AdminFeedbackCreate = lazy(() => import('@/pages/admin/feedback/FeedbackCreatePage'));
-const AdminFeedbackRuleCreate = lazy(() => import('@/pages/admin/feedback/FeedbackRuleCreatePage'));
-const AdminModels = lazy(() => import('@/pages/admin/models'));
-const AdminQuotas = lazy(() => import('@/pages/admin/quotas'));
-const AdminNotifications = lazy(() => import('@/pages/admin/notifications'));
-const AdminOperations = lazy(() => import('@/pages/admin/operations'));
-const AdminToolAudit = lazy(() => import('@/pages/admin/audit'));
-const AdminMetrics = lazy(() => import('@/pages/admin/metrics'));
+const AdminSettings = lazy(() => import('@/features/settings'));
+const AdminOverview = lazy(() => import('@/features/overview'));
+const AdminAgents = lazy(() => import('@/features/agents'));
+const AdminAgentDetail = lazy(() => import('@/features/agents/AgentDetailPage'));
+const AdminAgentCreate = lazy(() => import('@/features/agents/AgentCreatePage'));
+const AdminKnowledge = lazy(() => import('@/features/knowledge'));
+const AdminKnowledgeKbDetail = lazy(() => import('@/features/knowledge/KbDetailPage'));
+const AdminKnowledgeDocDetail = lazy(() => import('@/features/knowledge/DocDetailPage'));
+const AdminKnowledgeSourceDetail = lazy(() => import('@/features/knowledge/SourceDetailPage'));
+const AdminKnowledgeKbCreate = lazy(() => import('@/features/knowledge/KbCreatePage'));
+const AdminKnowledgeSourceCreate = lazy(() => import('@/features/knowledge/SourceCreatePage'));
+const AdminMemory = lazy(() => import('@/features/memory'));
+const AdminMemoryPolicyDetail = lazy(() => import('@/features/memory/PolicyDetailPage'));
+const AdminMemoryL1Detail = lazy(() => import('@/features/memory/L1DetailPage'));
+const AdminMemoryL2Detail = lazy(() => import('@/features/memory/L2DetailPage'));
+const AdminMemoryL3Detail = lazy(() => import('@/features/memory/L3DetailPage'));
+const AdminWorkflows = lazy(() => import('@/features/workflows'));
+const AdminWorkflowCreate = lazy(() => import('@/features/workflows/WorkflowCreatePage'));
+const AdminWorkflowDetail = lazy(() => import('@/features/workflows/WorkflowDetailPage'));
+const AdminSkills = lazy(() => import('@/features/skills'));
+const AdminSkillCreate = lazy(() => import('@/features/skills/SkillCreatePage'));
+const AdminSkillDetail = lazy(() => import('@/features/skills/SkillDetailPage'));
+const AdminEvaluations = lazy(() => import('@/features/evaluations'));
+const AdminEvaluationDetail = lazy(() => import('@/features/evaluations/EvaluationDetailPage'));
+const AdminRegressions = lazy(() => import('@/features/regressions'));
+const AdminRegressionDetail = lazy(() => import('@/features/regressions/RegressionDetailPage'));
+const AdminRegressionCreate = lazy(() => import('@/features/regressions/RegressionCreatePage'));
+const AdminFeedback = lazy(() => import('@/features/feedback'));
+const AdminFeedbackDetail = lazy(() => import('@/features/feedback/FeedbackDetailPage'));
+const AdminFeedbackCreate = lazy(() => import('@/features/feedback/FeedbackCreatePage'));
+const AdminFeedbackRuleCreate = lazy(() => import('@/features/feedback/FeedbackRuleCreatePage'));
+const AdminModels = lazy(() => import('@/features/models'));
+const AdminModelDetail = lazy(() => import('@/features/models/ModelDetailPage'));
+const AdminQuotas = lazy(() => import('@/features/quotas'));
+const AdminQuotaDetail = lazy(() => import('@/features/quotas/QuotaDetailPage'));
+const AdminNotifications = lazy(() => import('@/features/notifications'));
+const AdminChannelDetail = lazy(() => import('@/features/notifications/ChannelDetailPage'));
+const AdminOperations = lazy(() => import('@/features/operations'));
+const AdminSessionDetail = lazy(() => import('@/features/operations/SessionDetailPage'));
+const AdminToolAudit = lazy(() => import('@/features/audit'));
+const AdminAuditDetail = lazy(() => import('@/features/audit/AuditDetailPage'));
+const AdminMetrics = lazy(() => import('@/features/metrics'));
+const AdminMetricDetail = lazy(() => import('@/features/metrics/MetricDetailPage'));
 
 function PageFallback() {
   return (
@@ -109,12 +114,13 @@ export default function App() {
             <Route path="/team/*" element={<MyTeam />} />
             <Route path="/insights" element={<Navigate to="/home" replace />} />
             <Route path="/account" element={<AccountSettings />} />
-            <Route path="/help" element={<HelpCenter />} />
-            <Route path="/admin/help" element={<AdminHelp />} />
+            <Route path="/help" element={<Navigate to="/account" replace />} />
+            <Route path="/admin/help" element={<Navigate to="/admin/settings" replace />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/overview" element={<AdminOverview />} />
             <Route path="/admin/agents" element={<AdminAgents />} />
             <Route path="/admin/agents/new" element={<AdminAgentCreate />} />
+            <Route path="/admin/agents/:id/edit" element={<AdminAgentDetail />} />
             <Route path="/admin/agents/:id" element={<AdminAgentDetail />} />
             <Route path="/admin/knowledge" element={<AdminKnowledge />} />
             <Route path="/admin/knowledge/kbs/new" element={<AdminKnowledgeKbCreate />} />
@@ -131,6 +137,8 @@ export default function App() {
             <Route path="/admin/workflows/new" element={<AdminWorkflowCreate />} />
             <Route path="/admin/workflows/:id" element={<AdminWorkflowDetail />} />
             <Route path="/admin/tools" element={<AdminSkills />} />
+            <Route path="/admin/tools/new" element={<AdminSkillCreate />} />
+            <Route path="/admin/tools/:id/edit" element={<AdminSkillDetail />} />
             <Route path="/admin/tools/:id" element={<AdminSkillDetail />} />
             <Route path="/admin/evaluations" element={<AdminEvaluations />} />
             <Route path="/admin/evaluations/:id" element={<AdminEvaluationDetail />} />
@@ -142,11 +150,17 @@ export default function App() {
             <Route path="/admin/feedback/rules/new" element={<AdminFeedbackRuleCreate />} />
             <Route path="/admin/feedback/:id" element={<AdminFeedbackDetail />} />
             <Route path="/admin/models" element={<AdminModels />} />
+            <Route path="/admin/models/:id" element={<AdminModelDetail />} />
             <Route path="/admin/quotas" element={<AdminQuotas />} />
+            <Route path="/admin/quotas/:id" element={<AdminQuotaDetail />} />
             <Route path="/admin/notifications" element={<AdminNotifications />} />
+            <Route path="/admin/notifications/:id" element={<AdminChannelDetail />} />
             <Route path="/admin/operations" element={<AdminOperations />} />
+            <Route path="/admin/operations/:id" element={<AdminSessionDetail />} />
             <Route path="/admin/tool-audit" element={<AdminToolAudit />} />
+            <Route path="/admin/tool-audit/:id" element={<AdminAuditDetail />} />
             <Route path="/admin/metrics" element={<AdminMetrics />} />
+            <Route path="/admin/metrics/:id" element={<AdminMetricDetail />} />
             <Route path="/admin/*" element={<WorkspacePlaceholder />} />
           </Route>
           <Route path="/app" element={<RebuildPlaceholder />} />

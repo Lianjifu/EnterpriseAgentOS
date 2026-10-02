@@ -1,73 +1,165 @@
-import { Bell, Bot, Building2, Check, ChevronRight, KeyRound, ListTodo, LogOut, Megaphone, Monitor, Palette, Save, ShieldCheck, UserRound, UsersRound } from 'lucide-react';
+import { Bell, Check, ChevronRight, KeyRound, LogOut, Monitor, Palette, Save, ShieldCheck, UserRound } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NoticeBanner } from '@/components/feedback/NoticeBanner';
-import { useAuthStore } from '@/entities/auth';
+import { useAuthStore } from '@/features/auth';
 import { useUiStore } from '@/stores/uiStore';
 
-type SettingTab = '个人资料' | '偏好设置' | '通知' | '账号安全' | '品牌与界面' | '合规策略' | '审计日志' | '成员管理';
+type SettingTab = '个人资料' | '偏好设置' | '通知' | '账号安全';
 type TabDef = { id: SettingTab; label: string; description: string; icon: typeof UserRound };
 
-const userTabs: TabDef[] = [
+const tabs: TabDef[] = [
   { id: '个人资料', label: '个人资料', description: '姓名、邮箱与工作空间身份', icon: UserRound },
   { id: '偏好设置', label: '偏好设置', description: '主题、语言与工作台体验', icon: Palette },
   { id: '通知', label: '通知设置', description: '任务、工作流和系统提醒', icon: Bell },
   { id: '账号安全', label: '账号安全', description: '登录保护与访问记录', icon: ShieldCheck },
 ];
 
-const adminTabs: TabDef[] = [
-  { id: '品牌与界面', label: '品牌与界面', description: '名称、Logo、主题色与登录页', icon: Building2 },
-  { id: '合规策略', label: '合规策略', description: '内容安全、数据合规与风险评估', icon: ShieldCheck },
-  { id: '审计日志', label: '审计日志', description: '成员与平台操作记录', icon: ListTodo },
-  { id: '成员管理', label: '成员管理', description: '工作空间成员、团队与邀请', icon: UsersRound },
-];
-
-const audienceMeta = {
-  user: { eyebrow: 'ACCOUNT / 设置', heading: '把工作台调成你的样子。', sub: '管理个人信息、通知偏好和账号安全。设置只影响当前浏览器中的前端演示状态。', initialTab: '个人资料' as SettingTab },
-  admin: { eyebrow: 'ADMIN / 平台设置', heading: '把工作台调成团队的样子。', sub: '配置品牌与界面、合规策略、审计日志与成员管理。模型、渠道管理与额度请在「平台治理」侧栏处理。', initialTab: '品牌与界面' as SettingTab },
-};
-
-export default function AccountSettings({ audience = 'user' }: { audience?: 'user' | 'admin' }) {
+export default function AccountSettings() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const { theme, toggleTheme } = useUiStore();
-  const meta = audienceMeta[audience];
-  const tabs = audience === 'admin' ? adminTabs : userTabs;
-  const [tab, setTab] = useState<SettingTab>(meta.initialTab);
+  const [tab, setTab] = useState<SettingTab>('个人资料');
   const [displayName, setDisplayName] = useState(user?.name ?? '平台成员');
   const [email, setEmail] = useState(user?.email ?? 'member@example.com');
   const [language, setLanguage] = useState('简体中文');
   const [digest, setDigest] = useState(true);
   const [taskAlert, setTaskAlert] = useState(true);
-  const [brandName, setBrandName] = useState('企智搭 · 智能体平台');
-  const [brandColor, setBrandColor] = useState('#6366f1');
-  const [webhookUrl, setWebhookUrl] = useState('https://example.com/webhooks/eos');
   const [saved, setSaved] = useState(false);
   const [notice, setNotice] = useState('');
+  const current = tabs.find((item) => item.id === tab);
   const save = () => { setSaved(true); setNotice('设置已保存在当前页面演示状态。'); window.setTimeout(() => setSaved(false), 1600); };
   const handleLogout = () => { logout(); navigate('/login', { replace: true }); };
 
   return (
-    <div className="mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-10"><section className="relative overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--surface-1)] px-6 py-8 shadow-[var(--shadow-sm)] sm:px-8"><div aria-hidden="true" className="pointer-events-none absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,var(--brand-light),transparent_68%)]" /><div className="relative flex flex-col justify-between gap-5 xl:flex-row xl:items-end"><div><p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--brand)]">{meta.eyebrow}</p><h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">{meta.heading}</h2><p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">{meta.sub}</p></div><div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-3"><span className="grid h-11 w-11 place-items-center rounded-xl bg-[var(--brand-light)] text-lg font-bold text-[var(--brand)]">{displayName.slice(0, 1)}</span><div><p className="text-sm font-semibold">{displayName}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{email}</p></div></div></div></section>{notice && <NoticeBanner tone="emerald" onClose={() => setNotice('')}>{notice}</NoticeBanner>}
-      <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]"><aside className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-3"><p className="px-3 pb-3 pt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">SETTINGS</p><nav aria-label="设置分类" className="space-y-1">{tabs.map((item) => { const Icon = item.icon; return <button key={item.id} type="button" aria-current={tab === item.id ? 'page' : undefined} onClick={() => setTab(item.id)} className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition ${tab === item.id ? 'bg-[var(--brand-light)] text-[var(--brand)] dark:text-indigo-200' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'}`}><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[var(--bg-elevated)]"><Icon className="h-4 w-4" /></span><span className="min-w-0 flex-1"><span className="block text-xs font-semibold">{item.label}</span><span className="mt-0.5 block truncate text-[10px] opacity-70">{item.description}</span></span><ChevronRight className="h-4 w-4 shrink-0" /></button>; })}</nav>{audience === 'user' && <div className="mt-6 border-t border-[var(--border)] pt-4"><button type="button" onClick={handleLogout} className="flex w-full items-center gap-3 rounded-xl p-3 text-left text-xs font-semibold text-[var(--danger)] hover:bg-[var(--danger-bg)]"><LogOut className="h-4 w-4" />退出当前账号</button></div>}</aside>
-        <section className="min-w-0 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]"><div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-5 sm:px-8"><div><h3 className="text-xl font-semibold">{tabs.find((item) => item.id === tab)?.label}</h3><p className="mt-1 text-xs text-[var(--text-muted)]">{tabs.find((item) => item.id === tab)?.description}</p></div><button type="button" onClick={save} className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">{saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}{saved ? '已保存' : '保存设置'}</button></div><div className="p-5 sm:p-8">
-          {audience === 'user' ? (
-            <>
-              {tab === '个人资料' && <div className="max-w-3xl space-y-7"><div className="flex items-center gap-4 rounded-2xl bg-[var(--bg-elevated)] p-5"><span className="grid h-16 w-16 place-items-center rounded-2xl bg-[var(--brand)] text-xl font-bold text-white">{displayName.slice(0, 1)}</span><div><p className="text-sm font-semibold">你的工作台身份</p><p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">用于显示在任务、协作和产出物中。</p></div></div><div className="grid gap-5 md:grid-cols-2"><label className="text-xs font-semibold">显示名称<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm font-normal outline-none focus:border-[var(--brand)]" /></label><label className="text-xs font-semibold">工作邮箱<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm font-normal outline-none focus:border-[var(--brand)]" /></label></div><div className="rounded-xl border border-[var(--border)] p-5"><p className="text-xs font-semibold">当前工作空间</p><p className="mt-2 text-sm font-medium">默认工作空间</p><p className="mt-1 text-xs text-[var(--text-muted)]">你的演示数据、对话和协作内容会显示在这里。</p></div></div>}
-              {tab === '偏好设置' && <div className="max-w-3xl divide-y divide-[var(--border)]"><div className="flex items-center gap-4 py-5 first:pt-0"><span className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--brand-light)] text-[var(--brand)]"><Monitor className="h-5 w-5" /></span><div className="flex-1"><p className="text-sm font-semibold">外观主题</p><p className="mt-1 text-xs text-[var(--text-muted)]">当前：{theme === 'light' ? '浅色模式' : '深色模式'}</p></div><button type="button" onClick={toggleTheme} className="rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-semibold hover:border-[var(--brand)]">切换主题</button></div><div className="flex items-center gap-4 py-5"><span className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--bg-elevated)] text-[var(--text-muted)]"><UserRound className="h-5 w-5" /></span><div className="flex-1"><p className="text-sm font-semibold">界面语言</p><p className="mt-1 text-xs text-[var(--text-muted)]">选择工作台显示语言</p></div><select value={language} onChange={(event) => setLanguage(event.target.value)} className="h-10 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-3 text-xs outline-none"><option>简体中文</option><option>English</option></select></div></div>}
-              {tab === '通知' && <div className="max-w-3xl divide-y divide-[var(--border)]"><label className="flex cursor-pointer items-center gap-4 py-5 first:pt-0"><span className="grid h-10 w-10 place-items-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300"><Bell className="h-5 w-5" /></span><span className="flex-1"><span className="block text-sm font-semibold">任务与工作流提醒</span><span className="mt-1 block text-xs text-[var(--text-muted)]">当任务需要确认或工作流发生异常时提醒我</span></span><input type="checkbox" checked={taskAlert} onChange={(event) => setTaskAlert(event.target.checked)} className="h-5 w-5 accent-[var(--brand)]" /></label><label className="flex cursor-pointer items-center gap-4 py-5"><span className="grid h-10 w-10 place-items-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300"><MailIcon /></span><span className="flex-1"><span className="block text-sm font-semibold">每周使用小结</span><span className="mt-1 block text-xs text-[var(--text-muted)]">接收关于任务完成和节省时间的摘要</span></span><input type="checkbox" checked={digest} onChange={(event) => setDigest(event.target.checked)} className="h-5 w-5 accent-[var(--brand)]" /></label></div>}
-              {tab === '账号安全' && <div className="max-w-3xl space-y-4"><div className="flex items-center gap-4 rounded-2xl border border-emerald-400/25 bg-emerald-50 p-5 dark:bg-emerald-500/10"><ShieldCheck className="h-6 w-6 text-emerald-600" /><div><p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">账号保护正常</p><p className="mt-1 text-xs text-emerald-700/80 dark:text-emerald-300/80">最近一次登录：刚刚 · 当前浏览器</p></div></div><button type="button" onClick={() => setNotice('密码修改入口将在连接账号服务后开放。')} className="flex w-full items-center gap-4 rounded-xl border border-[var(--border)] p-5 text-left hover:border-[var(--brand)]"><KeyRound className="h-5 w-5 text-[var(--brand)]" /><span className="flex-1"><span className="block text-sm font-semibold">修改密码</span><span className="mt-1 block text-xs text-[var(--text-muted)]">更新登录凭据和验证方式</span></span><ChevronRight className="h-4 w-4 text-[var(--text-muted)]" /></button><div className="rounded-xl border border-[var(--border)] p-5"><p className="text-sm font-semibold">最近访问</p><p className="mt-2 text-xs text-[var(--text-muted)]">当前浏览器 · 当前工作空间 · 刚刚</p></div></div>}
-            </>
-          ) : (
-            <>
-              {tab === '品牌与界面' && <div className="max-w-3xl space-y-6"><div className="flex items-center gap-4 rounded-2xl bg-[var(--bg-elevated)] p-5"><span className="grid h-14 w-14 place-items-center rounded-2xl bg-[var(--brand)] text-white"><Bot className="h-7 w-7" /></span><div><p className="text-sm font-semibold">品牌预览</p><p className="mt-1 text-xs text-[var(--text-muted)]">用于登录页、邮件头与对外文档的水印。</p></div></div><div className="grid gap-5 md:grid-cols-2"><label className="text-xs font-semibold">品牌名称<input value={brandName} onChange={(event) => setBrandName(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm font-normal outline-none focus:border-[var(--brand)]" /></label><label className="text-xs font-semibold">主题色<div className="mt-2 flex items-center gap-3"><input type="color" value={brandColor} onChange={(event) => setBrandColor(event.target.value)} className="h-11 w-16 cursor-pointer rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)]" /><span className="text-xs text-[var(--text-muted)]">{brandColor}</span></div></label></div><div className="rounded-xl border border-[var(--border)] p-5"><p className="text-xs font-semibold">登录页主图</p><p className="mt-2 text-xs text-[var(--text-muted)]">支持上传 1440×720 的 JPG/PNG，文件大小不超过 2MB。</p><button type="button" onClick={() => setNotice('上传入口将在连接资源服务后开放。')} className="mt-3 inline-flex items-center gap-2 rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-semibold hover:border-[var(--brand)]">上传主图</button></div></div>}
-              {tab === '合规策略' && <div className="max-w-3xl space-y-4"><div className="rounded-2xl border border-emerald-400/25 bg-emerald-50 p-5 dark:bg-emerald-500/10"><p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">合规检查最近一次通过</p><p className="mt-1 text-xs text-emerald-700/80 dark:text-emerald-300/80">执行于今天 02:00 · 共 18 项规则</p></div><div className="grid gap-3 sm:grid-cols-2"><div className="rounded-xl border border-[var(--border)] p-4"><p className="text-xs font-semibold">内容安全</p><p className="mt-2 text-xs text-[var(--text-muted)]">敏感词过滤、违规拦截、红队测试</p><button type="button" onClick={() => setNotice('敏感词库导入将在连接内容服务后开放。')} className="mt-3 text-xs font-semibold text-[var(--brand)] hover:underline">管理敏感词</button></div><div className="rounded-xl border border-[var(--border)] p-4"><p className="text-xs font-semibold">数据合规</p><p className="mt-2 text-xs text-[var(--text-muted)]">数据出境、保留期限、访问留痕</p><button type="button" onClick={() => setNotice('数据策略导出准备中（演示）。')} className="mt-3 text-xs font-semibold text-[var(--brand)] hover:underline">导出策略</button></div></div><div className="rounded-xl border border-[var(--border)] p-5"><p className="text-xs font-semibold">风险评估</p><p className="mt-2 text-xs text-[var(--text-muted)]">基于近 30 天运行数据自动评估，1 项需关注。</p><ul className="mt-3 space-y-2 text-xs"><li className="flex items-center justify-between rounded-lg bg-amber-50 px-3 py-2 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"><span>外部工具访问频率偏高</span><span>中</span></li><li className="flex items-center justify-between rounded-lg bg-emerald-50 px-3 py-2 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"><span>登录异常拦截</span><span>低</span></li></ul></div></div>}
-              {tab === '审计日志' && <div className="max-w-3xl space-y-3"><div className="rounded-xl border border-[var(--border)] p-5"><p className="text-sm font-semibold">最近 7 天活动</p><ul className="mt-3 space-y-2 text-xs"><li className="flex items-center justify-between rounded-lg bg-[var(--bg-elevated)] px-3 py-2"><span>张敏 · 发布智能体「客户沟通助手」</span><span className="text-[var(--text-muted)]">2 小时前</span></li><li className="flex items-center justify-between rounded-lg bg-[var(--bg-elevated)] px-3 py-2"><span>李雷 · 修改知识库访问权限</span><span className="text-[var(--text-muted)]">今天 10:32</span></li><li className="flex items-center justify-between rounded-lg bg-[var(--bg-elevated)] px-3 py-2"><span>系统 · 启用 SSO 配置</span><span className="text-[var(--text-muted)]">昨天 18:14</span></li></ul></div><button type="button" onClick={() => setNotice('审计日志导出正在准备（演示）。')} className="rounded-xl border border-[var(--border)] px-4 py-2 text-xs font-semibold hover:border-[var(--brand)]">导出审计</button></div>}
-              {tab === '成员管理' && <div className="max-w-3xl space-y-4"><div className="rounded-xl border border-[var(--border)] p-5"><p className="text-sm font-semibold">成员概览</p><div className="mt-3 grid grid-cols-3 gap-2 text-xs"><CostCard title="总成员" value="226" /><CostCard title="管理员" value="12" /><CostCard title="本周新增" value="5" /></div></div><div className="rounded-xl border border-[var(--border)] p-5"><p className="text-xs font-semibold">团队</p><ul className="mt-3 space-y-2 text-xs"><li className="flex items-center justify-between rounded-lg bg-[var(--bg-elevated)] px-3 py-2"><span>客服一组 · 张敏负责</span><span className="text-[var(--text-muted)]">18 人</span></li><li className="flex items-center justify-between rounded-lg bg-[var(--bg-elevated)] px-3 py-2"><span>销售支持 · 李雷负责</span><span className="text-[var(--text-muted)]">26 人</span></li><li className="flex items-center justify-between rounded-lg bg-[var(--bg-elevated)] px-3 py-2"><span>数据团队 · 王芳负责</span><span className="text-[var(--text-muted)]">14 人</span></li></ul></div><button type="button" onClick={() => setNotice('邀请链接已生成（演示）。')} className="inline-flex items-center gap-2 rounded-xl bg-[var(--text)] px-4 py-2 text-xs font-semibold text-[var(--surface-1)]">邀请新成员</button></div>}
-            </>
-          )}
-        </div></section></div>
+    <div className="mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-10">
+      <section className="relative overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--surface-1)] px-6 py-8 shadow-[var(--shadow-sm)] sm:px-8">
+        <div aria-hidden="true" className="pointer-events-none absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,var(--brand-light),transparent_68%)]" />
+        <div className="relative flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--brand)]">ACCOUNT / 设置</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">把工作台调成你的样子。</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">管理个人信息、通知偏好和账号安全。设置只影响当前浏览器中的前端演示状态。</p>
+          </div>
+          <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-3">
+            <span className="grid h-11 w-11 place-items-center rounded-xl bg-[var(--brand-light)] text-lg font-bold text-[var(--brand)]">{displayName.slice(0, 1)}</span>
+            <div>
+              <p className="text-sm font-semibold">{displayName}</p>
+              <p className="mt-1 text-xs text-[var(--text-muted)]">{email}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      {notice && <NoticeBanner tone="emerald" onClose={() => setNotice('')}>{notice}</NoticeBanner>}
+      <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
+        <aside className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-3">
+          <p className="px-3 pb-3 pt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">SETTINGS</p>
+          <nav aria-label="设置分类" className="space-y-1">
+            {tabs.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button key={item.id} type="button" aria-current={tab === item.id ? 'page' : undefined} onClick={() => setTab(item.id)} className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition ${tab === item.id ? 'bg-[var(--brand-light)] text-[var(--brand)] dark:text-indigo-200' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'}`}>
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[var(--bg-elevated)]"><Icon className="h-4 w-4" /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-semibold">{item.label}</span>
+                    <span className="mt-0.5 block truncate text-[10px] opacity-70">{item.description}</span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0" />
+                </button>
+              );
+            })}
+          </nav>
+          <div className="mt-6 border-t border-[var(--border)] pt-4">
+            <button type="button" onClick={handleLogout} className="flex w-full items-center gap-3 rounded-xl p-3 text-left text-xs font-semibold text-[var(--danger)] hover:bg-[var(--danger-bg)]"><LogOut className="h-4 w-4" />退出当前账号</button>
+          </div>
+        </aside>
+        <section className="min-w-0 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
+          <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-5 sm:px-8">
+            <div>
+              <h3 className="text-xl font-semibold">{current?.label}</h3>
+              <p className="mt-1 text-xs text-[var(--text-muted)]">{current?.description}</p>
+            </div>
+            <button type="button" onClick={save} className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">{saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}{saved ? '已保存' : '保存设置'}</button>
+          </div>
+          <div className="p-5 sm:p-8">
+            {tab === '个人资料' && (
+              <div className="max-w-3xl space-y-7">
+                <div className="flex items-center gap-4 rounded-2xl bg-[var(--bg-elevated)] p-5">
+                  <span className="grid h-16 w-16 place-items-center rounded-2xl bg-[var(--brand)] text-xl font-bold text-white">{displayName.slice(0, 1)}</span>
+                  <div>
+                    <p className="text-sm font-semibold">你的工作台身份</p>
+                    <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">用于显示在任务、协作和产出物中。</p>
+                  </div>
+                </div>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <label className="text-xs font-semibold">显示名称<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm font-normal outline-none focus:border-[var(--brand)]" /></label>
+                  <label className="text-xs font-semibold">工作邮箱<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm font-normal outline-none focus:border-[var(--brand)]" /></label>
+                </div>
+                <div className="rounded-xl border border-[var(--border)] p-5">
+                  <p className="text-xs font-semibold">当前工作空间</p>
+                  <p className="mt-2 text-sm font-medium">默认工作空间</p>
+                  <p className="mt-1 text-xs text-[var(--text-muted)]">你的演示数据、对话和协作内容会显示在这里。</p>
+                </div>
+              </div>
+            )}
+            {tab === '偏好设置' && (
+              <div className="max-w-3xl divide-y divide-[var(--border)]">
+                <div className="flex items-center gap-4 py-5 first:pt-0">
+                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--brand-light)] text-[var(--brand)]"><Monitor className="h-5 w-5" /></span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold">外观主题</p>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">当前：{theme === 'light' ? '浅色模式' : '深色模式'}</p>
+                  </div>
+                  <button type="button" onClick={toggleTheme} className="rounded-xl border border-[var(--border)] px-3 py-2 text-xs font-semibold hover:border-[var(--brand)]">切换主题</button>
+                </div>
+                <div className="flex items-center gap-4 py-5">
+                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--bg-elevated)] text-[var(--text-muted)]"><UserRound className="h-5 w-5" /></span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold">界面语言</p>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">选择工作台显示语言</p>
+                  </div>
+                  <select value={language} onChange={(event) => setLanguage(event.target.value)} className="h-10 rounded-xl border border-[var(--border)] bg-[var(--bg-elevated)] px-3 text-xs outline-none"><option>简体中文</option><option>English</option></select>
+                </div>
+              </div>
+            )}
+            {tab === '通知' && (
+              <div className="max-w-3xl divide-y divide-[var(--border)]">
+                <label className="flex cursor-pointer items-center gap-4 py-5 first:pt-0">
+                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300"><Bell className="h-5 w-5" /></span>
+                  <span className="flex-1"><span className="block text-sm font-semibold">任务与工作流提醒</span><span className="mt-1 block text-xs text-[var(--text-muted)]">当任务需要确认或工作流发生异常时提醒我</span></span>
+                  <input type="checkbox" checked={taskAlert} onChange={(event) => setTaskAlert(event.target.checked)} className="h-5 w-5 accent-[var(--brand)]" />
+                </label>
+                <label className="flex cursor-pointer items-center gap-4 py-5">
+                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300"><MailIcon /></span>
+                  <span className="flex-1"><span className="block text-sm font-semibold">每周使用小结</span><span className="mt-1 block text-xs text-[var(--text-muted)]">接收关于任务完成和节省时间的摘要</span></span>
+                  <input type="checkbox" checked={digest} onChange={(event) => setDigest(event.target.checked)} className="h-5 w-5 accent-[var(--brand)]" />
+                </label>
+              </div>
+            )}
+            {tab === '账号安全' && (
+              <div className="max-w-3xl space-y-4">
+                <div className="flex items-center gap-4 rounded-2xl border border-emerald-400/25 bg-emerald-50 p-5 dark:bg-emerald-500/10">
+                  <ShieldCheck className="h-6 w-6 text-emerald-600" />
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">账号保护正常</p>
+                    <p className="mt-1 text-xs text-emerald-700/80 dark:text-emerald-300/80">最近一次登录：刚刚 · 当前浏览器</p>
+                  </div>
+                </div>
+                <button type="button" onClick={() => setNotice('密码修改入口将在连接账号服务后开放。')} className="flex w-full items-center gap-4 rounded-xl border border-[var(--border)] p-5 text-left hover:border-[var(--brand)]">
+                  <KeyRound className="h-5 w-5 text-[var(--brand)]" />
+                  <span className="flex-1"><span className="block text-sm font-semibold">修改密码</span><span className="mt-1 block text-xs text-[var(--text-muted)]">更新登录凭据和验证方式</span></span>
+                  <ChevronRight className="h-4 w-4 text-[var(--text-muted)]" />
+                </button>
+                <div className="rounded-xl border border-[var(--border)] p-5">
+                  <p className="text-sm font-semibold">最近访问</p>
+                  <p className="mt-2 text-xs text-[var(--text-muted)]">当前浏览器 · 当前工作空间 · 刚刚</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
@@ -86,8 +178,4 @@ function ChannelRow({ icon, tone, title, desc, defaultEnabled = true, children }
       {children && enabled && <div className="mt-3 pl-14">{children}</div>}
     </div>
   );
-}
-
-function CostCard({ title, value, desc }: { title: string; value: string; desc?: string }) {
-  return <div className="rounded-xl border border-[var(--border)] p-4"><p className="text-xs text-[var(--text-muted)]">{title}</p><p className="mt-2 text-lg font-semibold">{value}</p>{desc && <p className="mt-1 text-xs text-[var(--text-muted)]">{desc}</p>}</div>;
 }

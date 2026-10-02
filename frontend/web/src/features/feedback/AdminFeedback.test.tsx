@@ -1,0 +1,68 @@
+/**
+ * AdminFeedback — 对齐技能管理 / 模型配置：无子模块 Tab，列表工具栏 + 视图筛选。
+ */
+import { describe, expect, it, afterEach } from 'vitest';
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
+import { qk } from '@/api/shared/query-keys';
+import { renderWithProviders } from '@/test-utils/seed';
+import { mockFeedbackList, mockFeedbackRules, mockFeedbackTickets, mockFeedbackTopics } from './fixtures';
+import FeedbackPage from './index';
+
+function renderPage() {
+  return renderWithProviders(<FeedbackPage />, {
+    seeds: [
+      { key: [...qk.admin.feedback.list, 'w1'], data: mockFeedbackList },
+      { key: [...qk.admin.feedback.tickets, 'w1'], data: mockFeedbackTickets },
+      { key: [...qk.admin.feedback.topics, 'w1'], data: mockFeedbackTopics },
+      { key: [...qk.admin.feedback.rules, 'w1'], data: mockFeedbackRules },
+    ],
+  });
+}
+
+describe('AdminFeedback', () => {
+  afterEach(() => cleanup());
+
+  it('renders hero without sub-module tabs', async () => {
+    renderPage();
+    expect(screen.getByText(/让用户的每一条反馈都被看见/)).toBeTruthy();
+    expect(screen.queryByLabelText('子模块导航')).toBeNull();
+    expect(screen.getByRole('combobox', { name: '视图' })).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getAllByText('王芳').length).toBeGreaterThan(0);
+    });
+  });
+
+  it('renders feedback cards and action buttons', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('王芳')).toBeTruthy();
+    });
+    expect(screen.getAllByRole('button', { name: /^分诊$/ }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: /^解决$/ }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: /^删除$/ }).length).toBeGreaterThan(0);
+  });
+
+  it('switches to ticket view via select', async () => {
+    renderPage();
+    fireEvent.change(screen.getByRole('combobox', { name: '视图' }), { target: { value: 'ticket' } });
+    await waitFor(() => {
+      expect(screen.getByText('所有工单')).toBeTruthy();
+    });
+  });
+
+  it('switches to topic view via select', async () => {
+    renderPage();
+    fireEvent.change(screen.getByRole('combobox', { name: '视图' }), { target: { value: 'topic' } });
+    await waitFor(() => {
+      expect(screen.getByText('主题聚类')).toBeTruthy();
+    });
+  });
+
+  it('switches to rule view via select', async () => {
+    renderPage();
+    fireEvent.change(screen.getByRole('combobox', { name: '视图' }), { target: { value: 'rule' } });
+    await waitFor(() => {
+      expect(screen.getByText('反馈路由规则')).toBeTruthy();
+    });
+  });
+});

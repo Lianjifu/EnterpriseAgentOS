@@ -13,8 +13,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useApiMutation, useApiQuery } from '@/services/query';
-import { useAuthStore } from '@/stores/authStore';
-import type { User } from '@de/web-types';
+import { useAuthStore } from '@/features/auth';
+import { useWorkspaceStore } from '@/stores/workspaceStore';
+import type { User, Workspace } from '@de/web-types';
 
 export interface LoginMutationOutput {
   token: string;
@@ -53,6 +54,67 @@ function readBuildVersion(): string {
     ?.VITE_BUILD_VERSION) ?? 'dev';
 }
 
+function identityServiceDown(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const status = 'status' in err ? Number((err as { status?: number }).status) : NaN;
+  const code = 'code' in err ? String((err as { code?: string }).code) : '';
+  return status === 502 || status === 503 || status === 504 || status === 0
+    || code === 'E_NETWORK' || code === 'E_BAD_RESPONSE' || code === 'E_TIMEOUT';
+}
+
+function sessionFromControlPlane(payload: unknown): LoginMutationOutput | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const root = payload as Record<string, unknown>;
+  const data = root.ok === true && root.data && typeof root.data === 'object'
+    ? root.data as Record<string, unknown>
+    : root;
+  const token = typeof data.token === 'string' ? data.token : '';
+  const user = data.user;
+  if (!token || !user || typeof user !== 'object') return null;
+  const record = user as User;
+  if (!record.id || !record.email || !record.role) return null;
+  return { token, user: record };
+}
+
+async function loginViaControlPlane(email: string, password: string): Promise<LoginMutationOutput> {
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  let json: unknown = null;
+  try {
+    json = await res.json();
+  } catch {
+    throw new Error('控制面登录响应无法解析');
+  }
+  if (!res.ok) {
+    const message = json && typeof json === 'object' && 'error' in json
+      ? (json as { error?: { message?: string } }).error?.message
+      : undefined;
+    throw new Error(message || '登录失败');
+  }
+  const session = sessionFromControlPlane(json);
+  if (!session) throw new Error('登录响应缺少用户信息');
+  return session;
+}
+
+function workspaceFromUser(user: User): Workspace | null {
+  if (!user.workspaceId) return null;
+  return {
+    id: user.workspaceId,
+    tenantId: user.tenantId,
+    name: '当前工作空间',
+    region: 'cn-east-1',
+    plan: 'enterprise',
+    memberCount: 1,
+    complianceScore: 0,
+    createdAt: new Date().toISOString(),
+    ownerId: user.id,
+    status: 'active',
+  };
+}
+
 export function useLogin(opts: UseLoginOpts = {}) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -88,43 +150,60 @@ export function useLogin(opts: UseLoginOpts = {}) {
     { enabled: false, retry: false },
   );
 
+  const enterWorkspace = useCallback((data: LoginMutationOutput) => {
+    const looksLikeMfa =
+      MFA_EMAIL_PATTERN.test(data?.user?.email ?? '') ||
+      searchParams.get('step') === 'mfa';
+    if (looksLikeMfa && !data?.user?.id) {
+      setStep('mfa');
+      opts.onMfaRequired?.();
+      return;
+    }
+    authLogin(data.user, data.token);
+    const workspace = workspaceFromUser(data.user);
+    if (workspace) useWorkspaceStore.getState().setCurrent(workspace);
+    opts.onAuthenticated?.(data);
+    if (!data.user?.id) {
+      const fetched = meQuery.data;
+      if (fetched && (fetched.id || fetched.email)) {
+        authLogin({ ...data.user, ...fetched }, data.token);
+      } else {
+        void meQuery
+          .refetch()
+          .then((me) => {
+            if (me.data && (me.data.id || me.data.email)) {
+              authLogin({ ...data.user, ...me.data }, data.token);
+            }
+          })
+          .catch(() => {
+            /* 身份服务未返回 profile 时保留登录结果 */
+          });
+      }
+    }
+    const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
+    navigate(from ?? defaultRouteForRole(data.user.role), { replace: true });
+  }, [authLogin, location.state, meQuery, navigate, opts, searchParams]);
+
   const mut = useApiMutation<LoginMutationOutput, { email: string; password: string }>(
     '/api/auth/login',
     {
       onSuccess: (data) => {
-        const looksLikeMfa =
-          MFA_EMAIL_PATTERN.test(data?.user?.email ?? email) ||
-          searchParams.get('step') === 'mfa';
-        if (looksLikeMfa && !data?.user?.id) {
-          setStep('mfa');
-          opts.onMfaRequired?.();
-          return;
-        }
-        authLogin(data.user, data.token);
-        opts.onAuthenticated?.(data);
-        const fetched = meQuery.data;
-        if (fetched && (fetched.id || fetched.email)) {
-          authLogin({ ...data.user, ...fetched }, data.token);
-        } else {
-          void meQuery
-            .refetch()
-            .then((me) => {
-              if (me.data && (me.data.id || me.data.email)) {
-                authLogin({ ...data.user, ...me.data }, data.token);
-              }
-            })
-            .catch(() => {
-              /* mock 模式下 users/me 无 handler,静默忽略 */
-            });
-        }
-        const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
-        navigate(from ?? defaultRouteForRole(data.user.role), { replace: true });
+        enterWorkspace(data);
       },
-      onError: (err: unknown) => {
+      onError: (err: unknown, vars) => {
         const message =
           err && typeof err === 'object' && 'message' in err
             ? (err as { message?: string }).message
             : undefined;
+        if (identityServiceDown(err) && vars?.email && vars?.password) {
+          void loginViaControlPlane(vars.email, vars.password)
+            .then((data) => enterWorkspace(data))
+            .catch((fallbackErr: unknown) => {
+              const fallbackMessage = fallbackErr instanceof Error ? fallbackErr.message : message;
+              opts.onLoginError?.(fallbackMessage);
+            });
+          return;
+        }
         opts.onLoginError?.(message);
       },
     },

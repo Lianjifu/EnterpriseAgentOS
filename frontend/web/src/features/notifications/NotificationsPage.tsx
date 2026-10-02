@@ -1,0 +1,324 @@
+/**
+ * NotificationsPage — 对齐模型管理：无子模块 Tab，Hero 轻量，列表工具栏承载导入/新建。
+ * 视图筛选：渠道列表 / Webhook / 接收人组；渠道视图可按类型筛选。
+ */
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Globe, Plus, Search, Upload } from 'lucide-react';
+import { NoticeBanner } from '@/components/feedback/NoticeBanner';
+import {
+  useBatchChannelStatus, useCreateChannel, useCreateGroup,
+  useNotificationChannels, useNotificationGroups, useNotificationWebhooks, useUpdateChannel,
+} from './useNotifications';
+import type { NotificationChannel, NotificationGroup } from './schema';
+import { BatchToolbar } from './components/BatchToolbar';
+import { ChannelCard } from './components/ChannelCard';
+import { CreateChannelModal } from './components/CreateChannelModal';
+import { CreateGroupModal } from './components/CreateGroupModal';
+import { ExportChannelModal } from './components/ExportChannelModal';
+import { GroupCard } from './components/GroupCard';
+import { ImportChannelModal } from './components/ImportChannelModal';
+import { WebhookCard } from './components/WebhookCard';
+import { HERO_ICON, type ExchangeFormat } from './components/constants';
+
+type ViewId = 'channel' | 'webhook' | 'group';
+type KindFilter = 'all' | 'email' | 'im';
+
+function downloadBlob(blob: Blob, filename: string) {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export default function NotificationsPage() {
+  const navigate = useNavigate();
+  const { data: channels = [] } = useNotificationChannels();
+  const { data: webhooks = [] } = useNotificationWebhooks();
+  const { data: groups = [] } = useNotificationGroups();
+
+  const createChannel = useCreateChannel();
+  const updateChannel = useUpdateChannel();
+  const batchStatus = useBatchChannelStatus();
+  const createGroup = useCreateGroup();
+
+  const [view, setView] = useState<ViewId>('channel');
+  const [kindFilter, setKindFilter] = useState<KindFilter>('all');
+  const [search, setSearch] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createGroupOpen, setCreateGroupOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [notice, setNotice] = useState('');
+
+  const stats = useMemo(() => {
+    const total = channels.length;
+    const active = channels.filter((c) => c.status === 'active').length;
+    const sentToday = channels.reduce((s, c) => s + c.sentToday, 0);
+    return { total, active, sentToday };
+  }, [channels]);
+
+  const visibleChannels = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return channels.filter((c) =>
+      (kindFilter === 'all' || c.kind === kindFilter) &&
+      (q.length === 0 || `${c.name} ${c.target} ${c.description}`.toLowerCase().includes(q)),
+    );
+  }, [channels, search, kindFilter]);
+
+  const toggleSelect = (id: string) =>
+    setSelectedIds((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
+
+  const openChannel = (c: NotificationChannel) => navigate(`/admin/notifications/${c.id}`);
+
+  const handleEnable = (c: NotificationChannel) => {
+    if (c.status === 'active') return;
+    updateChannel.mutate({ id: c.id, patch: { status: 'active' } });
+    setNotice(`已启用渠道「${c.name}」。`);
+  };
+
+  const handleExportOne = (c: NotificationChannel) => {
+    downloadBlob(new Blob([JSON.stringify(c, null, 2)], { type: 'application/json' }), `channel-${c.id}.json`);
+    setNotice(`已导出「${c.name}」。`);
+  };
+
+  const handleRequestDelete = (c: NotificationChannel) => {
+    setNotice(`渠道「${c.name}」暂不支持删除，可先暂停或导出备份。`);
+  };
+
+  const handleBatchEnable = () => {
+    batchStatus.mutate({ ids: selectedIds, status: 'active' }, {
+      onSuccess: () => setNotice(`已批量启用 ${selectedIds.length} 个渠道。`),
+    });
+    setSelectedIds([]);
+  };
+  const handleBatchPause = () => {
+    batchStatus.mutate({ ids: selectedIds, status: 'paused' }, {
+      onSuccess: () => setNotice(`已批量暂停 ${selectedIds.length} 个渠道。`),
+    });
+    setSelectedIds([]);
+  };
+  const handleBatchExport = () => setExportOpen(true);
+
+  const handleCreateChannel = (c: NotificationChannel) => {
+    const { id: _ignored, ...payload } = c;
+    void _ignored;
+    createChannel.mutate(
+      { name: payload.name, kind: payload.kind, target: payload.target, description: payload.description },
+      {
+        onSuccess: (created) => setNotice(`已创建渠道「${created.name}」。`),
+        onError: () => setNotice(`创建失败,请重试。`),
+      },
+    );
+    setCreateOpen(false);
+    setView('channel');
+  };
+
+  const handleCreateGroup = (g: NotificationGroup) => {
+    createGroup.mutate(
+      { name: g.name, description: g.description, members: g.members },
+      {
+        onSuccess: (created) => setNotice(`已创建接收人组「${created.name}」。`),
+        onError: () => setNotice(`创建失败,请重试。`),
+      },
+    );
+    setCreateGroupOpen(false);
+  };
+
+  const handleImport = (count: number) => setNotice(`已导入 ${count} 个渠道。`);
+
+  const handleExport = (format: ExchangeFormat) => {
+    const list = selectedIds.length > 0 ? channels.filter((c) => selectedIds.includes(c.id)) : channels;
+    const data = list.map((c) => ({ id: c.id, name: c.name, kind: c.kind, target: c.target, status: c.status }));
+    if (format === 'json') {
+      downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), 'channels.json');
+    } else {
+      const yaml = data.map((c) => `- id: "${c.id}"\n  name: "${c.name}"\n  kind: "${c.kind}"`).join('\n');
+      downloadBlob(new Blob([`${yaml}\n`], { type: 'text/yaml' }), 'channels.yaml');
+    }
+    setNotice(`已导出 ${list.length} 个渠道为 ${format.toUpperCase()} 文件。`);
+  };
+
+  const toggleStar = (id: string) => {
+    const target = channels.find((c) => c.id === id);
+    if (!target) return;
+    updateChannel.mutate(
+      { id, patch: { starred: !target.starred } },
+      { onError: () => setNotice(`更新收藏失败,请重试。`) },
+    );
+  };
+
+  const HeroIcon = HERO_ICON;
+
+  return (
+    <div className="notifications-page mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-10">
+      <section className="relative overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--surface-1)] px-6 py-8 shadow-[var(--shadow-sm)] sm:px-8">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px]">
+          <div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.10),transparent_68%)]" />
+        </div>
+        <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-violet-700 dark:text-violet-300">ADMIN / 渠道管理</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">把消息送到对的渠道、对的人。</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">统一管理邮件、IM、Webhook 与接收人组,实时观察投递结果。</p>
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
+            <HeroIcon className="h-3 w-3" />{stats.total} 个渠道 · {stats.active} 启用 · 今日投递 {stats.sentToday}
+          </div>
+        </div>
+      </section>
+
+      {notice && (
+        <NoticeBanner tone="violet" onClose={() => setNotice('')}>
+          {notice}
+        </NoticeBanner>
+      )}
+
+      {selectedIds.length > 0 && view === 'channel' && (
+        <BatchToolbar
+          count={selectedIds.length}
+          onClear={() => setSelectedIds([])}
+          onBatchEnable={handleBatchEnable}
+          onBatchPause={handleBatchPause}
+          onBatchExport={handleBatchExport}
+        />
+      )}
+
+      {view === 'channel' && (
+        <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
+          <div className="flex flex-col gap-2 border-b border-[var(--border)] px-4 py-3 sm:flex-row sm:items-center sm:px-5">
+            <label className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--text-muted)]" />
+              <input
+                aria-label="搜索渠道"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="搜索渠道 / 目标"
+                className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] pl-8 pr-3 text-sm outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--brand)]"
+              />
+            </label>
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              <select
+                aria-label="视图"
+                value={view}
+                onChange={(e) => setView(e.target.value as ViewId)}
+                className="h-9 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-2.5 text-xs outline-none focus:border-[var(--brand)]"
+              >
+                <option value="channel">渠道列表</option>
+                <option value="webhook">Webhook</option>
+                <option value="group">接收人组</option>
+              </select>
+              <select
+                aria-label="类型"
+                value={kindFilter}
+                onChange={(e) => setKindFilter(e.target.value as KindFilter)}
+                className="h-9 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-2.5 text-xs outline-none focus:border-[var(--brand)]"
+              >
+                <option value="all">全部</option>
+                <option value="email">邮件</option>
+                <option value="im">IM</option>
+              </select>
+              <button type="button" onClick={() => setImportOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]">
+                <Upload className="h-3.5 w-3.5" />导入
+              </button>
+              <button type="button" onClick={() => setCreateOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
+                <Plus className="h-3.5 w-3.5" />新建渠道
+              </button>
+            </div>
+          </div>
+          <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
+            {visibleChannels.map((c) => (
+              <ChannelCard
+                key={c.id}
+                channel={c}
+                selected={selectedIds.includes(c.id)}
+                onToggleSelect={toggleSelect}
+                onSelect={openChannel}
+                onToggleStar={toggleStar}
+                onEdit={openChannel}
+                onEnable={handleEnable}
+                onExportOne={handleExportOne}
+                onRequestDelete={handleRequestDelete}
+              />
+            ))}
+          </div>
+          {visibleChannels.length === 0 && (
+            <div className="px-5 pb-8 text-center">
+              <Search className="mx-auto h-6 w-6 text-[var(--text-muted)]" />
+              <p className="mt-3 text-sm font-semibold">没有匹配的渠道</p>
+              <p className="mt-1 text-xs text-[var(--text-muted)]">尝试其他关键词或清除筛选。</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {view !== 'channel' && (
+        <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
+          <div className="flex flex-wrap items-center gap-2 border-b border-[var(--border)] px-4 py-3 sm:px-5">
+            <select
+              aria-label="视图"
+              value={view}
+              onChange={(e) => setView(e.target.value as ViewId)}
+              className="h-9 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-2.5 text-xs outline-none focus:border-[var(--brand)]"
+            >
+              <option value="channel">渠道列表</option>
+              <option value="webhook">Webhook</option>
+              <option value="group">接收人组</option>
+            </select>
+            {view === 'webhook' && (
+              <button type="button" onClick={() => setNotice('已生成 Webhook 接入指南')} className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 text-xs font-semibold hover:border-[var(--brand)]">
+                <Globe className="h-3.5 w-3.5" />接入指南
+              </button>
+            )}
+            {view === 'group' && (
+              <button type="button" onClick={() => setCreateGroupOpen(true)} className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
+                <Plus className="h-3.5 w-3.5" />新建组
+              </button>
+            )}
+          </div>
+
+          {view === 'webhook' && (
+            <div className="space-y-3 p-5">
+              {webhooks.map((w) => <WebhookCard key={w.id} webhook={w} />)}
+            </div>
+          )}
+
+          {view === 'group' && (
+            <div className="space-y-3 p-5">
+              {groups.map((g) => <GroupCard key={g.id} group={g} />)}
+            </div>
+          )}
+        </div>
+      )}
+
+      <CreateChannelModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreate={handleCreateChannel}
+      />
+      <CreateGroupModal
+        open={createGroupOpen}
+        onClose={() => setCreateGroupOpen(false)}
+        onCreate={handleCreateGroup}
+      />
+      <ImportChannelModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImport={handleImport}
+      />
+      <ExportChannelModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        onExport={handleExport}
+        total={channels.length}
+        selectedCount={selectedIds.length}
+      />
+    </div>
+  );
+}

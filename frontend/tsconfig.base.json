@@ -17,16 +17,7 @@
     "isolatedModules": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "useDefineForClassFields": true,
-    "baseUrl": ".",
-    "paths": {
-      "@web/*": ["web/src/*"],
-      "@web-ui/*": ["packages/ui/src/*"],
-      "@web-api/*": ["packages/api/src/*"],
-      "@web-types/*": ["packages/types/src/*"],
-      "@web-hooks/*": ["packages/hooks/src/*"],
-      "@web-utils/*": ["packages/utils/src/*"]
-    }
+    "useDefineForClassFields": true
   },
   "exclude": ["node_modules", "dist", "build"]
 }

@@ -45,17 +45,27 @@ function adaptLogin(rawData: unknown): LoginAdapterOutput | unknown {
   const u = (r.user ?? {}) as AnyRecord;
   const userId = typeof u.id === 'string' ? u.id : '';
   const userEmail = typeof u.email === 'string' ? u.email : '';
-  const tenantId = typeof u.tenant_id === 'string' ? u.tenant_id : '';
-  const displayName = typeof u.display_name === 'string' ? u.display_name : '';
+  const tenantId = typeof u.tenant_id === 'string' ? u.tenant_id : typeof u.tenantId === 'string' ? u.tenantId : '';
+  const displayName = typeof u.display_name === 'string' ? u.display_name : typeof u.name === 'string' ? u.name : '';
+  const explicitRole = typeof u.role === 'string' ? u.role : '';
+  const emailKey = userEmail.toLowerCase();
+  const role = explicitRole === 'admin' || explicitRole === 'auditor' || explicitRole === 'user'
+    ? explicitRole
+    : emailKey.startsWith('admin@')
+      ? 'admin'
+      : emailKey.startsWith('audit@')
+        ? 'auditor'
+        : 'user';
+  const permissions = Array.isArray(u.permissions) ? u.permissions.filter((item): item is string => typeof item === 'string') : [];
   return {
     token: tokenRaw,
     user: {
       id: userId,
       email: userEmail,
-      role: 'user',
+      role,
       tenantId,
       name: displayName,
-      permissions: [],
+      permissions,
     },
     expiresAt: typeof expiresRaw === 'string' ? expiresRaw : '',
   };

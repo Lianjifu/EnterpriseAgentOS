@@ -1,15 +1,11 @@
 /**
- * LoginPage — 企智搭 · 智能体平台登录页
+ * LoginPage — 企智搭 · 门禁账册
  *
- * 现代 SaaS 风格:
- *  - 左:LoginBrandPanel(品牌 + hero + bullets + stats)
- *  - 右:CredentialsForm / MfaStep 二选一
- *  - 背景:渐变 + 3 个浮动模糊球 + 网点纹理 + 顶部品牌色细线
- *
- * 鉴权副作用(IME guard / 反向 redirect / users/me 回拉 / MFA 检测)
- * 全部委托给 useLogin hook;toast/i18n 通过 opts 回调注入本页。
+ * 左:墨色舞台(品牌、编号能力、指标)
+ * 右:暖纸表单(凭据 / MFA)
+ * 鉴权副作用全部委托给 useLogin。
  */
-import { ShieldCheck, Sun, Moon, UserRound, Shield, ScrollText, Gauge, Lock, Bot, ArrowUpRight } from 'lucide-react';
+import { ShieldCheck, Sun, Moon, UserRound, Shield, ScrollText, Gauge, Lock, Bot } from 'lucide-react';
 import { toast } from '@de/web-ui';
 import { BrandLogo } from '@/components/feedback/BrandLogo';
 import { useUiStore } from '@/stores/uiStore';
@@ -111,28 +107,8 @@ export default function LoginPage() {
   ];
 
   return (
-    <div className="login-page relative min-h-screen w-screen overflow-hidden bg-[var(--bg-elevated)] dark:bg-[var(--bg)]">
-      {/* Top brand-color accent line */}
-      <div
-        aria-hidden
-        className="absolute inset-x-0 top-0 z-20 h-[2px] bg-gradient-to-r from-transparent via-[var(--brand)] to-transparent opacity-80"
-      />
-
-      {/* Theme toggle (top-right of right panel) */}
-      <button
-        onClick={toggleTheme}
-        aria-label={theme === 'light' ? t('login.theme.lightTip') : t('login.theme.darkTip')}
-        title={theme === 'light' ? t('login.theme.lightTip') : t('login.theme.darkTip')}
-        className="absolute right-5 top-5 z-30 grid h-9 w-9 place-items-center rounded-md
-                   border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-muted)]
-                   hover:bg-[var(--bg-hover)] hover:text-[var(--text)]
-                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/30"
-      >
-        {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-      </button>
-
-      <div className="grid min-h-screen grid-cols-1 md:grid-cols-[1.08fr_0.92fr]">
-        {/* ── Left: brand panel ── */}
+    <div className="login-page relative h-screen w-screen overflow-x-hidden overflow-y-auto">
+      <div className="grid min-h-full grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(22rem,1fr)]">
         <LoginBrandPanel
           product={t('login.brand.product')}
           tagline={t('login.brand.tagline')}
@@ -146,90 +122,93 @@ export default function LoginPage() {
           footnote={t('login.hero.footnote')}
         />
 
-        {/* ── Right: form panel ── */}
-        <main className="login-form relative flex min-h-screen flex-col justify-center bg-[#f7f8fc] px-5 py-8 dark:bg-[var(--bg)] sm:px-10 md:border-l md:border-[var(--border)] md:px-12 lg:px-16">
-          <div className="absolute inset-x-0 top-0 h-1 bg-[var(--brand)] md:hidden" aria-hidden />
-          <div className="relative m-auto w-full max-w-[470px] rounded-2xl border border-slate-200/80 bg-white px-6 py-7 shadow-[0_18px_50px_rgba(15,23,42,0.08)] dark:border-[var(--border)] dark:bg-[var(--surface-1)] sm:px-9 sm:py-9 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none">
-            <div className="mb-7 flex items-center justify-between md:hidden">
-              <div className="flex items-center gap-2.5">
-                <BrandLogo size={36} className="text-[var(--brand)]" ariaLabel="企智搭 · 智能体平台" />
-                <span className="text-sm font-semibold text-[var(--text)]">{t('login.brand.product')}</span>
-              </div>
-              <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--text-muted)]">QiZhiDa</span>
-            </div>
-            {step === 'credentials' ? (
-              <header className="mb-8">
-                <h1 className="text-3xl font-semibold tracking-[-0.03em] text-[var(--text)]">{t('login.title')}</h1>
-                <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">{t('login.subtitle')}</p>
-              </header>
-            ) : null}
-            {step === 'credentials' ? (
-              <LoginCredentialsForm
-                email={email}
-                setEmail={setEmail}
-                password={password}
-                setPassword={setPassword}
-                mfa={mfa}
-                setMfa={setMfa}
-                compositionHandlers={compositionHandlers}
-                submit={submit}
-                isPending={isPending}
-                rememberLabel={t('login.rememberMe')}
-                forgotLabel={t('login.forgotPassword')}
-                emailLabel={t('login.emailLabel')}
-                emailPlaceholder={t('login.emailPlaceholder')}
-                passwordLabel={t('login.passwordLabel')}
-                passwordPlaceholder={t('login.passwordPlaceholder')}
-                mfaLabel={t('login.mfaLabel')}
-                mfaHint={t('login.mfaHint')}
-                mfaPlaceholder={t('login.mfaPlaceholder')}
-                submitLabel={t('login.submit')}
-                submittingLabel={t('login.submitting')}
-                ssoLabel={t('login.sso')}
-                ssoTooltip={t('login.sso.tooltip')}
-                soonLabel={t('login.mfa.soon')}
-                demoTitle={t('login.demoTitle')}
-                demoRoles={demoRoles}
-                onChooseRole={chooseRole}
-                termsPrefix={t('login.termsPrefix')}
-                termsTos={t('login.terms.tos')}
-                termsPrivacy={t('login.terms.privacy')}
-              />
-            ) : (
-              <LoginMfaStep
-                mfa={mfa}
-                setMfa={setMfa}
-                compositionHandlers={compositionHandlers}
-                submit={submit}
-                isPending={isPending}
-                goBack={goBack}
-                title={t('login.mfa.title')}
-                subtitle={t('login.mfa.subtitle')}
-                mfaLabel={t('login.mfaLabel')}
-                mfaPlaceholder={t('login.mfaPlaceholder')}
-                submitLabel={t('login.submit')}
-                submittingLabel={t('login.submitting')}
-                backLabel={t('login.mfa.back')}
-                resendLabel={t('login.mfa.resend')}
-                soonLabel={t('login.mfa.soon')}
-              />
-            )}
+        <main className="login-sheet relative flex min-h-full flex-col">
+          <button
+            onClick={toggleTheme}
+            aria-label={theme === 'light' ? t('login.theme.lightTip') : t('login.theme.darkTip')}
+            title={theme === 'light' ? t('login.theme.lightTip') : t('login.theme.darkTip')}
+            className="absolute right-5 top-5 z-30 grid h-9 w-9 place-items-center rounded-full border border-[var(--login-rule)] text-[var(--text-muted)] transition-colors hover:text-[var(--login-blue)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--login-blue)]/30 md:right-7 md:top-7"
+          >
+            {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+          </button>
 
-            {/* TrustStrip — sits directly under the form, no card chrome around either */}
-            <div id="security" className="mt-8 sm:mt-10">
-              <TrustStrip items={trustItems} tone="light" />
+          <div className="flex flex-1 items-start justify-center px-6 py-16 sm:px-8 md:items-center xl:px-12 2xl:px-16">
+            <div className="w-full max-w-[26rem] xl:max-w-[28rem]">
+              <div className="mb-8 flex items-center gap-2.5 md:hidden">
+                <BrandLogo size={32} className="text-[var(--login-orange)]" ariaLabel="企智搭 · 智能体平台" />
+                <span className="text-sm font-medium text-[var(--text)]">{t('login.brand.product')}</span>
+              </div>
+              {step === 'credentials' ? (
+                <header className="mb-8">
+                  <p className="login-kicker text-[var(--text-muted)]">WORKSPACE GATE</p>
+                  <h1 className="login-sheet-title mt-3 text-[34px] leading-none text-[var(--text)]">{t('login.title')}</h1>
+                  <p className="mt-3 max-w-[34ch] text-[13px] leading-6 text-[var(--text-muted)]">{t('login.subtitle')}</p>
+                </header>
+              ) : null}
+              {step === 'credentials' ? (
+                <LoginCredentialsForm
+                  email={email}
+                  setEmail={setEmail}
+                  password={password}
+                  setPassword={setPassword}
+                  mfa={mfa}
+                  setMfa={setMfa}
+                  compositionHandlers={compositionHandlers}
+                  submit={submit}
+                  isPending={isPending}
+                  rememberLabel={t('login.rememberMe')}
+                  forgotLabel={t('login.forgotPassword')}
+                  emailLabel={t('login.emailLabel')}
+                  emailPlaceholder={t('login.emailPlaceholder')}
+                  passwordLabel={t('login.passwordLabel')}
+                  passwordPlaceholder={t('login.passwordPlaceholder')}
+                  mfaLabel={t('login.mfaLabel')}
+                  mfaHint={t('login.mfaHint')}
+                  mfaPlaceholder={t('login.mfaPlaceholder')}
+                  submitLabel={t('login.submit')}
+                  submittingLabel={t('login.submitting')}
+                  ssoLabel={t('login.sso')}
+                  ssoTooltip={t('login.sso.tooltip')}
+                  soonLabel={t('login.mfa.soon')}
+                  demoTitle={t('login.demoTitle')}
+                  demoRoles={demoRoles}
+                  onChooseRole={chooseRole}
+                  termsPrefix={t('login.termsPrefix')}
+                  termsTos={t('login.terms.tos')}
+                  termsPrivacy={t('login.terms.privacy')}
+                />
+              ) : (
+                <LoginMfaStep
+                  mfa={mfa}
+                  setMfa={setMfa}
+                  compositionHandlers={compositionHandlers}
+                  submit={submit}
+                  isPending={isPending}
+                  goBack={goBack}
+                  title={t('login.mfa.title')}
+                  subtitle={t('login.mfa.subtitle')}
+                  mfaLabel={t('login.mfaLabel')}
+                  mfaPlaceholder={t('login.mfaPlaceholder')}
+                  submitLabel={t('login.submit')}
+                  submittingLabel={t('login.submitting')}
+                  backLabel={t('login.mfa.back')}
+                  resendLabel={t('login.mfa.resend')}
+                  soonLabel={t('login.mfa.soon')}
+                />
+              )}
+
+              <div id="security" className="mt-8 border-t border-[var(--login-rule)] pt-5">
+                <TrustStrip items={trustItems} tone="light" className="login-trust" />
+                <div className="mt-3 flex items-center justify-between text-[11px] text-[var(--text-muted)]">
+                  <a href="#security" className="hover:text-[var(--text)]">安全与合规说明</a>
+                  <span className="font-mono tracking-[0.18em]">
+                    {t('login.buildLabel')} {buildVersion}
+                  </span>
+                </div>
+              </div>
             </div>
-            <a href="#security" className="mx-auto mt-5 hidden items-center justify-center gap-1 text-[11px] text-[var(--text-muted)] hover:text-[var(--brand)] md:flex">
-              安全与合规说明 <ArrowUpRight className="h-3 w-3" />
-            </a>
           </div>
         </main>
-      </div>
-
-      {/* Build version chip (bottom-right, subtle) */}
-      <div className="absolute bottom-4 right-5 z-10 select-none font-mono text-[10px]
-                      tracking-widest text-[var(--text-muted)]">
-        {t('login.buildLabel')} {buildVersion}
       </div>
     </div>
   );

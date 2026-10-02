@@ -5,7 +5,6 @@ import {
   Boxes,
   Beaker,
   CircleDollarSign,
-  CircleHelp,
   CloudCog,
   FileText,
   Gauge,
@@ -48,12 +47,10 @@ export const workspaceNavigation: NavigationItem[] = [
 ];
 
 export const utilityNavigation: NavigationItem[] = [
-  { label: '帮助', href: '/help', icon: CircleHelp, description: '获取平台使用帮助' },
   { label: '设置', href: '/account', icon: Settings2, description: '管理用户信息、账号安全与偏好' },
 ];
 
 export const adminUtilityNavigation: NavigationItem[] = [
-  { label: '管理员帮助', href: '/admin/help', icon: CircleHelp, description: '查看管理员文档、常见操作与反馈入口' },
   { label: '平台设置', href: '/admin/settings', icon: Settings2, description: '配置品牌、合规、审计与成员管理' },
 ];
 

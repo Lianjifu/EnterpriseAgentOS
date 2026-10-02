@@ -6,27 +6,28 @@ import App from './app/App';
 import { I18nProvider } from './i18n';
 import './styles/global.css';
 import { setApiClient, ApiClient, mockHandlerWithAdapters } from '@de/web-api';
-import { useAuthStore } from './stores/authStore';
+import { useAuthStore } from './features/auth';
 import { apiBaseURL, isDemoApiMode } from './lib/api-mode';
 import { resolveWorkspaceHeader } from './lib/workspace-header';
 import { wrapMockHandlerWithSkills } from './lib/skills-mock-handler';
 import { wrapMockHandlerWithAutomations } from './lib/automations-mock-handler';
 import { wrapMockHandlerWithTeam } from './lib/team-mock-handler';
 import { wrapMockHandlerWithUserKnowledge } from './lib/user-knowledge-mock-handler';
-import { wrapMockHandlerWithAdminNotifications } from './lib/admin-notifications-mock-handler';
-import { wrapMockHandlerWithAdminKnowledge } from './lib/admin-knowledge-mock-handler';
-import { wrapMockHandlerWithAdminQuotas } from './lib/admin-quotas-mock-handler';
-import { wrapMockHandlerWithAdminModels } from './lib/admin-models-mock-handler';
-import { wrapMockHandlerWithAdminAgents } from './lib/admin-agents-mock-handler';
-import { wrapMockHandlerWithAdminOverview } from './lib/admin-overview-mock-handler';
-import { wrapMockHandlerWithAdminOperations } from './lib/admin-operations-mock-handler';
-import { wrapMockHandlerWithAdminAudit } from './lib/admin-audit-mock-handler';
-import { wrapMockHandlerWithAdminMetrics } from './lib/admin-metrics-mock-handler';
-import { wrapMockHandlerWithAdminMemory } from './lib/admin-memory-mock-handler';
-import { wrapMockHandlerWithAdminWorkflows } from './lib/admin-workflows-mock-handler';
-import { wrapMockHandlerWithAdminEvaluations } from './lib/admin-evaluations-mock-handler';
-import { wrapMockHandlerWithAdminRegressions } from './lib/admin-regressions-mock-handler';
-import { wrapMockHandlerWithAdminFeedback } from './lib/admin-feedback-mock-handler';
+import { wrapMockHandlerWithAdminNotifications } from './features/notifications/mock-handler';
+import { wrapMockHandlerWithAdminKnowledge } from './features/knowledge/mock-handler';
+import { wrapMockHandlerWithAdminQuotas } from './features/quotas/mock-handler';
+import { wrapMockHandlerWithAdminModels } from './features/models/mock-handler';
+import { wrapMockHandlerWithAdminAgents } from './features/agents/mock-handler';
+import { wrapMockHandlerWithAdminSkills } from './features/skills/mock-handler';
+import { wrapMockHandlerWithAdminOverview } from './features/overview/mock-handler';
+import { wrapMockHandlerWithAdminOperations } from './features/operations/mock-handler';
+import { wrapMockHandlerWithAdminAudit } from './features/audit/mock-handler';
+import { wrapMockHandlerWithAdminMetrics } from './features/metrics/mock-handler';
+import { wrapMockHandlerWithAdminMemory } from './features/memory/mock-handler';
+import { wrapMockHandlerWithAdminWorkflows } from './features/workflows/mock-handler';
+import { wrapMockHandlerWithAdminEvaluations } from './features/evaluations/mock-handler';
+import { wrapMockHandlerWithAdminRegressions } from './features/regressions/mock-handler';
+import { wrapMockHandlerWithAdminFeedback } from './features/feedback/mock-handler';
 
 function installApiClient() {
   // 默认真实 API；仅演示模式注入本地 Handler。
@@ -41,15 +42,17 @@ function installApiClient() {
                   wrapMockHandlerWithAdminQuotas(
                     wrapMockHandlerWithAdminModels(
                       wrapMockHandlerWithAdminAgents(
-                        wrapMockHandlerWithAdminOverview(
-                          wrapMockHandlerWithAdminOperations(
-                            wrapMockHandlerWithAdminAudit(
-                              wrapMockHandlerWithAdminMetrics(
-                                wrapMockHandlerWithAdminMemory(
-                                  wrapMockHandlerWithAdminWorkflows(
-                                    wrapMockHandlerWithAdminEvaluations(
-                                      wrapMockHandlerWithAdminRegressions(
-                                        wrapMockHandlerWithAdminFeedback(mockHandlerWithAdapters),
+                        wrapMockHandlerWithAdminSkills(
+                          wrapMockHandlerWithAdminOverview(
+                            wrapMockHandlerWithAdminOperations(
+                              wrapMockHandlerWithAdminAudit(
+                                wrapMockHandlerWithAdminMetrics(
+                                  wrapMockHandlerWithAdminMemory(
+                                    wrapMockHandlerWithAdminWorkflows(
+                                      wrapMockHandlerWithAdminEvaluations(
+                                        wrapMockHandlerWithAdminRegressions(
+                                          wrapMockHandlerWithAdminFeedback(mockHandlerWithAdapters),
+                                        ),
                                       ),
                                     ),
                                   ),

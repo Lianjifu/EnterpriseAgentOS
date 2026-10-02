@@ -17,7 +17,7 @@ vi.mock('@/services/query', () => ({
   useApiUploadMutation: vi.fn(),
 }));
 
-vi.mock('@/stores/authStore', () => ({
+vi.mock('@/features/auth', () => ({
   useAuthStore: (selector: any) => {
     if (typeof selector === 'function') return selector(authState);
     return authState;

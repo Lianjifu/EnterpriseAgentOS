@@ -1,7 +1,7 @@
 /**
  * LoginCredentialsForm — Step 1: 邮箱 / 密码 / MFA(可选) + 演示角色
  */
-import { Building2, Eye, EyeOff, KeyRound, Sparkles } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { Button, Input } from '@de/web-ui';
 import { useState, type ComponentProps } from 'react';
 import { LoginDemoChips, type LoginDemoRole } from './LoginDemoChips';
@@ -46,39 +46,31 @@ type InputProps = ComponentProps<typeof Input>;
 export function LoginCredentialsForm(props: LoginCredentialsFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   return (
-    <div className="animate-[loginSlideUp_350ms_ease-out]">
-      <form noValidate onSubmit={props.submit} className="space-y-5">
-        <div>
-          <label className="mb-2 block text-[13px] font-medium text-[var(--text-secondary)]">
-            {props.emailLabel}
+    <div className="animate-[loginSlideUp_420ms_ease-out]">
+      <form noValidate onSubmit={props.submit} className="space-y-6">
+        <div className="login-field">
+          <label className="mb-1 flex items-baseline justify-between text-[12px] text-[var(--text-secondary)]">
+            <span>{props.emailLabel}</span>
           </label>
-          <div className="relative">
-            <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
-            <Input
-              value={props.email}
-              onChange={(e) => props.setEmail(e.target.value)}
-              placeholder={props.emailPlaceholder}
-              autoComplete="username"
-              inputMode="email"
-              className="pl-9"
-              {...(props.compositionHandlers as InputProps)}
-            />
-          </div>
+          <Input
+            value={props.email}
+            onChange={(e) => props.setEmail(e.target.value)}
+            placeholder={props.emailPlaceholder}
+            autoComplete="username"
+            inputMode="email"
+            {...(props.compositionHandlers as InputProps)}
+          />
         </div>
 
-        <div>
-          <label className="mb-2 block text-[13px] font-medium text-[var(--text-secondary)]">
-            {props.passwordLabel}
-          </label>
+        <div className="login-field">
+          <label className="mb-1 block text-[12px] text-[var(--text-secondary)]">{props.passwordLabel}</label>
           <div className="relative">
-            <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
             <Input
               type={showPassword ? 'text' : 'password'}
               value={props.password}
               onChange={(e) => props.setPassword(e.target.value)}
               placeholder={props.passwordPlaceholder}
               autoComplete="current-password"
-              className="pl-9 pr-10"
               {...(props.compositionHandlers as InputProps)}
             />
             <button
@@ -86,17 +78,17 @@ export function LoginCredentialsForm(props: LoginCredentialsFormProps) {
               onClick={() => setShowPassword((value) => !value)}
               aria-label={showPassword ? '隐藏密码' : '显示密码'}
               title={showPassword ? '隐藏密码' : '显示密码'}
-              className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text)]"
+              className="absolute right-0 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center text-[var(--text-muted)] hover:text-[var(--text)]"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
         </div>
 
-        <div>
-          <label className="mb-2 flex items-center justify-between text-[13px] font-medium text-[var(--text-secondary)]">
+        <div className="login-field">
+          <label className="mb-1 flex items-center justify-between text-[12px] text-[var(--text-secondary)]">
             <span>{props.mfaLabel}</span>
-            <span className="text-[11px] font-normal text-[var(--text-muted)]">{props.mfaHint}</span>
+            <span className="text-[11px] text-[var(--text-muted)]">{props.mfaHint}</span>
           </label>
           <Input
             value={props.mfa}
@@ -105,21 +97,21 @@ export function LoginCredentialsForm(props: LoginCredentialsFormProps) {
             inputMode="numeric"
             autoComplete="one-time-code"
             maxLength={6}
-            className="font-mono text-center"
+            className="font-mono tracking-[0.28em]"
             {...(props.compositionHandlers as InputProps)}
           />
         </div>
 
-        <div className="flex items-center justify-between pt-2 text-[13px]">
-          <label className="flex cursor-pointer items-center gap-1.5 text-[var(--text-muted)]">
+        <div className="flex items-center justify-between pt-1 text-[13px]">
+          <label className="flex cursor-pointer items-center gap-2 text-[var(--text-muted)]">
             <input
               type="checkbox"
               defaultChecked
-              className="h-4 w-4 rounded border-[var(--border)] accent-[var(--brand)]"
+              className="h-3.5 w-3.5 rounded-sm border-[var(--login-rule)] accent-[var(--login-blue)]"
             />
             {props.rememberLabel}
           </label>
-          <a className="text-[var(--brand)] hover:underline" href="#">
+          <a className="text-[var(--text)] underline decoration-[var(--login-rule)] underline-offset-4 hover:decoration-[var(--login-blue)]" href="#">
             {props.forgotLabel}
           </a>
         </div>
@@ -128,48 +120,35 @@ export function LoginCredentialsForm(props: LoginCredentialsFormProps) {
           type="submit"
           loading={props.isPending}
           size="lg"
-          className="login-cta mt-2 w-full text-[15px] font-semibold"
+          className="login-cta mt-1 w-full text-[14px] font-medium"
         >
           {props.isPending ? props.submittingLabel : props.submitLabel}
         </Button>
-
-        <div className="relative my-6 flex items-center text-[11px] uppercase tracking-widest text-[var(--text-muted)]">
-          <div className="h-px flex-1 bg-[var(--border)]" />
-          <span className="px-3">OR</span>
-          <div className="h-px flex-1 bg-[var(--border)]" />
-        </div>
 
         <button
           type="button"
           disabled
           aria-disabled="true"
           title={props.ssoTooltip}
-          className="login-sso flex w-full items-center justify-center gap-2 rounded-md
-                     border border-[var(--border)] bg-[var(--surface-1)] px-4 py-3
-                     text-[14px] font-medium text-[var(--text-secondary)]
-                     hover:bg-[var(--bg-hover)]
-                     disabled:cursor-not-allowed disabled:opacity-60"
+          className="login-sso flex w-full items-center justify-between border border-[var(--login-rule)] px-4 py-3 text-left text-[13px] text-[var(--text-secondary)] disabled:cursor-not-allowed"
         >
-          <Sparkles className="h-4 w-4 text-[var(--brand)]" />
-          {props.ssoLabel}
-          <span className="ml-1 rounded bg-[var(--bg-hover)] px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
-            {props.soonLabel}
-          </span>
+          <span>{props.ssoLabel}</span>
+          <span className="login-kicker text-[10px] text-[var(--text-muted)]">{props.soonLabel}</span>
         </button>
 
         <LoginDemoChips title={props.demoTitle} roles={props.demoRoles} onChoose={props.onChooseRole} />
       </form>
 
-      <div className="mt-7 text-center text-[11px] leading-relaxed text-[var(--text-muted)]">
+      <p className="mt-6 text-[11px] leading-relaxed text-[var(--text-muted)]">
         {props.termsPrefix}{' '}
-        <a className="text-[var(--brand)] hover:underline" href="#">
+        <a className="text-[var(--text)] underline decoration-[var(--login-rule)] underline-offset-4" href="#">
           {props.termsTos}
         </a>{' '}
-        &{' '}
-        <a className="text-[var(--brand)] hover:underline" href="#">
+        ·{' '}
+        <a className="text-[var(--text)] underline decoration-[var(--login-rule)] underline-offset-4" href="#">
           {props.termsPrivacy}
         </a>
-      </div>
+      </p>
     </div>
   );
 }

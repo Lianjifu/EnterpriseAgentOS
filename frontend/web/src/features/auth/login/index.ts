@@ -1,5 +1,5 @@
 /**
- * features/auth/login — 登录 feature 公共入口
+ * features/auth/login — 登录页。会话状态从 `@/features/auth` 取。
  *
  * 暴露:
  *  - LoginPage(默认导出) — App router lazy 引入

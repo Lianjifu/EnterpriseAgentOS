@@ -5,7 +5,6 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { ReactNode } from 'react';
 import MyInsights from '@/pages/user/home/MyInsights';
 import MyTasks from '@/pages/user/tasks';
-import HelpCenter from '@/pages/shared/HelpCenter';
 import AccountSettings from '@/pages/shared/AccountSettings';
 import { mockTasks } from '@/mock/user/tasks.fixtures';
 import { qk } from '@/api/shared/query-keys';
@@ -40,8 +39,9 @@ afterEach(() => cleanup());
 describe('效果看板', () => {
   it('switches ranges and toggles the accessible trend table', () => {
     render(<MyInsights />);
-    fireEvent.change(screen.getByLabelText('选择时间范围'), { target: { value: '本季度' } });
-    expect(screen.getByText('本季度')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /近 7 天/ }));
+    fireEvent.click(screen.getByRole('menuitemradio', { name: '本季度' }));
+    expect(screen.getByRole('button', { name: /本季度/ })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '查看数据表' }));
     expect(document.querySelector('caption')?.textContent).toBe('智能体任务完成率趋势数据');
     expect(screen.getByText('7 月')).toBeTruthy();
@@ -68,23 +68,6 @@ describe('我的任务', () => {
     renderTasks();
     fireEvent.click(screen.getByRole('button', { name: '日程视图' }));
     expect(screen.getByRole('button', { name: '日程视图' }).getAttribute('aria-pressed')).toBe('true');
-  });
-});
-
-describe('帮助中心', () => {
-  it('searches and expands an FAQ', () => {
-    renderWith(<HelpCenter />);
-    fireEvent.change(screen.getByPlaceholderText(/搜索“如何开始/), { target: { value: '深色模式' } });
-    fireEvent.click(screen.getByRole('button', { name: '如何切换深色模式？' }));
-    expect(screen.getByText(/点击工作台顶部的主题按钮/)).toBeTruthy();
-  });
-
-  it('submits local feedback', () => {
-    renderWith(<HelpCenter />);
-    fireEvent.click(screen.getByRole('button', { name: '提交反馈' }));
-    fireEvent.change(screen.getByLabelText('你的反馈'), { target: { value: '希望增加更多示例' } });
-    fireEvent.click(screen.getAllByRole('button', { name: '提交反馈' })[1]);
-    expect(screen.getByRole('status').textContent).toContain('感谢反馈');
   });
 });
 

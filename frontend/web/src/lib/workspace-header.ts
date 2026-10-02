@@ -1,4 +1,4 @@
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from '@/features/auth';
 import { useWorkspaceStore } from '@/stores/workspaceStore';
 
 /** Pick a workspace id safe to send as x-workspace-id (must be in JWT membership). */

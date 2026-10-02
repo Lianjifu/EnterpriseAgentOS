@@ -1,5 +1,5 @@
 /**
- * LoginMfaStep — Step 2: 多因素验证(占位骨架)
+ * LoginMfaStep — Step 2: 多因素验证
  */
 import { ArrowLeft, RotateCw } from 'lucide-react';
 import { Button, Input, toast } from '@de/web-ui';
@@ -30,19 +30,19 @@ type InputProps = ComponentProps<typeof Input>;
 
 export function LoginMfaStep(props: LoginMfaStepProps) {
   return (
-    <div className="animate-[loginSlideUp_350ms_ease-out]">
+    <div className="animate-[loginSlideUp_420ms_ease-out]">
       <button
         type="button"
         onClick={props.goBack}
-        className="mb-4 inline-flex items-center gap-1 text-[12px] text-[var(--text-muted)]
-                   hover:text-[var(--text)]"
+        className="mb-6 inline-flex items-center gap-1.5 text-[12px] text-[var(--text-muted)] hover:text-[var(--text)]"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         {props.backLabel}
       </button>
 
-      <h1 className="text-[24px] font-semibold tracking-tight text-[var(--text)]">{props.title}</h1>
-      <p className="mt-2 text-[14px] text-[var(--text-muted)]">{props.subtitle}</p>
+      <p className="login-kicker text-[var(--text-muted)]">SECOND FACTOR</p>
+      <h1 className="login-sheet-title mt-3 text-[34px] leading-none text-[var(--text)]">{props.title}</h1>
+      <p className="mt-3 text-[13px] leading-6 text-[var(--text-muted)]">{props.subtitle}</p>
 
       <form
         noValidate
@@ -50,12 +50,10 @@ export function LoginMfaStep(props: LoginMfaStepProps) {
           e.preventDefault();
           props.submit();
         }}
-        className="mt-8 space-y-5"
+        className="mt-8 space-y-6"
       >
-        <div>
-          <label className="mb-2 block text-[13px] font-medium text-[var(--text-secondary)]">
-            {props.mfaLabel}
-          </label>
+        <div className="login-field">
+          <label className="mb-1 block text-[12px] text-[var(--text-secondary)]">{props.mfaLabel}</label>
           <Input
             value={props.mfa}
             onChange={(e) => props.setMfa(e.target.value.replace(/\D/g, '').slice(0, 6))}
@@ -63,7 +61,7 @@ export function LoginMfaStep(props: LoginMfaStepProps) {
             inputMode="numeric"
             autoComplete="one-time-code"
             maxLength={6}
-            className="text-center font-mono text-lg tracking-[0.4em]"
+            className="text-center font-mono text-lg tracking-[0.42em]"
             autoFocus
             {...(props.compositionHandlers as InputProps)}
           />
@@ -73,7 +71,7 @@ export function LoginMfaStep(props: LoginMfaStepProps) {
           type="submit"
           loading={props.isPending}
           size="lg"
-          className="login-cta w-full text-[15px] font-semibold"
+          className="login-cta w-full text-[14px] font-medium"
         >
           {props.isPending ? props.submittingLabel : props.submitLabel}
         </Button>
@@ -81,8 +79,7 @@ export function LoginMfaStep(props: LoginMfaStepProps) {
         <button
           type="button"
           onClick={() => toast.info(props.soonLabel)}
-          className="inline-flex w-full items-center justify-center gap-1.5
-                     text-[12px] text-[var(--text-muted)] hover:text-[var(--text)]"
+          className="inline-flex w-full items-center justify-center gap-1.5 text-[12px] text-[var(--text-muted)] hover:text-[var(--text)]"
         >
           <RotateCw className="h-3.5 w-3.5" />
           {props.resendLabel}

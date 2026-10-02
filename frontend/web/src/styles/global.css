@@ -171,39 +171,222 @@ body {
 @keyframes drawerFadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes drawerSlideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
-/* ── Login page ───────────────────────────────────────────── */
-@keyframes loginFadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes loginSlideUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+/* ── Login page · 紫色企业色，浅色 / 深色各自成套 ── */
+.login-page {
+  --login-blue: #4b277a;
+  --login-blue-deep: #381c5e;
+  --login-orange: #7a3eae;
+  --login-stage-bg: #ddd0ee;
+  --star: rgba(42, 22, 72, 0.45);
+  --star-bright: #3d2468;
+  --star-accent: rgba(122, 62, 174, 0.75);
+  --login-sheet-bg: #faf8fd;
+  --login-fg: #1a1228;
+  --login-fg-soft: rgba(26, 18, 40, 0.74);
+  --login-fg-muted: rgba(26, 18, 40, 0.52);
+  --login-accent: var(--login-orange);
+  --login-line: rgba(42, 22, 72, 0.12);
+  --login-mark: rgba(75, 39, 122, 0.24);
+  --login-rule: rgba(42, 22, 72, 0.16);
+  --login-paper: #faf8fd;
+  --login-serif: "Songti SC", "Source Han Serif SC", "Noto Serif SC", "STSong", "PMingLiU", Georgia, serif;
+  background: var(--login-stage-bg);
+  color: var(--login-fg);
 }
-@keyframes loginShimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-@keyframes loginFloat {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33%      { transform: translate(20px, -10px) scale(1.05); }
-  66%      { transform: translate(-15px, 15px) scale(0.97); }
-}
-@keyframes loginDotDrift {
-  0%, 100% { background-position: 0 0; }
-  50%      { background-position: 24px 24px; }
+.dark .login-page {
+  --login-blue: #7c4dcc;
+  --login-blue-deep: #9b74e0;
+  --login-orange: #d4b4ff;
+  --login-stage-bg: #0a0612;
+  --star: rgba(255, 255, 255, 0.62);
+  --star-bright: #ffffff;
+  --star-accent: rgba(212, 180, 255, 0.95);
+  --login-sheet-bg: #161022;
+  --login-fg: #f4eefe;
+  --login-fg-soft: rgba(244, 238, 254, 0.76);
+  --login-fg-muted: rgba(244, 238, 254, 0.52);
+  --login-accent: var(--login-orange);
+  --login-line: rgba(210, 180, 255, 0.16);
+  --login-mark: rgba(167, 139, 250, 0.36);
+  --login-rule: rgba(210, 180, 255, 0.18);
+  --login-paper: #161022;
 }
 
-/* Login CTA: 渐变品牌色背景 + 轻阴影 */
+.login-stage,
+.login-copy {
+  background:
+    radial-gradient(420px 260px at 16% 10%, rgba(255, 255, 255, 0.72), transparent 70%),
+    radial-gradient(520px 320px at 92% 96%, rgba(122, 62, 174, 0.14), transparent 62%),
+    linear-gradient(168deg, #f7f4fc 0%, #e6dcf4 46%, #d5c6ec 100%);
+  background-attachment: fixed;
+}
+.login-stage { color: var(--login-fg); }
+.dark .login-stage,
+.dark .login-copy {
+  background:
+    radial-gradient(720px 420px at 10% -6%, rgba(124, 77, 204, 0.4), transparent 58%),
+    radial-gradient(560px 340px at 94% 108%, rgba(196, 160, 255, 0.2), transparent 56%),
+    linear-gradient(168deg, #07040e 0%, #160e28 54%, #0c0816 100%);
+  background-attachment: fixed;
+}
+.login-copy {
+  position: relative;
+  z-index: 1;
+  padding: 1.75rem 1.5rem 1.5rem;
+}
+.login-stars,
+.login-stars-bright,
+.login-stars-accent {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-repeat: repeat;
+}
+.login-stars {
+  background-image:
+    radial-gradient(1px 1px at 18px 28px, var(--star) 50%, transparent 52%),
+    radial-gradient(1px 1px at 72px 84px, var(--star) 50%, transparent 52%),
+    radial-gradient(1.2px 1.2px at 132px 22px, var(--star) 50%, transparent 52%),
+    radial-gradient(1px 1px at 196px 96px, var(--star) 50%, transparent 52%),
+    radial-gradient(1px 1px at 36px 148px, var(--star) 50%, transparent 52%),
+    radial-gradient(1.2px 1.2px at 108px 164px, var(--star) 50%, transparent 52%),
+    radial-gradient(1px 1px at 168px 136px, var(--star) 50%, transparent 52%),
+    radial-gradient(1px 1px at 244px 48px, var(--star) 50%, transparent 52%),
+    radial-gradient(1px 1px at 88px 46px, var(--star) 50%, transparent 52%),
+    radial-gradient(1.2px 1.2px at 214px 178px, var(--star) 50%, transparent 52%);
+  background-size: 280px 210px;
+}
+.login-stars-bright {
+  background-image:
+    radial-gradient(circle at 70px 46px, var(--star-bright) 0 1.1px, transparent 3.2px),
+    radial-gradient(circle at 210px 120px, var(--star-bright) 0 1.3px, transparent 3.6px),
+    radial-gradient(circle at 340px 74px, var(--star-bright) 0 1px, transparent 2.8px),
+    radial-gradient(circle at 120px 250px, var(--star-bright) 0 1.2px, transparent 3.4px),
+    radial-gradient(circle at 280px 290px, var(--star-bright) 0 1.4px, transparent 3.8px),
+    radial-gradient(circle at 400px 200px, var(--star-bright) 0 1px, transparent 3px);
+  background-size: 480px 360px;
+  animation: loginTwinkle 5.6s ease-in-out infinite;
+}
+.login-stars-accent {
+  background-image:
+    radial-gradient(circle at 150px 90px, var(--star-accent) 0 1.2px, transparent 3.4px),
+    radial-gradient(circle at 360px 240px, var(--star-accent) 0 1px, transparent 2.8px);
+  background-size: 520px 400px;
+  opacity: 0.9;
+}
+@keyframes loginTwinkle {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-stars-bright { animation: none; }
+}
+.login-watermark {
+  position: absolute;
+  right: -0.08em;
+  bottom: -0.22em;
+  z-index: 0;
+  font-family: var(--login-serif);
+  font-size: clamp(200px, 22vw, 360px);
+  line-height: 0.8;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--login-mark);
+  pointer-events: none;
+  user-select: none;
+}
+.login-display {
+  font-family: var(--login-serif);
+  font-weight: 600;
+  font-size: clamp(36px, 2.5vw, 60px);
+  line-height: 1.18;
+  letter-spacing: -0.03em;
+}
+@media (min-width: 1536px) {
+  .login-watermark {
+    right: auto;
+    left: -0.06em;
+    font-size: clamp(240px, 18vw, 420px);
+  }
+}
+.login-kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+}
+.login-sheet {
+  background: var(--login-sheet-bg);
+  color: var(--text);
+}
+.dark .login-sheet {
+  background: var(--login-sheet-bg);
+  color: var(--text);
+}
+.login-sheet-title {
+  font-family: var(--login-serif);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.login-page .login-field input {
+  height: 48px;
+  border-radius: 0;
+  border-width: 0 0 1px;
+  border-style: solid;
+  border-color: var(--login-rule);
+  background: transparent;
+  padding-left: 0;
+  padding-right: 2.4rem;
+  box-shadow: none;
+}
+.login-page .login-field input:focus {
+  border-color: var(--login-blue);
+  box-shadow: none;
+  outline: none;
+}
+.login-page :focus-visible {
+  outline-color: var(--login-blue);
+}
+.login-page .login-trust {
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+@keyframes loginRise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+.login-rise > * {
+  animation: loginRise 0.72s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.login-rise > *:nth-child(1) { animation-delay: 40ms; }
+.login-rise > *:nth-child(2) { animation-delay: 120ms; }
+.login-rise > *:nth-child(3) { animation-delay: 200ms; }
+.login-rise > *:nth-child(4) { animation-delay: 280ms; }
+.login-rise > *:nth-child(5) { animation-delay: 360ms; }
+
+@keyframes loginSlideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
 .login-cta {
-  background: linear-gradient(135deg, var(--brand), var(--purple)) !important;
+  height: 48px !important;
+  border-radius: 10px !important;
+  background: var(--login-blue) !important;
   color: #ffffff !important;
   border: none !important;
-  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
+  letter-spacing: 0.14em;
+  box-shadow: none !important;
 }
 .login-cta:hover {
-  background: linear-gradient(135deg, var(--brand-hover), var(--brand)) !important;
-  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.32);
+  background: var(--login-blue-deep) !important;
+  box-shadow: none !important;
+  transform: none !important;
 }
-.dark .login-cta {
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+.dark .login-cta,
+.dark .login-cta:hover {
+  color: #ffffff !important;
+  box-shadow: none !important;
 }
 
 /* 全局键盘焦点环（a11y） */

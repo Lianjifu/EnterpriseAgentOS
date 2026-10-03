@@ -21,7 +21,7 @@ describe('admin-notifications-mock-handler', () => {
     const before = (await wrap('/api/admin/notifications/channels', { method: 'GET' })) as Array<unknown>;
     const created = (await wrap('/api/admin/notifications/channels', {
       method: 'POST',
-      body: { name: 'X', kind: 'email', target: 'x@example.com' },
+      body: { name: 'X', kind: 'feishu', target: '测试机器人', config: { appId: 'cli_x', appSecret: 's' } },
     })) as { id: string; name: string };
     expect(created.name).toBe('X');
     const after = (await wrap('/api/admin/notifications/channels', { method: 'GET' })) as Array<unknown>;

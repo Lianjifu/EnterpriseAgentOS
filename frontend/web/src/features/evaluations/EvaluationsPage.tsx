@@ -2,16 +2,18 @@
  * AdminEvaluations — 评测中心 orchestrator。
  * 对齐技能管理 / ModelsPage：无子模块 Tab，Hero 轻量，列表工具栏 + 视图筛选。
  */
-import { Beaker, Plus, Search, Upload } from 'lucide-react';
+import { Plus, Search, Upload } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AdminListPagination, paginateItems } from '@/components/feedback/AdminListPagination';
+import { AdminListHeader, AdminListHeaderMetrics } from '@/components/feedback/AdminListRow';
 import { NoticeBanner } from '@/components/feedback/NoticeBanner';
 import { useEvalResults, useEvalSuites, useEvalSuiteStats } from './useEvaluations';
 import type { CaseTemplate, EvalResult, EvalSuite, EvalStatus, EvalSuiteType, ExchangeFormat } from './schema';
 import { mockCaseTemplates } from './fixtures';
 import { BatchToolbar } from './components/BatchToolbar';
 import { STATUS_FILTER, TYPE_FILTER, uid } from './components/constants';
-import { CreateSuiteWizard, DeleteSuiteModal, ExportSuiteModal, ImportSuiteModal, RunConfirmModal } from './components/Modals';
+import { DeleteSuiteModal, ExportSuiteModal, ImportSuiteModal, RunConfirmModal } from './components/Modals';
 import { SuiteCard } from './components/SuiteCard';
 import { CaseTab, ResultTab, TemplateTab } from './components/tabs/Tabs';
 
@@ -30,12 +32,12 @@ export default function EvaluationsPage() {
   const [typeFilter, setTypeFilter] = useState<'all' | EvalSuiteType>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | EvalStatus>('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [createOpen, setCreateOpen] = useState(false);
   const [runTarget, setRunTarget] = useState<EvalSuite | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<EvalSuite | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [notice, setNotice] = useState('');
+  const [page, setPage] = useState(1);
 
   const stats = useEvalSuiteStats(suites);
 
@@ -49,6 +51,9 @@ export default function EvaluationsPage() {
       (q.length === 0 || `${s.name} ${s.description} ${s.owner} ${s.tags.join(' ')}`.toLowerCase().includes(q)),
     );
   }, [suites, typeFilter, statusFilter, search]);
+
+  useEffect(() => { setPage(1); }, [search, typeFilter, statusFilter, view]);
+  const paged = useMemo(() => paginateItems(visibleSuites, page), [visibleSuites, page]);
 
   const goDetail = (suite: EvalSuite) => navigate(`/admin/evaluations/${suite.id}`);
 
@@ -82,13 +87,6 @@ export default function EvaluationsPage() {
     setSuites((current) => current.filter((s) => !selectedIds.includes(s.id)));
     setNotice(`已批量删除 ${selectedIds.length} 个套件。`);
     setSelectedIds([]);
-  };
-
-  const handleCreate = (suite: EvalSuite) => {
-    setSuites((current) => [suite, ...current]);
-    setNotice(`已创建评测套件「${suite.name}」,已加入队列。`);
-    setCreateOpen(false);
-    setView('suite');
   };
 
   const handleImport = (count: number) => {
@@ -165,15 +163,10 @@ export default function EvaluationsPage() {
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px]">
           <div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,0.10),transparent_68%)]" />
         </div>
-        <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-teal-700 dark:text-teal-300">ADMIN / 评测中心</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">把评测当作质量的尺子。</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">为智能体与工作流设置可重复运行的评测套件,持续追踪能力、质量、安全与回归表现。</p>
-          </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-            <Beaker className="h-3 w-3" />{suites.length} 个套件 · 本月通过 {stats.passed}
-          </div>
+        <div className="relative">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-teal-700 dark:text-teal-300">ADMIN / 评测中心</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">用套件评测智能体质量。</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">{suites.length} 个套件 · 本月通过 {stats.passed}。</p>
         </div>
       </section>
 
@@ -236,13 +229,14 @@ export default function EvaluationsPage() {
               <button type="button" onClick={() => setImportOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]">
                 <Upload className="h-3.5 w-3.5" />导入
               </button>
-              <button type="button" onClick={() => setCreateOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
+              <button type="button" onClick={() => navigate('/admin/evaluations/new')} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
                 <Plus className="h-3.5 w-3.5" />新建套件
               </button>
             </div>
           </div>
-          <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
-            {visibleSuites.map((suite) => (
+          <AdminListHeader metrics={<AdminListHeaderMetrics labels={['用例', '通过率', '最近运行']} />} />
+          <div className="divide-y divide-[var(--border)]">
+            {paged.slice.map((suite) => (
               <SuiteCard
                 key={suite.id}
                 suite={suite}
@@ -250,13 +244,20 @@ export default function EvaluationsPage() {
                 onToggleSelect={toggleSelect}
                 onSelect={goDetail}
                 onToggleStar={toggleStar}
-                onEdit={goDetail}
                 onRun={(s) => setRunTarget(s)}
                 onDuplicate={handleDuplicate}
                 onRequestDelete={setDeleteTarget}
               />
             ))}
           </div>
+          <AdminListPagination
+            page={paged.safePage}
+            totalPages={paged.totalPages}
+            total={paged.total}
+            pageStart={paged.pageStart}
+            pageEnd={paged.pageEnd}
+            onPageChange={setPage}
+          />
           {visibleSuites.length === 0 && (
             <div className="px-5 pb-8 text-center">
               <Search className="mx-auto h-6 w-6 text-[var(--text-muted)]" />
@@ -294,12 +295,6 @@ export default function EvaluationsPage() {
           </div>
         </div>
       )}
-
-      <CreateSuiteWizard
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onCreate={handleCreate}
-      />
 
       <RunConfirmModal
         open={runTarget !== null}

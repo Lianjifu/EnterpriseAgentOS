@@ -6,10 +6,11 @@
  * 与 /admin/workflows 列表卡片结构对齐。
  */
 import { ArrowUpRight, CheckCircle2 } from 'lucide-react';
+import { AdminListPagination } from '@/components/feedback/AdminListPagination';
+import { AdminListHeader, AdminListHeaderMetrics } from '@/components/feedback/AdminListRow';
 import type { L2Category, L2Fact } from '../../schema';
 import { L2_CATEGORY_LABEL } from '../constants';
 import { L2Card } from '../Cards';
-import { InlinePagination } from '../InlinePagination';
 import { ListToolbar } from '../ListToolbar';
 
 export function L2Tab({
@@ -78,7 +79,8 @@ export function L2Tab({
             },
           ]}
         />
-        <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
+        <AdminListHeader hasStar={false} metrics={<AdminListHeaderMetrics labels={['置信度', '最近使用']} />} />
+        <div className="divide-y divide-[var(--border)]">
           {facts.map((f) => (
             <L2Card
               key={f.id}
@@ -91,12 +93,12 @@ export function L2Tab({
             />
           ))}
           {facts.length === 0 && (
-            <p className="md:col-span-2 xl:col-span-3 rounded-2xl border border-dashed border-[var(--border)] p-12 text-center text-xs text-[var(--text-muted)]">
+            <p className="p-12 text-center text-xs text-[var(--text-muted)]">
               没有匹配的事实,试试调整筛选条件。
             </p>
           )}
         </div>
-        {pagination && <InlinePagination {...pagination} />}
+        {pagination && <AdminListPagination {...pagination} />}
       </div>
     </section>
   );

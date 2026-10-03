@@ -34,7 +34,7 @@ function renderPage() {
 describe('AdminWorkflows', () => {
   it('渲染 hero + 搜索 + 状态 + 新建工作流', () => {
     renderPage();
-    expect(screen.getByText(/把可复用的工作流设计出来/)).toBeTruthy();
+    expect(screen.getByText(/编排并发布可执行工作流/)).toBeTruthy();
     expect(screen.getByPlaceholderText(/搜索工作流名/)).toBeTruthy();
     expect(screen.getByRole('combobox', { name: '状态' })).toBeTruthy();
     expect(screen.getByRole('button', { name: /新建工作流/ })).toBeTruthy();
@@ -59,19 +59,11 @@ describe('AdminWorkflows', () => {
     expect(navigateMock).toHaveBeenCalledWith(`/admin/workflows/${firstFlow.id}`);
   });
 
-  it('FlowCard 编辑按钮 → /admin/workflows/:id?edit=1', () => {
-    renderPage();
-    const firstFlow = mockFlows[0];
-    const buttons = screen.getAllByRole('button', { name: /^编辑$/ });
-    buttons[0].click();
-    expect(navigateMock).toHaveBeenCalledWith(`/admin/workflows/${firstFlow.id}?edit=1`);
-  });
-
-  it('卡片底栏无查看与添加节点', () => {
+  it('列表行无查看与添加节点', () => {
     renderPage();
     expect(screen.queryByRole('button', { name: /^查看$/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /添加节点/ })).toBeNull();
-    expect(screen.getAllByRole('button', { name: /^编辑$/ }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: /^编辑$/ })).toBeNull();
     expect(screen.getAllByRole('button', { name: /^复制$/ }).length).toBeGreaterThan(0);
   });
 });

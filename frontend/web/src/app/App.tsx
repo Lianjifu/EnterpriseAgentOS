@@ -38,6 +38,7 @@ const AdminSkills = lazy(() => import('@/features/skills'));
 const AdminSkillCreate = lazy(() => import('@/features/skills/SkillCreatePage'));
 const AdminSkillDetail = lazy(() => import('@/features/skills/SkillDetailPage'));
 const AdminEvaluations = lazy(() => import('@/features/evaluations'));
+const AdminEvaluationCreate = lazy(() => import('@/features/evaluations/EvalSuiteCreatePage'));
 const AdminEvaluationDetail = lazy(() => import('@/features/evaluations/EvaluationDetailPage'));
 const AdminRegressions = lazy(() => import('@/features/regressions'));
 const AdminRegressionDetail = lazy(() => import('@/features/regressions/RegressionDetailPage'));
@@ -48,15 +49,22 @@ const AdminFeedbackCreate = lazy(() => import('@/features/feedback/FeedbackCreat
 const AdminFeedbackRuleCreate = lazy(() => import('@/features/feedback/FeedbackRuleCreatePage'));
 const AdminModels = lazy(() => import('@/features/models'));
 const AdminModelDetail = lazy(() => import('@/features/models/ModelDetailPage'));
+const AdminModelCreate = lazy(() => import('@/features/models/ModelCreatePage'));
+const AdminRouteCreate = lazy(() => import('@/features/models/RouteCreatePage'));
 const AdminQuotas = lazy(() => import('@/features/quotas'));
+const AdminQuotaCreate = lazy(() => import('@/features/quotas/BudgetCreatePage'));
+const AdminQuotaAlertCreate = lazy(() => import('@/features/quotas/AlertCreatePage'));
 const AdminQuotaDetail = lazy(() => import('@/features/quotas/QuotaDetailPage'));
 const AdminNotifications = lazy(() => import('@/features/notifications'));
+const AdminChannelCreate = lazy(() => import('@/features/notifications/ChannelCreatePage'));
 const AdminChannelDetail = lazy(() => import('@/features/notifications/ChannelDetailPage'));
 const AdminOperations = lazy(() => import('@/features/operations'));
 const AdminSessionDetail = lazy(() => import('@/features/operations/SessionDetailPage'));
 const AdminToolAudit = lazy(() => import('@/features/audit'));
+const AdminAuditRuleCreate = lazy(() => import('@/features/audit/AuditRuleCreatePage'));
 const AdminAuditDetail = lazy(() => import('@/features/audit/AuditDetailPage'));
 const AdminMetrics = lazy(() => import('@/features/metrics'));
+const AdminDashboardCreate = lazy(() => import('@/features/metrics/DashboardCreatePage'));
 const AdminMetricDetail = lazy(() => import('@/features/metrics/MetricDetailPage'));
 
 function PageFallback() {
@@ -141,6 +149,7 @@ export default function App() {
             <Route path="/admin/tools/:id/edit" element={<AdminSkillDetail />} />
             <Route path="/admin/tools/:id" element={<AdminSkillDetail />} />
             <Route path="/admin/evaluations" element={<AdminEvaluations />} />
+            <Route path="/admin/evaluations/new" element={<AdminEvaluationCreate />} />
             <Route path="/admin/evaluations/:id" element={<AdminEvaluationDetail />} />
             <Route path="/admin/regressions" element={<AdminRegressions />} />
             <Route path="/admin/regressions/new" element={<AdminRegressionCreate />} />
@@ -150,16 +159,23 @@ export default function App() {
             <Route path="/admin/feedback/rules/new" element={<AdminFeedbackRuleCreate />} />
             <Route path="/admin/feedback/:id" element={<AdminFeedbackDetail />} />
             <Route path="/admin/models" element={<AdminModels />} />
+            <Route path="/admin/models/new" element={<AdminModelCreate />} />
+            <Route path="/admin/models/routes/new" element={<AdminRouteCreate />} />
             <Route path="/admin/models/:id" element={<AdminModelDetail />} />
             <Route path="/admin/quotas" element={<AdminQuotas />} />
+            <Route path="/admin/quotas/new" element={<AdminQuotaCreate />} />
+            <Route path="/admin/quotas/alerts/new" element={<AdminQuotaAlertCreate />} />
             <Route path="/admin/quotas/:id" element={<AdminQuotaDetail />} />
             <Route path="/admin/notifications" element={<AdminNotifications />} />
+            <Route path="/admin/notifications/new" element={<AdminChannelCreate />} />
             <Route path="/admin/notifications/:id" element={<AdminChannelDetail />} />
             <Route path="/admin/operations" element={<AdminOperations />} />
             <Route path="/admin/operations/:id" element={<AdminSessionDetail />} />
             <Route path="/admin/tool-audit" element={<AdminToolAudit />} />
+            <Route path="/admin/tool-audit/rules/new" element={<AdminAuditRuleCreate />} />
             <Route path="/admin/tool-audit/:id" element={<AdminAuditDetail />} />
             <Route path="/admin/metrics" element={<AdminMetrics />} />
+            <Route path="/admin/metrics/new" element={<AdminDashboardCreate />} />
             <Route path="/admin/metrics/:id" element={<AdminMetricDetail />} />
             <Route path="/admin/*" element={<WorkspacePlaceholder />} />
           </Route>

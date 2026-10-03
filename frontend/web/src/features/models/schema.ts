@@ -9,6 +9,7 @@ export type TaskType = 'reasoning' | 'generation' | 'classification' | 'embeddin
 export type ModelTier = 'premium' | 'balanced' | 'economy';
 export type ExchangeFormat = 'json' | 'yaml';
 export type HealthEventType = 'incident' | 'latency' | 'quota' | 'recovery';
+export type ModelProtocol = 'openai' | 'azure' | 'anthropic' | 'openai-compatible';
 
 export interface Model {
   id: string;
@@ -37,6 +38,7 @@ export interface Provider {
   status: ProviderStatus;
   baseUrl: string;
   apiKeyMasked: string;
+  protocol?: ModelProtocol;
   errorRate: number;
   avgLatencyMs: number;
   qps: number;
@@ -70,14 +72,21 @@ export interface ModelFilters {
 }
 
 export type CreateModelVars = {
-  name: string;
-  providerId: string;
-  task: TaskType[];
-  contextWindow: number;
-  priceIn: number;
-  priceOut: number;
-  description: string;
-  tags: string[];
+  providerName: string;
+  apiKey: string;
+  baseUrl: string;
+  protocol: ModelProtocol;
+  models: string[];
+};
+
+export type ProbeModelsVars = {
+  apiKey: string;
+  baseUrl: string;
+  protocol: ModelProtocol;
+};
+
+export type ProbeModelsResult = {
+  models: string[];
 };
 
 export type CreateRouteVars = {

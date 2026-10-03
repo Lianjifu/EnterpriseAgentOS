@@ -3,7 +3,9 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, Plus, Search, ShieldAlert, ShieldQuestion } from 'lucide-react';
+import { Download, Plus, Search, ShieldQuestion } from 'lucide-react';
+import { AdminListPagination, paginateItems } from '@/components/feedback/AdminListPagination';
+import { AdminListHeader, AdminListHeaderMetrics } from '@/components/feedback/AdminListRow';
 import { NoticeBanner } from '@/components/feedback/NoticeBanner';
 import {
   useAuditEntries, useAuditRisks, useAuditRules, usePermissionScopes,
@@ -11,7 +13,6 @@ import {
 import type { AuditEntry, AuditRule, RiskEvent } from './schema';
 import { AuditCard } from './components/AuditCard';
 import { BatchToolbar } from './components/BatchToolbar';
-import { CreateRuleModal } from './components/CreateRuleModal';
 import { ExportAuditModal, type ExportFormat } from './components/ExportAuditModal';
 import { RiskTab } from './components/tabs/RiskTab';
 import { PermissionTab } from './components/tabs/PermissionTab';
@@ -57,9 +58,9 @@ export default function AuditPage() {
   const [view, setView] = useState<ViewId>('record');
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [createRuleOpen, setCreateRuleOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [notice, setNotice] = useState('');
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (entries.length === 0 && baseEntries.length > 0) setEntries(baseEntries);
@@ -80,6 +81,9 @@ export default function AuditPage() {
       `${e.id} ${e.toolName} ${e.actor} ${e.sessionId} ${e.category} ${e.reason ?? ''}`.toLowerCase().includes(q),
     );
   }, [entries, search]);
+
+  useEffect(() => { setPage(1); }, [search, view]);
+  const paged = useMemo(() => paginateItems(visibleEntries, page), [visibleEntries, page]);
 
   const toggleSelect = (id: string) =>
     setSelectedIds((current) => (current.includes(id) ? current.filter((x) => x !== id) : [...current, id]));
@@ -120,11 +124,6 @@ export default function AuditPage() {
     setNotice(`已将「${entry.toolName}」标记进入处置流程。`);
   };
 
-  const handleCreateRule = (r: AuditRule) => {
-    setRules((current) => [r, ...current]);
-    setNotice(`已创建审计规则「${r.name}」。`);
-  };
-
   const handleResolveRisk = (id: string) =>
     setRisks((current) => current.map((r) => (r.id === id ? { ...r, resolved: !r.resolved } : r)));
 
@@ -153,22 +152,16 @@ export default function AuditPage() {
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px]">
           <div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(244,63,94,0.10),transparent_68%)]" />
         </div>
-        <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-rose-700 dark:text-rose-300">
-              ADMIN / 工具审计
-            </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-              让每一次工具调用都有据可查、有规则可循。
-            </h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
-              追踪工具调用 / 权限越界 / 异常敏感操作,落地规则、归因、处置全流程,让风险可见可处置。
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-            <ShieldAlert className="h-3 w-3" />
-            {entries.length} 条审计 · {unresolvedRisks} 未处置风险
-          </div>
+        <div className="relative">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-rose-700 dark:text-rose-300">
+            ADMIN / 工具审计
+          </p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+            审查工具调用与风险规则。
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
+            {entries.length} 条审计 · {unresolvedRisks} 未处置风险。
+          </p>
         </div>
       </section>
 
@@ -221,7 +214,7 @@ export default function AuditPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setCreateRuleOpen(true)}
+                onClick={() => navigate('/admin/tool-audit/rules/new')}
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-rose-600 px-3 text-xs font-semibold text-white hover:bg-rose-700"
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -229,8 +222,9 @@ export default function AuditPage() {
               </button>
             </div>
           </div>
-          <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
-            {visibleEntries.map((e) => (
+          <AdminListHeader metrics={<AdminListHeaderMetrics labels={['风险', '时间']} />} />
+          <div className="divide-y divide-[var(--border)]">
+            {paged.slice.map((e) => (
               <AuditCard
                 key={e.id}
                 entry={e}
@@ -243,6 +237,14 @@ export default function AuditPage() {
               />
             ))}
           </div>
+          <AdminListPagination
+            page={paged.safePage}
+            totalPages={paged.totalPages}
+            total={paged.total}
+            pageStart={paged.pageStart}
+            pageEnd={paged.pageEnd}
+            onPageChange={setPage}
+          />
           {visibleEntries.length === 0 && (
             <div className="px-5 pb-8 text-center">
               <Search className="mx-auto h-6 w-6 text-[var(--text-muted)]" />
@@ -260,7 +262,7 @@ export default function AuditPage() {
             {view === 'rule' && (
               <button
                 type="button"
-                onClick={() => setCreateRuleOpen(true)}
+                onClick={() => navigate('/admin/tool-audit/rules/new')}
                 className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg bg-rose-600 px-3 text-xs font-semibold text-white hover:bg-rose-700"
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -271,12 +273,11 @@ export default function AuditPage() {
           {view === 'risk' && <RiskTab risks={risks} onToggleResolve={handleResolveRisk} />}
           {view === 'permission' && <PermissionTab scopes={baseScopes} onReReview={handleReReview} />}
           {view === 'rule' && (
-            <RuleTab rules={rules} onToggleRule={handleToggleRule} onCreateRule={() => setCreateRuleOpen(true)} />
+            <RuleTab rules={rules} onToggleRule={handleToggleRule} onCreateRule={() => navigate('/admin/tool-audit/rules/new')} />
           )}
         </div>
       )}
 
-      <CreateRuleModal open={createRuleOpen} onClose={() => setCreateRuleOpen(false)} onCreate={handleCreateRule} />
       <ExportAuditModal
         open={exportOpen}
         onClose={() => setExportOpen(false)}

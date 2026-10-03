@@ -18,16 +18,37 @@ describe('admin-models-mock-handler', () => {
     const wrap = wrapMockHandlerWithAdminModels(async () => undefined);
     const createdModel = (await wrap('/api/admin/models', {
       method: 'POST',
-      body: { name: '新建模型', providerId: 'pv-openai', task: ['reasoning'], contextWindow: 8000, priceIn: 0.001, priceOut: 0.003, description: '测试', tags: ['test'] },
-    })) as { id: string; status: string; providerName: string };
+      body: {
+        providerName: '测试供应商',
+        apiKey: 'sk-test-1234',
+        baseUrl: 'https://api.openai.com/v1',
+        protocol: 'openai',
+        models: ['gpt-4o-mini'],
+      },
+    })) as { id: string; status: string; providerName: string; name: string };
     expect(createdModel.status).toBe('draft');
-    expect(createdModel.providerName).toBe('OpenAI 官方');
+    expect(createdModel.providerName).toBe('测试供应商');
+    expect(createdModel.name).toBe('gpt-4o-mini');
 
     const createdRoute = (await wrap('/api/admin/models/routes', {
       method: 'POST',
       body: { name: '新路由', task: 'reasoning', strategy: 'quality-first', priority: 50, primaryModelId: 'md-gpt4o', description: 'test' },
     })) as { id: string; enabled: boolean };
     expect(createdRoute.enabled).toBe(true);
+  });
+
+  it('probes provider catalog by protocol', async () => {
+    const wrap = wrapMockHandlerWithAdminModels(async () => undefined);
+    const openai = (await wrap('/api/admin/models/catalog', {
+      method: 'POST',
+      body: { apiKey: 'sk-test', baseUrl: 'https://api.openai.com/v1', protocol: 'openai' },
+    })) as { models: string[] };
+    expect(openai.models).toContain('gpt-4o');
+    const claude = (await wrap('/api/admin/models/catalog', {
+      method: 'POST',
+      body: { apiKey: 'sk-test', baseUrl: 'https://api.anthropic.com', protocol: 'anthropic' },
+    })) as { models: string[] };
+    expect(claude.models).toContain('claude-3-5-sonnet');
   });
 
   it('toggles a route and patches a model', async () => {

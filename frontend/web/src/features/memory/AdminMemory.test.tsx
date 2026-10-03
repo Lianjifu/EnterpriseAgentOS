@@ -49,7 +49,7 @@ function renderApp() {
 describe('AdminMemory', () => {
   it('渲染 hero + 三层标签 + 默认短期记忆', () => {
     renderPage();
-    expect(screen.getByText(/把企业记忆资产管起来/)).toBeTruthy();
+    expect(screen.getByText(/管理会话记忆和长期记忆/)).toBeTruthy();
     expect(screen.getByText('最近 7 天')).toBeTruthy();
     const nav = screen.getByLabelText('子模块导航');
     expect(within(nav).getByRole('button', { name: /短期记忆/ })).toBeTruthy();
@@ -61,9 +61,11 @@ describe('AdminMemory', () => {
     expect(screen.getByText('全部 flush')).toBeTruthy();
   });
 
-  it('默认 L1 tab 显示会话表格', () => {
+  it('默认 L1 tab 显示会话列表', () => {
     renderPage();
-    expect(screen.getByText('会话')).toBeTruthy();
+    expect(screen.getByText('sess-001')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /查看 sess-001 详情/ })).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: /立即 flush/ }).length).toBeGreaterThan(0);
   });
 
   it('切换到 L2 tab 显示事实卡片', async () => {

@@ -3,6 +3,7 @@
  *
  * 总览与「保留策略与评测」tab 已去掉;当前层「策略配置」进入 /admin/memory/policies/:id。
  */
+import { paginateItems } from '@/components/feedback/AdminListPagination';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Settings } from 'lucide-react';
@@ -18,20 +19,6 @@ import { PromoteMemoryModal } from './components/PromoteMemoryModal';
 import { L1Tab } from './components/tabs/L1Tab';
 import { L2Tab } from './components/tabs/L2Tab';
 import { L3Tab } from './components/tabs/L3Tab';
-
-const PAGE_SIZE = 8;
-function paginate<T>(items: T[], page: number) {
-  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
-  const safePage = Math.min(Math.max(1, page), totalPages);
-  const pageStart = (safePage - 1) * PAGE_SIZE;
-  const slice = items.slice(pageStart, pageStart + PAGE_SIZE);
-  return {
-    slice,
-    totalPages,
-    pageStart: items.length === 0 ? 0 : pageStart + 1,
-    pageEnd: Math.min(pageStart + slice.length, items.length),
-  };
-}
 
 export default function MemoryPage() {
   const navigate = useNavigate();
@@ -104,9 +91,9 @@ export default function MemoryPage() {
     });
   }, [l3, l3Query, l3TeamFilter, l3StatusFilter]);
 
-  const pagedL1 = useMemo(() => paginate(filteredL1, l1Page), [filteredL1, l1Page]);
-  const pagedL2 = useMemo(() => paginate(filteredL2, l2Page), [filteredL2, l2Page]);
-  const pagedL3 = useMemo(() => paginate(filteredL3, l3Page), [filteredL3, l3Page]);
+  const pagedL1 = useMemo(() => paginateItems(filteredL1, l1Page), [filteredL1, l1Page]);
+  const pagedL2 = useMemo(() => paginateItems(filteredL2, l2Page), [filteredL2, l2Page]);
+  const pagedL3 = useMemo(() => paginateItems(filteredL3, l3Page), [filteredL3, l3Page]);
 
   const flushSession = (id: string) => setL1((prev) => prev.map((s) => s.id === id ? { ...s, status: 'expired', ttlRemainMin: 0 } : s));
   const flushAll = () => setL1((prev) => prev.map((s) => s.status === 'active' ? { ...s, status: 'expired', ttlRemainMin: 0 } : s));
@@ -136,12 +123,10 @@ export default function MemoryPage() {
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
           <div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.08),transparent_68%)]" />
         </div>
-        <div className="relative flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--brand)]">ADMIN / 记忆管理</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">把企业记忆资产管起来。</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">按会话上下文、用户长期偏好、团队共享知识三层组织,各有独立的保留策略与命中率。</p>
-          </div>
+        <div className="relative">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--brand)]">ADMIN / 记忆管理</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">管理会话记忆和长期记忆。</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">{l1.length} 条短期会话 · {l2.length} 条长期记忆 · {l3.length} 条团队知识。</p>
         </div>
       </section>
 
@@ -188,7 +173,7 @@ export default function MemoryPage() {
           onFlushAll={flushAll}
           onFlushOne={flushSession}
           onOpen={openL1}
-          pagination={{ page: l1Page, totalPages: pagedL1.totalPages, total: filteredL1.length, pageStart: pagedL1.pageStart, pageEnd: pagedL1.pageEnd, onPageChange: setL1Page }}
+          pagination={{ page: pagedL1.safePage, totalPages: pagedL1.totalPages, total: pagedL1.total, pageStart: pagedL1.pageStart, pageEnd: pagedL1.pageEnd, onPageChange: setL1Page }}
         />
       )}
       {tab === 'l2' && (
@@ -208,7 +193,7 @@ export default function MemoryPage() {
           onConfirm={confirmFact}
           onClearSelect={() => setSelectedL2Ids([])}
           onPromoteSelected={() => openPromote(selectedL2Ids)}
-          pagination={{ page: l2Page, totalPages: pagedL2.totalPages, total: filteredL2.length, pageStart: pagedL2.pageStart, pageEnd: pagedL2.pageEnd, onPageChange: setL2Page }}
+          pagination={{ page: pagedL2.safePage, totalPages: pagedL2.totalPages, total: pagedL2.total, pageStart: pagedL2.pageStart, pageEnd: pagedL2.pageEnd, onPageChange: setL2Page }}
         />
       )}
       {tab === 'l3' && (
@@ -225,7 +210,7 @@ export default function MemoryPage() {
           onRetire={retireEntry}
           onPublish={publishEntry}
           onCreate={() => window.alert('演示版本未提供新建表单;真实环境会打开向导')}
-          pagination={{ page: l3Page, totalPages: pagedL3.totalPages, total: filteredL3.length, pageStart: pagedL3.pageStart, pageEnd: pagedL3.pageEnd, onPageChange: setL3Page }}
+          pagination={{ page: pagedL3.safePage, totalPages: pagedL3.totalPages, total: pagedL3.total, pageStart: pagedL3.pageStart, pageEnd: pagedL3.pageEnd, onPageChange: setL3Page }}
         />
       )}
 

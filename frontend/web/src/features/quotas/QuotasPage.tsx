@@ -3,20 +3,20 @@
  * 视图筛选：企业预算 / 部门额度 / 用量分析 / 告警规则。
  */
 import {
-  ArrowDown, ArrowUp, ClipboardList, Plus, Search, Upload, UsersRound, Wallet,
+  ArrowDown, ArrowUp, ClipboardList, Plus, Search, Upload, UsersRound,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AdminListPagination, paginateItems } from '@/components/feedback/AdminListPagination';
+import { AdminListHeader, AdminListHeaderMetrics } from '@/components/feedback/AdminListRow';
 import { NoticeBanner } from '@/components/feedback/NoticeBanner';
 import {
   useQuotasAlerts, useQuotasBudgets, useQuotasDepartments, useQuotasUsage,
-  useCreateBudget, useCreateAlert, useToggleAlert, useUpdateBudget,
+  useToggleAlert, useUpdateBudget,
 } from './useQuotas';
-import type { EnterpriseBudget, AlertRule, ExchangeFormat } from './schema';
+import type { EnterpriseBudget, ExchangeFormat } from './schema';
 import { BatchToolbar } from './components/BatchToolbar';
 import { BudgetCard } from './components/BudgetCard';
-import { CreateAlertModal } from './components/CreateAlertModal';
-import { CreateBudgetModal } from './components/CreateBudgetModal';
 import { ExportBudgetModal, ImportBudgetModal } from './components/ImportExportModals';
 import { CATEGORY_META, PERIOD_LABEL, SCOPE_LABEL, SEVERITY_BADGE, downloadBlob } from './components/constants';
 import { ProgressBar, Sparkline } from './components/Primitives';
@@ -30,19 +30,16 @@ export default function QuotasPage() {
   const { data: usage = [] } = useQuotasUsage();
   const { data: alerts = [] } = useQuotasAlerts();
 
-  const createBudget = useCreateBudget();
   const updateBudget = useUpdateBudget();
-  const createAlert = useCreateAlert();
   const toggleAlert = useToggleAlert();
 
   const [view, setView] = useState<ViewId>('budget');
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createAlertOpen, setCreateAlertOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [notice, setNotice] = useState('');
+  const [page, setPage] = useState(1);
 
   const totals = useMemo(() => {
     const cap = budgets.reduce((s, b) => s + b.totalCap, 0);
@@ -54,6 +51,9 @@ export default function QuotasPage() {
     const q = search.trim().toLowerCase();
     return budgets.filter((b) => q.length === 0 || `${b.name} ${b.owner} ${b.description}`.toLowerCase().includes(q));
   }, [budgets, search]);
+
+  useEffect(() => { setPage(1); }, [search, view]);
+  const paged = useMemo(() => paginateItems(visibleBudgets, page), [visibleBudgets, page]);
 
   const toggleSelect = (id: string) =>
     setSelectedIds((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
@@ -78,23 +78,6 @@ export default function QuotasPage() {
   };
 
   const handleBatchExport = () => setExportOpen(true);
-
-  const handleCreateBudget = (b: EnterpriseBudget) => {
-    const { id: _ignored, ...payload } = b;
-    void _ignored;
-    createBudget.mutate(payload);
-    setNotice(`已创建预算「${b.name}」。`);
-    setCreateOpen(false);
-    setView('budget');
-  };
-
-  const handleCreateAlert = (a: AlertRule) => {
-    const { id: _ignored, ...rest } = a;
-    void _ignored;
-    createAlert.mutate({ ...rest, notify: a.notify.join(',') });
-    setNotice(`已创建告警规则「${a.name}」。`);
-    setCreateAlertOpen(false);
-  };
 
   const handleImport = (count: number) => {
     setNotice(`已导入 ${count} 个预算。`);
@@ -128,15 +111,10 @@ export default function QuotasPage() {
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px]">
           <div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(34,197,94,0.10),transparent_68%)]" />
         </div>
-        <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-300">ADMIN / 额度管理</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">让每一笔用量都心中有数。</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">统一管理企业预算、部门分配、实时用量与告警规则。</p>
-          </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-            <Wallet className="h-3 w-3" />总预算 ¥ {totals.cap.toLocaleString('zh-CN')} · 已用 ¥ {totals.used.toLocaleString('zh-CN')}
-          </div>
+        <div className="relative">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-300">ADMIN / 额度管理</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">控制预算、用量和告警。</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">总预算 ¥ {totals.cap.toLocaleString('zh-CN')} · 已用 ¥ {totals.used.toLocaleString('zh-CN')}。</p>
         </div>
       </section>
 
@@ -183,25 +161,33 @@ export default function QuotasPage() {
               <button type="button" onClick={() => setImportOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]">
                 <Upload className="h-3.5 w-3.5" />导入
               </button>
-              <button type="button" onClick={() => setCreateOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
+              <button type="button" onClick={() => navigate('/admin/quotas/new')} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
                 <Plus className="h-3.5 w-3.5" />新建预算
               </button>
             </div>
           </div>
-          <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
-            {visibleBudgets.map((b) => (
+          <AdminListHeader hasStar={false} metrics={<AdminListHeaderMetrics labels={['用量']} />} />
+          <div className="divide-y divide-[var(--border)]">
+            {paged.slice.map((b) => (
               <BudgetCard
                 key={b.id}
                 budget={b}
                 selected={selectedIds.includes(b.id)}
                 onToggleSelect={toggleSelect}
                 onSelect={openBudget}
-                onEdit={openBudget}
                 onFreeze={handleFreeze}
                 onExportOne={handleExportOne}
               />
             ))}
           </div>
+          <AdminListPagination
+            page={paged.safePage}
+            totalPages={paged.totalPages}
+            total={paged.total}
+            pageStart={paged.pageStart}
+            pageEnd={paged.pageEnd}
+            onPageChange={setPage}
+          />
           {visibleBudgets.length === 0 && (
             <div className="px-5 pb-8 text-center">
               <Search className="mx-auto h-6 w-6 text-[var(--text-muted)]" />
@@ -232,7 +218,7 @@ export default function QuotasPage() {
               </button>
             )}
             {view === 'alert' && (
-              <button type="button" onClick={() => setCreateAlertOpen(true)} className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
+              <button type="button" onClick={() => navigate('/admin/quotas/alerts/new')} className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
                 <Plus className="h-3.5 w-3.5" />新建规则
               </button>
             )}
@@ -331,8 +317,6 @@ export default function QuotasPage() {
         </div>
       )}
 
-      <CreateBudgetModal open={createOpen} onClose={() => setCreateOpen(false)} onCreate={handleCreateBudget} />
-      <CreateAlertModal open={createAlertOpen} onClose={() => setCreateAlertOpen(false)} onCreate={handleCreateAlert} />
       <ImportBudgetModal open={importOpen} onClose={() => setImportOpen(false)} onImport={handleImport} />
       <ExportBudgetModal open={exportOpen} onClose={() => setExportOpen(false)} onExport={handleExport} total={budgets.length} selectedCount={selectedIds.length} />
     </div>

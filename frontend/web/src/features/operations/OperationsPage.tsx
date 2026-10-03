@@ -3,7 +3,9 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, FileText, Filter, RefreshCw, Search } from 'lucide-react';
+import { FileText, Filter, RefreshCw, Search } from 'lucide-react';
+import { AdminListPagination, paginateItems } from '@/components/feedback/AdminListPagination';
+import { AdminListHeader, AdminListHeaderMetrics } from '@/components/feedback/AdminListRow';
 import { NoticeBanner } from '@/components/feedback/NoticeBanner';
 import {
   useIncidents,
@@ -54,6 +56,7 @@ export default function OperationsPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [notice, setNotice] = useState('');
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (sessions.length === 0 && baseSessions.length > 0) setSessions(baseSessions);
@@ -76,6 +79,9 @@ export default function OperationsPage() {
       q.length === 0 || `${s.id} ${s.user} ${s.agentName} ${s.summary}`.toLowerCase().includes(q),
     );
   }, [sessions, search]);
+
+  useEffect(() => { setPage(1); }, [search, view]);
+  const paged = useMemo(() => paginateItems(visibleSessions, page), [visibleSessions, page]);
 
   const toggleSelect = (id: string) =>
     setSelectedIds((current) => (current.includes(id) ? current.filter((x) => x !== id) : [...current, id]));
@@ -153,22 +159,16 @@ export default function OperationsPage() {
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px]">
           <div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(14,165,233,0.10),transparent_68%)]" />
         </div>
-        <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-700 dark:text-sky-300">
-              ADMIN / 调用链路
-            </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-              把每一次会话还原成可追溯的证据链。
-            </h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
-              还原智能体 / 工具 / MCP / 记忆 / 检索的完整调用链与上下文,快速定位异常与性能瓶颈。
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-            <Activity className="h-3 w-3" />
-            今日会话 {stats.total} · 异常率 {stats.errorRate}%
-          </div>
+        <div className="relative">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-700 dark:text-sky-300">
+            ADMIN / 调用链路
+          </p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+            还原会话的完整调用过程。
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
+            今日会话 {stats.total} · 异常率 {stats.errorRate}%。
+          </p>
         </div>
       </section>
 
@@ -228,8 +228,9 @@ export default function OperationsPage() {
               </button>
             </div>
           </div>
-          <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
-            {visibleSessions.map((session) => (
+          <AdminListHeader metrics={<AdminListHeaderMetrics labels={['Span', '耗时', '成本', '开始']} />} />
+          <div className="divide-y divide-[var(--border)]">
+            {paged.slice.map((session) => (
               <SessionCard
                 key={session.id}
                 session={session}
@@ -242,6 +243,14 @@ export default function OperationsPage() {
               />
             ))}
           </div>
+          <AdminListPagination
+            page={paged.safePage}
+            totalPages={paged.totalPages}
+            total={paged.total}
+            pageStart={paged.pageStart}
+            pageEnd={paged.pageEnd}
+            onPageChange={setPage}
+          />
           {visibleSessions.length === 0 && (
             <div className="px-5 pb-8 text-center">
               <Search className="mx-auto h-6 w-6 text-[var(--text-muted)]" />

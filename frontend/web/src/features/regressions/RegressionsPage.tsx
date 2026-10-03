@@ -3,9 +3,11 @@
  * 对齐技能管理：无子模块 Tab，Hero 轻量，列表工具栏承载导入/新建。
  * 追踪 / 告警 / 时间线 走 useApiQuery 拉取;写操作(CRUD/批量/导入导出/告警)走本地乐观更新。
  */
-import { GitBranch, Plus, Search, Upload } from 'lucide-react';
+import { Plus, Search, Upload } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AdminListPagination, paginateItems } from '@/components/feedback/AdminListPagination';
+import { AdminListHeader, AdminListHeaderMetrics } from '@/components/feedback/AdminListRow';
 import { NoticeBanner } from '@/components/feedback/NoticeBanner';
 import { useRegressionAlerts, useRegressionTimeline, useRegressionTracks } from './useRegressions';
 import type { AlertRule, ExchangeFormat, RegressionRisk, RegressionTrack } from './schema';
@@ -38,6 +40,7 @@ export default function RegressionsPage() {
   const [exportOpen, setExportOpen] = useState(false);
   const [editingAlert, setEditingAlert] = useState<AlertRule | null>(null);
   const [notice, setNotice] = useState('');
+  const [page, setPage] = useState(1);
 
   useEffect(() => { setTracks(tracksData); }, [tracksData]);
   useEffect(() => { setAlerts(alertsData); }, [alertsData]);
@@ -57,6 +60,9 @@ export default function RegressionsPage() {
       (q.length === 0 || `${t.name} ${t.agent} ${t.owner} ${t.tags.join(' ')}`.toLowerCase().includes(q)),
     );
   }, [tracks, statusFilter, riskFilter, search]);
+
+  useEffect(() => { setPage(1); }, [search, statusFilter, riskFilter, view]);
+  const paged = useMemo(() => paginateItems(visibleTracks, page), [visibleTracks, page]);
 
   const toggleSelect = (id: string) => setSelectedIds((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
   const toggleStar = (id: string) => setTracks((current) => current.map((t) => t.id === id ? { ...t, starred: !t.starred } : t));
@@ -188,15 +194,10 @@ export default function RegressionsPage() {
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px]">
           <div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.10),transparent_68%)]" />
         </div>
-        <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-700 dark:text-indigo-300">ADMIN / 回归追踪</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">把版本变更变成可观测的回归。</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">每次发布后自动对比基线,在退化和异常出现的第一时间发现并响应。</p>
-          </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-            <GitBranch className="h-3 w-3" />{counts.total} 个追踪 · {counts.regressed} 已退化 · {counts.investigating} 排查中
-          </div>
+        <div className="relative">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-700 dark:text-indigo-300">ADMIN / 回归追踪</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">对比基线，发现版本退化。</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">{counts.total} 个追踪 · {counts.regressed} 已退化 · {counts.investigating} 排查中。</p>
         </div>
       </section>
 
@@ -255,15 +256,15 @@ export default function RegressionsPage() {
               </button>
             </div>
           </div>
-          <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
-            {visibleTracks.map((track) => (
+          <AdminListHeader metrics={<AdminListHeaderMetrics labels={['通过率', '延迟', '检查时间']} />} />
+          <div className="divide-y divide-[var(--border)]">
+            {paged.slice.map((track) => (
               <TrackCard
                 key={track.id}
                 track={track}
                 selected={selectedIds.includes(track.id)}
                 onToggleSelect={toggleSelect}
                 onSelect={openTrack}
-                onEdit={openTrack}
                 onToggleStar={toggleStar}
                 onDuplicate={handleDuplicate}
                 onRequestDelete={setDeleteTarget}
@@ -272,6 +273,14 @@ export default function RegressionsPage() {
               />
             ))}
           </div>
+          <AdminListPagination
+            page={paged.safePage}
+            totalPages={paged.totalPages}
+            total={paged.total}
+            pageStart={paged.pageStart}
+            pageEnd={paged.pageEnd}
+            onPageChange={setPage}
+          />
           {visibleTracks.length === 0 && (
             <div className="px-5 pb-8 text-center">
               <Search className="mx-auto h-6 w-6 text-[var(--text-muted)]" />

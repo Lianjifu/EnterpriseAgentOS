@@ -113,7 +113,7 @@ describe('AdminKnowledge', () => {
   it('shows pagination bar when kb fixture count exceeds page size', () => {
     renderPage();
     const nav = screen.getByRole('navigation', { name: '分页' });
-    expect(nav.textContent).toMatch(/1-8/);
+    expect(nav.textContent).toMatch(/1-10/);
     expect(nav.textContent).toMatch(/共\s*12/);
     expect(screen.getAllByRole('button', { name: /第 2 页/ }).length).toBeGreaterThan(0);
   });
@@ -123,7 +123,7 @@ describe('AdminKnowledge', () => {
     expect(screen.getByText('产品手册 v3')).toBeTruthy();
     fireEvent.click(screen.getAllByRole('button', { name: /第 2 页/ })[0]);
     const nav = screen.getByRole('navigation', { name: '分页' });
-    expect(nav.textContent).toMatch(/9-12/);
-    expect(screen.getByText('行业研究报告')).toBeTruthy();
+    expect(nav.textContent).toMatch(/11-12/);
+    expect(screen.getByText('回复话术模板')).toBeTruthy();
   });
 });

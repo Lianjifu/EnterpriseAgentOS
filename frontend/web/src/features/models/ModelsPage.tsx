@@ -2,22 +2,20 @@
  * ModelsPage — 对齐技能管理：无子模块 Tab，Hero 轻量，列表工具栏承载导入/新建。
  * 视图筛选：模型 / 提供商 / 路由 / 健康。
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  AlertTriangle, Bot, CircleAlert, KeyRound, LineChart, Plus, RefreshCw, Search, ShieldCheck, Trash2, Upload,
-} from 'lucide-react';
+import { AlertTriangle, CircleAlert, KeyRound, LineChart, Plus, RefreshCw, Search, ShieldCheck, Trash2, Upload } from 'lucide-react';
+import { AdminListPagination, paginateItems } from '@/components/feedback/AdminListPagination';
+import { AdminListHeader, AdminListHeaderMetrics } from '@/components/feedback/AdminListRow';
 import { NoticeBanner } from '@/components/feedback/NoticeBanner';
 import {
   useModelsList, useProviders, useRouteRules, useHealthEvents,
-  useCreateModel, useUpdateModel, useDeleteModel, useToggleStar,
-  useCreateRoute, useToggleRoute, useDeleteRoute, useBatchSetStatus,
+  useUpdateModel, useDeleteModel, useToggleStar,
+  useToggleRoute, useDeleteRoute, useBatchSetStatus,
 } from './useModels';
 import type { Model, ModelFilters, ExchangeFormat } from './schema';
 import { STATUS_FILTER, TIER_FILTER, PROVIDER_BADGE, STRATEGY_META, TASK_LABEL, downloadBlob } from './components/constants';
 import { ModelCard } from './components/ModelCard';
-import { CreateModelModal } from './components/CreateModelModal';
-import { CreateRouteModal } from './components/CreateRouteModal';
 import { ImportModelModal, ExportModelModal, DeleteModelModal } from './components/ImportExportModals';
 import { BatchToolbar } from './components/BatchToolbar';
 
@@ -29,11 +27,10 @@ export default function ModelsPage() {
   const [view, setView] = useState<ViewId>('model');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<Model | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createRouteOpen, setCreateRouteOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [notice, setNotice] = useState('');
+  const [page, setPage] = useState(1);
 
   const modelsQ = useModelsList(filters);
   const providersQ = useProviders();
@@ -45,11 +42,9 @@ export default function ModelsPage() {
   const routes = useMemo(() => routesQ.data ?? [], [routesQ.data]);
   const health = useMemo(() => healthQ.data ?? [], [healthQ.data]);
 
-  const createModel = useCreateModel();
   const updateModel = useUpdateModel();
   const deleteModel = useDeleteModel();
   const toggleStar = useToggleStar();
-  const createRoute = useCreateRoute();
   const toggleRoute = useToggleRoute();
   const deleteRoute = useDeleteRoute();
   const batchStatus = useBatchSetStatus();
@@ -69,6 +64,9 @@ export default function ModelsPage() {
       (q.length === 0 || `${m.name} ${m.providerName} ${m.description} ${m.tags.join(' ')}`.toLowerCase().includes(q)),
     );
   }, [models, filters]);
+
+  useEffect(() => { setPage(1); }, [filters, view]);
+  const paged = useMemo(() => paginateItems(visibleModels, page), [visibleModels, page]);
 
   const toggleSelect = (id: string) =>
     setSelectedIds((cur) => cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]);
@@ -109,23 +107,6 @@ export default function ModelsPage() {
     setSelectedIds([]);
   };
   const handleBatchExport = () => setExportOpen(true);
-
-  const handleCreateModel = (m: Model) => {
-    const { id: _id, trend: _t, ...rest } = m;
-    void _id; void _t;
-    createModel.mutate(rest as unknown as Parameters<typeof createModel.mutate>[0]);
-    setNotice(`已创建模型「${m.name}」。`);
-    setCreateOpen(false);
-    setView('model');
-  };
-
-  const handleCreateRoute = (r: typeof routes[number]) => {
-    const { id: _id, ...rest } = r;
-    void _id;
-    createRoute.mutate(rest as unknown as Parameters<typeof createRoute.mutate>[0]);
-    setNotice(`已创建路由规则「${r.name}」。`);
-    setCreateRouteOpen(false);
-  };
 
   const handleImport = (count: number) => {
     setNotice(`已导入 ${count} 个模型。`);
@@ -173,15 +154,10 @@ export default function ModelsPage() {
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px]">
           <div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.10),transparent_68%)]" />
         </div>
-        <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-700 dark:text-indigo-300">ADMIN / 模型配置</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">让模型成为可观测、可路由的能力。</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">统一接入多家模型服务,按任务策略路由,实时监控健康与成本水位。</p>
-          </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-            <Bot className="h-3 w-3" />{counts.total} 个模型 · {counts.active} 启用 · 本月调用 {counts.calls.toLocaleString('zh-CN')}
-          </div>
+        <div className="relative">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-700 dark:text-indigo-300">ADMIN / 模型配置</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">接入模型并配置路由。</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">{counts.total} 个模型 · {counts.active} 启用 · 本月调用 {counts.calls.toLocaleString('zh-CN')}。</p>
         </div>
       </section>
 
@@ -245,13 +221,14 @@ export default function ModelsPage() {
               <button type="button" onClick={() => setImportOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]">
                 <Upload className="h-3.5 w-3.5" />导入
               </button>
-              <button type="button" onClick={() => setCreateOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
+              <button type="button" onClick={() => navigate('/admin/models/new')} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
                 <Plus className="h-3.5 w-3.5" />新建模型
               </button>
             </div>
           </div>
-          <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
-            {visibleModels.map((m) => (
+          <AdminListHeader metrics={<AdminListHeaderMetrics labels={['调用', '价格', '延迟', '任务']} />} />
+          <div className="divide-y divide-[var(--border)]">
+            {paged.slice.map((m) => (
               <ModelCard
                 key={m.id}
                 model={m}
@@ -259,13 +236,20 @@ export default function ModelsPage() {
                 onToggleSelect={toggleSelect}
                 onSelect={openModel}
                 onToggleStar={handleToggleStar}
-                onEdit={openModel}
                 onEnable={handleEnable}
                 onExportOne={handleExportOne}
                 onRequestDelete={setDeleteTarget}
               />
             ))}
           </div>
+          <AdminListPagination
+            page={paged.safePage}
+            totalPages={paged.totalPages}
+            total={paged.total}
+            pageStart={paged.pageStart}
+            pageEnd={paged.pageEnd}
+            onPageChange={setPage}
+          />
           {visibleModels.length === 0 && (
             <div className="px-5 pb-8 text-center">
               <Search className="mx-auto h-6 w-6 text-[var(--text-muted)]" />
@@ -291,7 +275,7 @@ export default function ModelsPage() {
               <option value="health">健康监控</option>
             </select>
             {view === 'route' && (
-              <button type="button" onClick={() => setCreateRouteOpen(true)} className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
+              <button type="button" onClick={() => navigate('/admin/models/routes/new')} className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
                 <Plus className="h-3.5 w-3.5" />新建路由
               </button>
             )}
@@ -409,18 +393,6 @@ export default function ModelsPage() {
         </div>
       )}
 
-      <CreateModelModal
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onCreate={handleCreateModel}
-        providers={providers}
-      />
-      <CreateRouteModal
-        open={createRouteOpen}
-        onClose={() => setCreateRouteOpen(false)}
-        onCreate={handleCreateRoute as never}
-        models={models}
-      />
       <DeleteModelModal
         open={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}

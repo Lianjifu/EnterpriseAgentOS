@@ -88,7 +88,6 @@ export function OverviewTab(props: OverviewTabProps) {
                 selected={selectedIds.includes(suite.id)}
                 onToggleSelect={onToggleSelect}
                 onRun={onRun}
-                onEdit={onSelect}
                 onDuplicate={onDuplicate}
                 onRequestDelete={onRequestDelete}
               />
@@ -182,7 +181,6 @@ export function SuiteListTab({
             selected={selectedIds.includes(suite.id)}
             onToggleSelect={onToggleSelect}
             onRun={onRun}
-            onEdit={onSelect}
             onDuplicate={onDuplicate}
             onRequestDelete={onRequestDelete}
           />

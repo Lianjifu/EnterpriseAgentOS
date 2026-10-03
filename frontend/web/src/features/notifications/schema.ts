@@ -1,9 +1,7 @@
 /**
- * 管理侧「渠道管理」schema — channel / webhook / group / delivery event 四类实体,
- * 以及创建/更新/批量操作的入参形态。颜色/图标等纯展示字段不入 data,
- * 由页面层根据 kind/status 派生。
+ * 管理侧「渠道配置」schema — 对接飞书 / 企业微信 / 钉钉 / Web 会话入口。
  */
-export type ChannelKind = 'email' | 'im' | 'webhook';
+export type ChannelKind = 'feishu' | 'wecom' | 'dingtalk' | 'web';
 export type ChannelStatus = 'active' | 'paused' | 'failed' | 'draft';
 export type WebhookStatus = 'success' | 'failed' | 'pending';
 
@@ -67,6 +65,7 @@ export interface CreateChannelVars {
   kind: ChannelKind;
   target: string;
   description?: string;
+  config?: Record<string, string>;
 }
 
 export interface UpdateChannelVars {

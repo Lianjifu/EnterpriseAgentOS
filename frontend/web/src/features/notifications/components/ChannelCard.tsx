@@ -1,9 +1,13 @@
 /**
- * ChannelCard — 对齐 ModelCard：整卡进详情，底栏等权操作。
+ * ChannelCard — 列表行。
  */
 import {
-  CheckCircle2, CircleDot, Download, Edit3, Power, Sparkles, Trash2,
+  CheckCircle2, CircleDot, Download, Power, Sparkles, Trash2,
 } from 'lucide-react';
+import {
+  AdminListActions, AdminListIdentity, AdminListMetric, AdminListMetrics, AdminListRow,
+  adminListActionBtn, adminListDangerBtn,
+} from '@/components/feedback/AdminListRow';
 import type { NotificationChannel } from '../schema';
 import { KIND_META, STATUS_BADGE } from './constants';
 
@@ -13,7 +17,6 @@ interface ChannelCardProps {
   onToggleSelect: (id: string) => void;
   onSelect: (c: NotificationChannel) => void;
   onToggleStar: (id: string) => void;
-  onEdit: (c: NotificationChannel) => void;
   onEnable: (c: NotificationChannel) => void;
   onExportOne: (c: NotificationChannel) => void;
   onRequestDelete: (c: NotificationChannel) => void;
@@ -21,7 +24,7 @@ interface ChannelCardProps {
 
 export function ChannelCard({
   channel, selected, onToggleSelect, onSelect, onToggleStar,
-  onEdit, onEnable, onExportOne, onRequestDelete,
+  onEnable, onExportOne, onRequestDelete,
 }: ChannelCardProps) {
   const meta = KIND_META[channel.kind];
   const Icon = meta.icon;
@@ -29,11 +32,7 @@ export function ChannelCard({
   const isActive = channel.status === 'active';
 
   return (
-    <article
-      className={`group relative flex flex-col gap-4 rounded-2xl border bg-[var(--surface-1)] p-5 text-left transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)] ${
-        selected ? 'border-[var(--brand)] shadow-[var(--shadow-sm)]' : 'border-[var(--border)] hover:border-[var(--brand)]'
-      }`}
-    >
+    <AdminListRow selected={selected}>
       <div
         role="button"
         tabIndex={0}
@@ -45,85 +44,58 @@ export function ChannelCard({
           }
         }}
         aria-label={`查看渠道 ${channel.name}`}
-        className="absolute inset-0 z-0 cursor-pointer rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
+        className="absolute inset-0 z-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--brand)]"
       />
 
-      <header className="relative z-10 flex items-start gap-2">
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onToggleSelect(channel.id); }}
-          aria-label={selected ? `取消选择渠道 ${channel.id}` : `选择渠道 ${channel.id}`}
-          aria-pressed={selected}
-          className={`grid h-9 w-9 place-items-center rounded-lg transition ${selected ? 'bg-[var(--brand-light)] text-[var(--brand)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)]'}`}
-        >
-          {selected ? <CheckCircle2 className="h-4 w-4" /> : <CircleDot className="h-4 w-4" />}
-        </button>
-        <div className="pointer-events-none min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${meta.tone}`}><Icon className="h-3.5 w-3.5" /></span>
-            <h3 className="text-sm font-semibold group-hover:text-[var(--brand)]">{channel.name}</h3>
-            <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.className}`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${badge.dot}`} aria-hidden="true" />{badge.label}
-            </span>
-          </div>
-          <p className="mt-1.5 line-clamp-2 text-[11px] leading-5 text-[var(--text-muted)]">{channel.description}</p>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onToggleSelect(channel.id); }}
+        aria-label={selected ? `取消选择渠道 ${channel.id}` : `选择渠道 ${channel.id}`}
+        aria-pressed={selected}
+        className={`relative z-10 grid h-7 w-7 place-items-center rounded-lg ${selected ? 'bg-[var(--brand-light)] text-[var(--brand)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)]'}`}
+      >
+        {selected ? <CheckCircle2 className="h-4 w-4" /> : <CircleDot className="h-4 w-4" />}
+      </button>
+
+      <AdminListIdentity>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${meta.tone}`}><Icon className="h-3.5 w-3.5" /></span>
+          <h3 className="truncate text-sm font-semibold group-hover:text-[var(--brand)]">{channel.name}</h3>
+          <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.className}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${badge.dot}`} aria-hidden="true" />{badge.label}
+          </span>
         </div>
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onToggleStar(channel.id); }}
-          aria-label={channel.starred ? `取消收藏 ${channel.name}` : `收藏 ${channel.name}`}
-          aria-pressed={channel.starred}
-          className={`grid h-9 w-9 place-items-center rounded-lg transition ${channel.starred ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)]'}`}
-        >
-          <Sparkles className={`h-4 w-4 ${channel.starred ? 'fill-amber-400' : ''}`} />
-        </button>
-      </header>
+        <p className="mt-0.5 truncate text-[11px] text-[var(--text-muted)]">{channel.target} · {channel.description}</p>
+      </AdminListIdentity>
 
-      <div className="pointer-events-none relative z-10 grid grid-cols-2 gap-2 text-[11px] sm:grid-cols-3">
-        <div><span className="text-[var(--text-muted)]">目标</span><br /><span className="font-mono font-semibold">{channel.target}</span></div>
-        <div><span className="text-[var(--text-muted)]">今日投递</span><br /><span className="font-semibold tabular-nums">{channel.sentToday}</span></div>
-        <div><span className="text-[var(--text-muted)]">成功率</span><br /><span className="font-semibold tabular-nums">{channel.successRate}%</span></div>
-      </div>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onToggleStar(channel.id); }}
+        aria-label={channel.starred ? `取消收藏 ${channel.name}` : `收藏 ${channel.name}`}
+        aria-pressed={channel.starred}
+        className={`relative z-10 grid h-7 w-7 place-items-center rounded-lg ${channel.starred ? 'text-amber-500' : 'text-[var(--text-muted)] hover:text-amber-500'}`}
+      >
+        <Sparkles className={`h-4 w-4 ${channel.starred ? 'fill-amber-400' : ''}`} />
+      </button>
 
-      <div className="pointer-events-none relative z-10 flex flex-wrap items-center gap-1.5">
-        <span className="rounded-full bg-[var(--bg-elevated)] px-2 py-0.5 text-[10px] font-medium">最近:{channel.lastUsed}</span>
-        {channel.scope.map((s) => (
-          <span key={s} className="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">{s}</span>
-        ))}
-      </div>
+      <AdminListMetrics cols={3}>
+        <AdminListMetric>今日 {channel.sentToday} 会话</AdminListMetric>
+        <AdminListMetric>{channel.successRate}%</AdminListMetric>
+        <AdminListMetric>{channel.lastUsed}</AdminListMetric>
+      </AdminListMetrics>
 
-      <div className="relative z-10 flex flex-wrap gap-1.5 border-t border-[var(--border)] pt-3">
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onEdit(channel); }}
-          className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-[var(--border)] px-1.5 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]"
-        >
-          <Edit3 className="h-3.5 w-3.5" />编辑
-        </button>
-        <button
-          type="button"
-          disabled={isActive}
-          onClick={(e) => { e.stopPropagation(); onEnable(channel); }}
-          className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-[var(--border)] px-1.5 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)] disabled:cursor-default disabled:opacity-40 disabled:hover:border-[var(--border)] disabled:hover:text-[var(--text-secondary)]"
-        >
+      <AdminListActions>
+        <button type="button" disabled={isActive} onClick={(e) => { e.stopPropagation(); onEnable(channel); }} className={adminListActionBtn}>
           {isActive ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Power className="h-3.5 w-3.5" />}
           {isActive ? '已启用' : '启用'}
         </button>
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onExportOne(channel); }}
-          className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-[var(--border)] px-1.5 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]"
-        >
+        <button type="button" onClick={(e) => { e.stopPropagation(); onExportOne(channel); }} className={adminListActionBtn}>
           <Download className="h-3.5 w-3.5" />导出
         </button>
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onRequestDelete(channel); }}
-          className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-rose-200 px-1.5 py-1.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-300 dark:hover:bg-rose-500/10"
-        >
+        <button type="button" onClick={(e) => { e.stopPropagation(); onRequestDelete(channel); }} className={adminListDangerBtn}>
           <Trash2 className="h-3.5 w-3.5" />删除
         </button>
-      </div>
-    </article>
+      </AdminListActions>
+    </AdminListRow>
   );
 }

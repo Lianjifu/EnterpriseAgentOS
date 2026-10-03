@@ -32,7 +32,7 @@ describe('AdminOverview', () => {
   it('renders hero eyebrow, headline, and sub copy', () => {
     renderPage();
     expect(screen.getByText('ADMIN / 运营总览')).toBeTruthy();
-    expect(screen.getByText(/把平台健康一眼说清楚/)).toBeTruthy();
+    expect(screen.getByText(/看调用量、可用率和告警/)).toBeTruthy();
   });
 
   it('renders all 6 KPI tiles from summary fixture', () => {

@@ -1,6 +1,6 @@
 /**
  * AdminWorkflows fixtures — 12 工作流,覆盖 4 个状态(全部/草稿/已发布/已下线);
- * 「全部」tab 12 条 > PAGE_SIZE 8,使分页可见。其余 tab 多在 1 页。
+ * 「全部」tab 12 条 > PAGE_SIZE 10,使分页可见。其余 tab 多在 1 页。
  *
  * 节点附带 inputs/outputs(Dify 风格变量)用于画布上显示「输入 / 输出」列。
  */

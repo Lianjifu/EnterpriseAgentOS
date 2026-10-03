@@ -12,6 +12,14 @@ export function childPageTitle(pathname: string): string | null {
     || pathname === '/admin/feedback/new'
     || pathname === '/admin/feedback/rules/new'
     || pathname === '/admin/workflows/new'
+    || pathname === '/admin/notifications/new'
+    || pathname === '/admin/models/new'
+    || pathname === '/admin/models/routes/new'
+    || pathname === '/admin/quotas/new'
+    || pathname === '/admin/quotas/alerts/new'
+    || pathname === '/admin/evaluations/new'
+    || pathname === '/admin/tool-audit/rules/new'
+    || pathname === '/admin/metrics/new'
   ) {
     return '新建页';
   }

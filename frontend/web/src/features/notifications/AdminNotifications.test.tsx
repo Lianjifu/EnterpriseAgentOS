@@ -1,12 +1,22 @@
 /**
- * AdminNotifications — 对齐模型管理：无子模块 Tab，列表工具栏 + 视图筛选。
+ * AdminNotifications — 渠道配置：飞书 / 企业微信 / 钉钉 / Web。
  */
-import { describe, expect, it, afterEach } from 'vitest';
+import { describe, expect, it, afterEach, vi } from 'vitest';
 import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { renderWithProviders } from '@/test-utils/seed';
 import NotificationsPage from './NotificationsPage';
 import { mockChannels, mockGroups, mockWebhooks, mockEvents } from './fixtures';
 import { qk } from '@/api/shared/query-keys';
+
+const navigateMock = vi.fn();
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => navigateMock,
+  };
+});
 
 function renderPage() {
   return renderWithProviders(<NotificationsPage />, {
@@ -21,31 +31,30 @@ function renderPage() {
 }
 
 describe('AdminNotifications', () => {
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    navigateMock.mockReset();
+  });
 
   it('renders hero without sub-module tabs', () => {
     renderPage();
-    expect(screen.getByText('把消息送到对的渠道、对的人。')).toBeTruthy();
+    expect(screen.getByText('接入飞书、企微、钉钉和 Web。')).toBeTruthy();
+    expect(screen.getByText(/ADMIN \/ 渠道配置/)).toBeTruthy();
     expect(screen.queryByLabelText('子模块导航')).toBeNull();
     expect(screen.getByRole('combobox', { name: '视图' })).toBeTruthy();
   });
 
   it('renders channel cards and action buttons', () => {
     renderPage();
-    expect(screen.getByText('客服告警邮箱')).toBeTruthy();
-    expect(screen.getAllByRole('button', { name: /^编辑$/ }).length).toBeGreaterThan(0);
+    expect(screen.getByText('飞书 · 客服助手')).toBeTruthy();
+    expect(screen.getAllByLabelText(/^查看渠道 /).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('button', { name: /导出/ }).length).toBeGreaterThan(0);
   });
 
-  it('opens create-channel modal from toolbar', async () => {
+  it('新建渠道按钮进入独立页面', () => {
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: /新建渠道/ }));
-    const dialog = await screen.findByRole('dialog', { name: '新建渠道' });
-    fireEvent.change(within(dialog).getByPlaceholderText('例如:客服告警邮箱'), { target: { value: '测试渠道' } });
-    const targetInput = within(dialog).getAllByRole('textbox')[1] as HTMLInputElement;
-    fireEvent.change(targetInput, { target: { value: 'alert@example.com' } });
-    fireEvent.click(within(dialog).getByRole('button', { name: /创建渠道/ }));
-    expect(screen.queryByRole('dialog', { name: '新建渠道' })).toBeNull();
+    expect(navigateMock).toHaveBeenCalledWith('/admin/notifications/new');
   });
 
   it('switches to group view and opens create-group modal', async () => {
@@ -65,16 +74,16 @@ describe('AdminNotifications', () => {
     fireEvent.change(screen.getByRole('combobox', { name: '视图' }), { target: { value: 'group' } });
     expect(screen.getByText('全员运营组')).toBeTruthy();
     fireEvent.change(screen.getByRole('combobox', { name: '视图' }), { target: { value: 'channel' } });
-    expect(screen.getByText('客服告警邮箱')).toBeTruthy();
+    expect(screen.getByText('飞书 · 客服助手')).toBeTruthy();
   });
 
-  it('filters channels by kind', () => {
+  it('filters channels by platform', () => {
     renderPage();
-    fireEvent.change(screen.getByRole('combobox', { name: '类型' }), { target: { value: 'email' } });
-    expect(screen.getByText('客服告警邮箱')).toBeTruthy();
-    expect(screen.queryByText('团队 Slack')).toBeNull();
-    fireEvent.change(screen.getByRole('combobox', { name: '类型' }), { target: { value: 'im' } });
-    expect(screen.getByText('团队 Slack')).toBeTruthy();
-    expect(screen.queryByText('客服告警邮箱')).toBeNull();
+    fireEvent.change(screen.getByRole('combobox', { name: '类型' }), { target: { value: 'feishu' } });
+    expect(screen.getByText('飞书 · 客服助手')).toBeTruthy();
+    expect(screen.queryByText('Web 工作台')).toBeNull();
+    fireEvent.change(screen.getByRole('combobox', { name: '类型' }), { target: { value: 'web' } });
+    expect(screen.getByText('Web 工作台')).toBeTruthy();
+    expect(screen.queryByText('飞书 · 客服助手')).toBeNull();
   });
 });

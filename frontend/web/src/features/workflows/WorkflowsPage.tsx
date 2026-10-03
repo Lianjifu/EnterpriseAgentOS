@@ -4,8 +4,7 @@
  * 4 tab(状态过滤器):全部 / 草稿 / 已发布 / 已下线。
  * 入口:
  * - 新建 → /admin/workflows/new
- * - 卡片点击 → /admin/workflows/:id(只读详情)
- * - 编辑 → /admin/workflows/:id?edit=1
+ * - 卡片点击 → /admin/workflows/:id(详情/编辑)
  *
  * 列表内 modal:发布为工具。
  */
@@ -46,7 +45,6 @@ export default function WorkflowsPage() {
 
   const goCreate = () => navigate('/admin/workflows/new');
   const goView = (id: string) => navigate(`/admin/workflows/${id}`);
-  const goEdit = (id: string) => navigate(`/admin/workflows/${id}?edit=1`);
 
   const openPublish = (flow: Flow) => {
     setPublishFlow(flow);
@@ -92,14 +90,10 @@ export default function WorkflowsPage() {
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px]">
           <div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.12),transparent_68%)]" />
         </div>
-        <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700 dark:text-amber-300">ADMIN / 工作流管理</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">把可复用的工作流设计出来。</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
-              用画布把触发器、工具调用、条件分支、结束节点串成可执行的工作流;可发布为工具,被任意智能体按需调用。
-            </p>
-          </div>
+        <div className="relative">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700 dark:text-amber-300">ADMIN / 工作流管理</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">编排并发布可执行工作流。</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">{flows.length} 条工作流 · {flows.filter((f) => f.status === 'published').length} 已发布。</p>
         </div>
       </section>
 
@@ -117,7 +111,6 @@ export default function WorkflowsPage() {
         onSearch={setSearch}
         onCreate={goCreate}
         onView={goView}
-        onEdit={goEdit}
         onCopy={copyFlow}
         onPublish={openPublish}
         onRetire={retireFlow}

@@ -21,16 +21,16 @@ function uid() {
 export function CreateGroupModal({ open, onClose, onCreate }: CreateGroupModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [member, setMember] = useState<GroupMember>({ name: '', channel: 'email', address: '' });
+  const [member, setMember] = useState<GroupMember>({ name: '', channel: 'feishu', address: '' });
   const [members, setMembers] = useState<GroupMember[]>([]);
   useEffect(() => {
-    if (open) { setName(''); setDescription(''); setMembers([]); setMember({ name: '', channel: 'email', address: '' }); }
+    if (open) { setName(''); setDescription(''); setMembers([]); setMember({ name: '', channel: 'feishu', address: '' }); }
   }, [open]);
   const canSubmit = name.trim().length > 0;
   const addMember = () => {
     if (member.name.trim().length === 0 || member.address.trim().length === 0) return;
     setMembers((current) => [...current, { name: member.name.trim(), channel: member.channel, address: member.address.trim() }]);
-    setMember({ name: '', channel: 'email', address: '' });
+    setMember({ name: '', channel: 'feishu', address: '' });
   };
   const handleSubmit = () => {
     onCreate({

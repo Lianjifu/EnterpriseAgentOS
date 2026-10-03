@@ -56,8 +56,8 @@ export default function OverviewPage() {
         <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--brand)]">ADMIN / 运营总览</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">把平台健康一眼说清楚。</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">6 个核心指标 · 3 条趋势曲线 · 实时告警与待处理事件 · 服务健康与 Top 智能体一屏可查。</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">看调用量、可用率和告警。</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">6 个核心指标 · 实时告警 · 服务健康与 Top 智能体。</p>
           </div>
           <TimeRangeDropdown value={range} onChange={setRange} options={RANGE_OPTIONS} />
         </div>
@@ -118,7 +118,7 @@ export default function OverviewPage() {
               title: '查看全部服务',
               time: '现在',
               affected: '全部 5 项',
-              suggestion: '点击进入 渠道管理 查看完整健康度。',
+              suggestion: '点击进入 渠道配置 查看完整健康度。',
             })
           }
         />

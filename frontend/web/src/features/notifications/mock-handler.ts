@@ -12,7 +12,6 @@ import type {
   UpdateChannelVars,
   CreateGroupVars,
   BatchStatusVars,
-  ChannelKind,
 } from './schema';
 import {
   mockChannels,
@@ -20,6 +19,7 @@ import {
   mockGroups,
   mockEvents,
 } from './fixtures';
+import { defaultChannelConfig, defaultChannelTemplate } from './components/constants';
 
 interface MockState {
   channels: NotificationChannel[];
@@ -45,18 +45,6 @@ function withDelay<T>(value: T): Promise<T> {
 
 function uid(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function defaultConfig(kind: ChannelKind): Record<string, string> {
-  if (kind === 'email') return { host: '', port: '465', from: '' };
-  if (kind === 'im') return { workspace: '', channel: '' };
-  return { method: 'POST', secret: '' };
-}
-
-function defaultTemplate(kind: ChannelKind): string {
-  if (kind === 'email') return '{{body}}';
-  if (kind === 'im') return '*{title}*\n{{body}}';
-  return '{event}';
 }
 
 export async function adminNotificationsMockHandler(
@@ -98,10 +86,10 @@ export async function adminNotificationsMockHandler(
       lastUsed: '从未',
       successRate: 0,
       sentToday: 0,
-      config: defaultConfig(body.kind),
+      config: defaultChannelConfig(body.kind, body.config),
       starred: false,
       scope: [],
-      template: defaultTemplate(body.kind),
+      template: defaultChannelTemplate(body.kind),
     };
     state.channels = [next, ...state.channels];
     return withDelay({ ...next });

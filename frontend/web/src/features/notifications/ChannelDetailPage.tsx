@@ -18,7 +18,7 @@ function NotFound() {
   return (
     <div className="mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-10">
       <Link to="/admin/notifications" className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--brand)]">
-        <ArrowLeft className="h-3.5 w-3.5" />返回渠道管理
+        <ArrowLeft className="h-3.5 w-3.5" />返回渠道配置
       </Link>
       <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-1)] p-8 text-center">
         <p className="text-sm font-semibold">渠道不存在或已被删除</p>
@@ -59,12 +59,12 @@ export default function ChannelDetailPage() {
   return (
     <div className="mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-10">
       <Link to="/admin/notifications" className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--brand)]">
-        <ArrowLeft className="h-3.5 w-3.5" />返回渠道管理
+        <ArrowLeft className="h-3.5 w-3.5" />返回渠道配置
       </Link>
 
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">渠道 · {meta.label}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">渠道配置 · {meta.label}</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">{draft.name}</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-muted)]">{draft.description}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">

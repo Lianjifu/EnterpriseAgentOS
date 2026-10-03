@@ -3,7 +3,9 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, Download, Plus, Search } from 'lucide-react';
+import { Download, Plus, Search } from 'lucide-react';
+import { AdminListPagination, paginateItems } from '@/components/feedback/AdminListPagination';
+import { AdminListHeader, AdminListHeaderMetrics } from '@/components/feedback/AdminListRow';
 import { NoticeBanner } from '@/components/feedback/NoticeBanner';
 import { TimeRangeDropdown } from '@/components/TimeRangeDropdown';
 import {
@@ -14,7 +16,6 @@ import type {
 } from './schema';
 import { TIME_RANGES } from './components/constants';
 import { ModelCard } from './components/ModelCard';
-import { CreateDashboardModal } from './components/CreateDashboardModal';
 import { ExportMetricModal } from './components/ExportMetricModal';
 import { BatchToolbar } from './components/BatchToolbar';
 import { AvailabilityTab } from './components/tabs/AvailabilityTab';
@@ -52,10 +53,10 @@ export default function MetricsPage() {
   const [view, setView] = useState<ViewId>('model');
   const [search, setSearch] = useState('');
   const [range, setRange] = useState<typeof TIME_RANGES[number]['id']>('24h');
-  const [createOpen, setCreateOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [pickedDashboards, setPickedDashboards] = useState<Set<string>>(new Set());
   const [notice, setNotice] = useState('');
+  const [page, setPage] = useState(1);
 
   const models = useModelMetrics();
   const latency = useLatencyPoints();
@@ -83,6 +84,9 @@ export default function MetricsPage() {
       `${m.model} ${m.provider}`.toLowerCase().includes(q),
     );
   }, [remoteModels, search]);
+
+  useEffect(() => { setPage(1); }, [search, view, range]);
+  const paged = useMemo(() => paginateItems(visibleModels, page), [visibleModels, page]);
 
   const toggleStar = (id: string) => {
     setLocalDashboards((prev) => prev.map((d) => (d.id === id ? { ...d, starred: !d.starred } : d)));
@@ -128,16 +132,10 @@ export default function MetricsPage() {
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px]">
           <div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.10),transparent_68%)]" />
         </div>
-        <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-700 dark:text-indigo-300">ADMIN / 运行指标</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">把模型健康与成本一眼说清楚。</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">覆盖可用率、延迟、Token 成本与告警阈值，统一观测模型运行水位。</p>
-          </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-            <BarChart3 className="h-3 w-3" />
-            {remoteModels.length} 个模型 · {remoteDashboards.length} 个看板 · {enabledRules} 条激活阈值
-          </div>
+        <div className="relative">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-700 dark:text-indigo-300">ADMIN / 运行指标</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">观测可用率、延迟和成本。</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">{remoteModels.length} 个模型 · {remoteDashboards.length} 个看板 · {enabledRules} 条激活阈值。</p>
         </div>
       </section>
 
@@ -181,15 +179,16 @@ export default function MetricsPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setCreateOpen(true)}
+                onClick={() => navigate('/admin/metrics/new')}
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]"
               >
                 <Plus className="h-3.5 w-3.5" />新建看板
               </button>
             </div>
           </div>
-          <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
-            {visibleModels.map((m) => (
+          <AdminListHeader hasCheckbox={false} hasStar={false} metrics={<AdminListHeaderMetrics labels={['可用率', 'P95', '错误率', '调用']} />} />
+          <div className="divide-y divide-[var(--border)]">
+            {paged.slice.map((m) => (
               <ModelCard
                 key={m.id}
                 model={m}
@@ -198,6 +197,14 @@ export default function MetricsPage() {
               />
             ))}
           </div>
+          <AdminListPagination
+            page={paged.safePage}
+            totalPages={paged.totalPages}
+            total={paged.total}
+            pageStart={paged.pageStart}
+            pageEnd={paged.pageEnd}
+            onPageChange={setPage}
+          />
           {visibleModels.length === 0 && (
             <div className="px-5 pb-8 text-center">
               <Search className="mx-auto h-6 w-6 text-[var(--text-muted)]" />
@@ -226,7 +233,7 @@ export default function MetricsPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCreateOpen(true)}
+                  onClick={() => navigate('/admin/metrics/new')}
                   className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]"
                 >
                   <Plus className="h-3.5 w-3.5" />新建看板
@@ -251,7 +258,7 @@ export default function MetricsPage() {
                 pickedIds={pickedDashboards}
                 onTogglePick={togglePick}
                 onToggleStar={toggleStar}
-                onCreate={() => setCreateOpen(true)}
+                onCreate={() => navigate('/admin/metrics/new')}
                 onToggleRule={toggleRule}
               />
             )}
@@ -259,16 +266,6 @@ export default function MetricsPage() {
         </div>
       )}
 
-      <CreateDashboardModal
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onSubmit={(d) => {
-          setLocalDashboards((prev) => [...prev, { id: 'db-' + Math.random().toString(36).slice(2, 8), name: d.name, range: d.range, panels: 0, owner: '我', starred: false }]);
-          setCreateOpen(false);
-          setView('dashboard');
-          flash(`看板「${d.name}」已创建`);
-        }}
-      />
       <ExportMetricModal
         open={exportOpen}
         onClose={() => setExportOpen(false)}

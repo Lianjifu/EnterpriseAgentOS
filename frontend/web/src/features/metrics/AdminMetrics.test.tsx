@@ -11,6 +11,7 @@ import {
 } from './fixtures';
 import MetricsPage from './index';
 import MetricDetailPage from './MetricDetailPage';
+import DashboardCreatePage from './DashboardCreatePage';
 
 afterEach(() => cleanup());
 
@@ -18,6 +19,7 @@ function renderPage() {
   return renderWithProviders(
     <Routes>
       <Route path="/admin/metrics" element={<MetricsPage />} />
+      <Route path="/admin/metrics/new" element={<DashboardCreatePage />} />
       <Route path="/admin/metrics/:id" element={<MetricDetailPage />} />
     </Routes>,
     {
@@ -41,7 +43,7 @@ describe('AdminMetrics', () => {
   it('renders hero and default model cards without tab nav', async () => {
     renderPage();
     expect(screen.getByText(/运行指标/)).toBeTruthy();
-    expect(screen.getByText('把模型健康与成本一眼说清楚。')).toBeTruthy();
+    expect(screen.getByText('观测可用率、延迟和成本。')).toBeTruthy();
     expect(screen.queryByRole('button', { name: '延迟分析' })).toBeNull();
     expect(screen.getByRole('combobox', { name: '视图' })).toBeTruthy();
     await waitFor(() => {
@@ -73,6 +75,15 @@ describe('AdminMetrics', () => {
       expect(screen.getByText('指标看板')).toBeTruthy();
     });
     expect(screen.getByText('告警阈值规则')).toBeTruthy();
+  });
+
+  it('新建看板进入独立页面', async () => {
+    renderPage();
+    switchView('dashboard');
+    await waitFor(() => expect(screen.getByText('指标看板')).toBeTruthy());
+    fireEvent.click(screen.getAllByRole('button', { name: /新建看板/ })[0]);
+    expect(screen.getByRole('heading', { level: 1, name: '新建看板' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /返回运行指标/ })).toBeTruthy();
   });
 
   it('switches to availability view and shows provider column', async () => {

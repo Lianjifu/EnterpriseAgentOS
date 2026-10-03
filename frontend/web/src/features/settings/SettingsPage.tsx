@@ -89,8 +89,8 @@ export default function SettingsPage() {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--brand)]">ADMIN / 平台设置</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight">平台设置</h2>
-          <p className="mt-1 max-w-xl text-sm text-[var(--text-muted)]">管理工作空间的品牌、合规开关、审计记录和成员。模型、渠道与额度在侧栏的平台治理里。</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">配置品牌、合规开关和成员。</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">品牌、合规、审计记录与成员。</p>
         </div>
         <button type="button" onClick={save} className="inline-flex h-9 items-center gap-2 self-start rounded-lg bg-[var(--brand)] px-3.5 text-xs font-semibold text-white hover:bg-[var(--brand-hover)] sm:self-auto">
           {saved ? <Check className="h-3.5 w-3.5" /> : <Save className="h-3.5 w-3.5" />}

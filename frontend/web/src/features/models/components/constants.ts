@@ -1,4 +1,4 @@
-import type { ModelStatus, ProviderStatus, RouteStrategy, TaskType, ModelTier, ExchangeFormat, TabId } from '../schema';
+import type { ModelStatus, ProviderStatus, RouteStrategy, TaskType, ModelTier, ExchangeFormat, TabId, ModelProtocol } from '../schema';
 import { BarChart3, Bot, Filter, LineChart, Settings2, ShieldCheck, Sparkles, Activity } from 'lucide-react';
 
 export const TABS: Array<{ id: TabId; label: string }> = [
@@ -92,3 +92,36 @@ export function formatPrice(value: number, kind: 'in' | 'out'): string {
   if (v < 0.001) return `¥ ${v.toFixed(5)}`;
   return `¥ ${v.toFixed(v < 0.01 ? 4 : 3)}`;
 }
+
+export const MODEL_PROTOCOLS: ModelProtocol[] = ['openai', 'azure', 'anthropic', 'openai-compatible'];
+
+export const PROTOCOL_META: Record<ModelProtocol, { label: string; summary: string; baseUrl: string }> = {
+  openai: {
+    label: 'OpenAI',
+    summary: '官方 Chat Completions',
+    baseUrl: 'https://api.openai.com/v1',
+  },
+  azure: {
+    label: 'Azure OpenAI',
+    summary: 'Azure 部署名调用',
+    baseUrl: 'https://example.openai.azure.com',
+  },
+  anthropic: {
+    label: 'Anthropic',
+    summary: 'Messages API',
+    baseUrl: 'https://api.anthropic.com',
+  },
+  'openai-compatible': {
+    label: 'OpenAI 兼容',
+    summary: '兼容 /v1 的自建或第三方网关',
+    baseUrl: 'https://',
+  },
+};
+
+/** demo 探测供应商时按协议返回的模型 ID，生产由供应商 /models 接口给出 */
+export const DEMO_PROVIDER_CATALOG: Record<ModelProtocol, string[]> = {
+  openai: ['gpt-4o', 'gpt-4o-mini', 'o1-preview', 'text-embedding-3-large'],
+  azure: ['gpt-4o', 'gpt-35-turbo', 'text-embedding-3'],
+  anthropic: ['claude-3-5-sonnet', 'claude-3-5-haiku', 'claude-3-opus'],
+  'openai-compatible': ['llama-3.1-70b', 'qwen-max', 'deepseek-chat'],
+};

@@ -36,7 +36,7 @@ describe('AdminOperations', () => {
 
   it('renders hero without sub-module tabs', () => {
     renderPage();
-    expect(screen.getByText(/把每一次会话还原成可追溯的证据链/)).toBeTruthy();
+    expect(screen.getByText(/还原会话的完整调用过程/)).toBeTruthy();
     expect(screen.queryByLabelText('子模块导航')).toBeNull();
     expect(screen.getByRole('combobox', { name: '视图' })).toBeTruthy();
   });
@@ -45,7 +45,7 @@ describe('AdminOperations', () => {
     renderPage();
     expect(screen.getByText('ss-2025-09-28-001')).toBeTruthy();
     expect(screen.getByText('ss-2025-09-28-008')).toBeTruthy();
-    expect(screen.getAllByRole('button', { name: /^打开$/ }).length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(/^查看会话 /).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('button', { name: /^导出$/ }).length).toBeGreaterThan(0);
   });
 

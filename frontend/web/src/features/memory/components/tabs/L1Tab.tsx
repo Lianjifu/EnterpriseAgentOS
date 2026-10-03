@@ -1,14 +1,10 @@
 /**
- * L1Tab — 短期记忆(会话缓冲列表 + 筛选 + 全部 flush)。
- *
- * 卡片布局:外层 rounded-2xl + 顶部 header(border-b) + 表格 + 底部分页(border-t 内联)。
- * 与 /admin/workflows 列表卡片结构对齐。
- *
- * 筛选上游由 MemoryPage 处理;本组件只负责渲染。
+ * L1Tab — 短期记忆会话列表。
  */
+import { AdminListPagination } from '@/components/feedback/AdminListPagination';
+import { AdminListHeader, AdminListHeaderMetrics } from '@/components/feedback/AdminListRow';
 import type { L1Session, L1Status } from '../../schema';
 import { L1Row } from '../Cards';
-import { InlinePagination } from '../InlinePagination';
 import { ListToolbar } from '../ListToolbar';
 import { L1_STATUS_BADGE } from '../constants';
 
@@ -44,32 +40,20 @@ export function L1Tab({
         }]}
         action={{ label: '全部 flush', onClick: onFlushAll, tone: 'danger' }}
       />
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[920px] text-xs">
-          <thead className="bg-[var(--bg-app)] text-[var(--text-muted)]">
-            <tr>
-              <th className="px-4 py-3 text-left font-semibold">会话</th>
-              <th className="px-4 py-3 text-left font-semibold">用户</th>
-              <th className="px-4 py-3 text-left font-semibold">智能体</th>
-              <th className="px-4 py-3 text-right font-semibold">缓冲</th>
-              <th className="px-4 py-3 text-right font-semibold">Tokens</th>
-              <th className="px-4 py-3 text-left font-semibold w-[180px]">TTL</th>
-              <th className="px-4 py-3 text-left font-semibold">状态</th>
-              <th className="px-4 py-3 text-left font-semibold">最近 flush</th>
-              <th className="px-4 py-3 text-right font-semibold">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sessions.map((s) => (
-              <L1Row key={s.id} session={s} onFlush={() => onFlushOne(s.id)} onOpen={() => onOpen(s)} />
-            ))}
-          </tbody>
-        </table>
+      <AdminListHeader
+        hasCheckbox={false}
+        hasStar={false}
+        metrics={<AdminListHeaderMetrics labels={['缓冲', 'Tokens', 'TTL', '最近 flush']} />}
+      />
+      <div className="divide-y divide-[var(--border)]">
+        {sessions.map((s) => (
+          <L1Row key={s.id} session={s} onFlush={() => onFlushOne(s.id)} onOpen={() => onOpen(s)} />
+        ))}
         {sessions.length === 0 && (
-          <p className="px-4 py-12 text-center text-xs text-[var(--text-muted)]">没有匹配的会话,试试调整筛选条件。</p>
+          <p className="px-5 py-12 text-center text-xs text-[var(--text-muted)]">没有匹配的会话,试试调整筛选条件。</p>
         )}
       </div>
-      {pagination && <InlinePagination {...pagination} />}
+      {pagination && <AdminListPagination {...pagination} />}
     </section>
   );
 }

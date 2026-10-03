@@ -3,9 +3,10 @@
  * dev:demo 注入;prod 永不触达。
  */
 import { mockModels, mockProviders, mockRoutes, mockHealth } from './fixtures';
+import { DEMO_PROVIDER_CATALOG } from './components/constants';
 import type {
-  Model, Provider, RouteRule, HealthEvent,
-  CreateModelVars, CreateRouteVars, UpdateModelVars,
+  Model, Provider, RouteRule, HealthEvent, ModelProtocol,
+  CreateModelVars, ProbeModelsVars, CreateRouteVars, UpdateModelVars,
   ToggleRouteVars, DeleteModelVars, ToggleStarVars, BatchStatusVars,
 } from './schema';
 
@@ -44,30 +45,61 @@ export async function adminModelsMockHandler(path: string, opts: MockOpts): Prom
     return m ? withDelay(m) : withDelay({ error: 'not found' }, 200);
   }
 
+  if (method === 'POST' && path === '/api/admin/models/catalog') {
+    const v = (opts.body ?? {}) as ProbeModelsVars;
+    if (!v.apiKey?.trim() || !v.baseUrl?.trim()) {
+      return withDelay({ models: [] as string[] }, 180);
+    }
+    const protocol = (v.protocol ?? 'openai') as ModelProtocol;
+    return withDelay({ models: [...(DEMO_PROVIDER_CATALOG[protocol] ?? [])] }, 220);
+  }
+
   if (method === 'POST' && path === '/api/admin/models') {
     const v = (opts.body ?? {}) as CreateModelVars;
-    const provider = findProvider(v.providerId);
-    const created: Model = {
-      id: uid('md'),
-      name: v.name,
-      providerId: v.providerId,
-      providerName: provider?.name ?? '未指定',
-      task: v.task,
-      contextWindow: v.contextWindow,
-      priceIn: v.priceIn,
-      priceOut: v.priceOut,
-      latencyMs: 0,
-      successRate: 0,
-      status: 'draft',
-      tier: 'balanced',
-      starred: false,
-      calls: 0,
-      trend: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      description: v.description,
-      tags: v.tags,
+    const names = v.models.filter((n) => n.trim().length > 0);
+    if (names.length === 0) return withDelay({ error: 'models required' }, 200);
+    const providerId = uid('pv');
+    const tail = v.apiKey.slice(-4);
+    const provider: Provider = {
+      id: providerId,
+      name: v.providerName,
+      region: 'custom',
+      status: 'healthy',
+      baseUrl: v.baseUrl,
+      apiKeyMasked: tail ? `••••${tail}` : '••••',
+      protocol: v.protocol,
+      errorRate: 0,
+      avgLatencyMs: 0,
+      qps: 0,
     };
-    state.models.unshift(created);
-    return withDelay(created);
+    state.providers.unshift(provider);
+    let first: Model | null = null;
+    for (const name of names) {
+      const lower = name.toLowerCase();
+      const task = lower.includes('embed') ? ['embedding' as const] : lower.includes('o1') || lower.includes('reason') ? ['reasoning' as const] : ['generation' as const];
+      const created: Model = {
+        id: uid('md'),
+        name,
+        providerId,
+        providerName: v.providerName,
+        task,
+        contextWindow: 128000,
+        priceIn: 0,
+        priceOut: 0,
+        latencyMs: 0,
+        successRate: 0,
+        status: 'draft',
+        tier: 'balanced',
+        starred: false,
+        calls: 0,
+        trend: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        description: `经 ${v.providerName}（${v.protocol}）接入`,
+        tags: [v.protocol],
+      };
+      state.models.unshift(created);
+      if (!first) first = created;
+    }
+    return withDelay(first);
   }
 
   if (method === 'PATCH' && detailMatch) {

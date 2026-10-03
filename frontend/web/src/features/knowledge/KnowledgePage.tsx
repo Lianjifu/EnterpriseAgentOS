@@ -7,7 +7,9 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, ChevronLeft, ChevronRight, Plus, RefreshCw, Search } from 'lucide-react';
+import { BookOpen, Plus, RefreshCw, Search } from 'lucide-react';
+import { AdminListPagination, paginateItems } from '@/components/feedback/AdminListPagination';
+import { AdminListHeader, AdminListHeaderMetrics } from '@/components/feedback/AdminListRow';
 import {
   useKnowledgeBases,
   useKnowledgeSources,
@@ -26,21 +28,6 @@ import {
 import KbCard from './components/KbCard';
 import SourceCard from './components/SourceCard';
 import { TimeRangeDropdown } from './components/TimeRangeDropdown';
-
-const PAGE_SIZE = 8;
-
-function paginate<T>(items: T[], page: number): { slice: T[]; totalPages: number; pageStart: number; pageEnd: number } {
-  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
-  const safePage = Math.min(Math.max(1, page), totalPages);
-  const pageStart = (safePage - 1) * PAGE_SIZE;
-  const pageEnd = Math.min(pageStart + items.slice(pageStart, pageStart + PAGE_SIZE).length, items.length);
-  return {
-    slice: items.slice(pageStart, pageStart + PAGE_SIZE),
-    totalPages,
-    pageStart: items.length === 0 ? 0 : pageStart + 1,
-    pageEnd,
-  };
-}
 
 export default function KnowledgePage() {
   const [tab, setTab] = useState<TabId>('kb');
@@ -84,8 +71,8 @@ export default function KnowledgePage() {
     });
   }, [sources, search, sourceStatusFilter]);
 
-  const kbPageItems = useMemo(() => paginate(visibleKbs, kbPage), [visibleKbs, kbPage]);
-  const sourcePageItems = useMemo(() => paginate(visibleSources, sourcePage), [visibleSources, sourcePage]);
+  const kbPageItems = useMemo(() => paginateItems(visibleKbs, kbPage), [visibleKbs, kbPage]);
+  const sourcePageItems = useMemo(() => paginateItems(visibleSources, sourcePage), [visibleSources, sourcePage]);
 
   const flash = (text: string) => {
     setNotice(text);
@@ -196,7 +183,8 @@ export default function KnowledgePage() {
               <button type="button" onClick={() => setSelectedKbIds([])} className="rounded-md border border-[var(--border)] px-2.5 py-1 hover:border-[var(--brand)] hover:text-[var(--brand)]">清空选择</button>
             </div>
           )}
-          <div className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 sm:p-7">
+          <AdminListHeader hasStar={false} metrics={<AdminListHeaderMetrics labels={['文档', '向量']} />} />
+          <div className="divide-y divide-[var(--border)]">
             {kbPageItems.slice.map((kb) => (
               <KbCard
                 key={kb.id}
@@ -208,10 +196,10 @@ export default function KnowledgePage() {
               />
             ))}
           </div>
-          <PaginationBar
-            page={kbPage}
+          <AdminListPagination
+            page={kbPageItems.safePage}
             totalPages={kbPageItems.totalPages}
-            total={visibleKbs.length}
+            total={kbPageItems.total}
             pageStart={kbPageItems.pageStart}
             pageEnd={kbPageItems.pageEnd}
             onPageChange={setKbPage}
@@ -239,7 +227,8 @@ export default function KnowledgePage() {
             actionLabel="新增数据源"
             onAction={() => navigate('/admin/knowledge/sources/new')}
           />
-          <div className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-3 sm:p-7">
+          <AdminListHeader hasCheckbox={false} hasStar={false} metrics={<AdminListHeaderMetrics labels={['条目', '最近同步']} />} />
+          <div className="divide-y divide-[var(--border)]">
             {sourcePageItems.slice.map((s) => (
               <SourceCard
                 key={s.id}
@@ -250,10 +239,10 @@ export default function KnowledgePage() {
               />
             ))}
           </div>
-          <PaginationBar
-            page={sourcePage}
+          <AdminListPagination
+            page={sourcePageItems.safePage}
             totalPages={sourcePageItems.totalPages}
-            total={visibleSources.length}
+            total={sourcePageItems.total}
             pageStart={sourcePageItems.pageStart}
             pageEnd={sourcePageItems.pageEnd}
             onPageChange={setSourcePage}
@@ -320,57 +309,3 @@ function ListToolbar({
   );
 }
 
-function PaginationBar({ page, totalPages, total, pageStart, pageEnd, onPageChange }: {
-  page: number;
-  totalPages: number;
-  total: number;
-  pageStart: number;
-  pageEnd: number;
-  onPageChange: (next: number) => void;
-}) {
-  if (totalPages <= 1) return null;
-  const safePage = Math.min(page, totalPages);
-  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
-  return (
-    <nav aria-label="分页" className="flex items-center justify-between border-t border-[var(--border)] px-5 py-3 text-xs">
-      <p className="text-[var(--text-muted)]">
-        第 <span className="font-semibold tabular-nums text-[var(--text-secondary)]">{pageStart}-{pageEnd}</span> 个 / 共 <span className="font-semibold tabular-nums text-[var(--text-secondary)]">{total}</span> 个
-      </p>
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
-          onClick={() => onPageChange(Math.max(1, safePage - 1))}
-          disabled={safePage <= 1}
-          aria-label="上一页"
-          className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <ChevronLeft className="h-3 w-3" />上一页
-        </button>
-        {pageNumbers.map((n) => {
-          const active = n === safePage;
-          return (
-            <button
-              key={n}
-              type="button"
-              onClick={() => onPageChange(n)}
-              aria-current={active ? 'page' : undefined}
-              aria-label={`第 ${n} 页`}
-              className={`grid h-7 w-7 place-items-center rounded-lg text-[11px] font-semibold transition ${active ? 'bg-[var(--brand)] text-white' : 'border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]'}`}
-            >
-              {n}
-            </button>
-          );
-        })}
-        <button
-          type="button"
-          onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
-          disabled={safePage >= totalPages}
-          aria-label="下一页"
-          className="inline-flex items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          下一页<ChevronRight className="h-3 w-3" />
-        </button>
-      </div>
-    </nav>
-  );
-}

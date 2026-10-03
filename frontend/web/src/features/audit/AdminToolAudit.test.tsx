@@ -8,6 +8,7 @@ import { qk } from '@/api/shared/query-keys';
 import { renderWithProviders } from '@/test-utils/seed';
 import AuditPage from './AuditPage';
 import AuditDetailPage from './AuditDetailPage';
+import AuditRuleCreatePage from './AuditRuleCreatePage';
 import {
   mockAuditEntries, mockAuditRisks, mockAuditRules, mockPermissionScopes,
 } from './fixtures';
@@ -16,6 +17,7 @@ function renderPage() {
   return renderWithProviders(
     <Routes>
       <Route path="/admin/tool-audit" element={<AuditPage />} />
+      <Route path="/admin/tool-audit/rules/new" element={<AuditRuleCreatePage />} />
       <Route path="/admin/tool-audit/:id" element={<AuditDetailPage />} />
     </Routes>,
     {
@@ -35,7 +37,7 @@ describe('AdminToolAudit', () => {
 
   it('renders hero without sub-module tabs', () => {
     renderPage();
-    expect(screen.getByText(/让每一次工具调用都有据可查/)).toBeTruthy();
+    expect(screen.getByText(/审查工具调用与风险规则/)).toBeTruthy();
     expect(screen.queryByLabelText('子模块导航')).toBeNull();
     expect(screen.getByRole('combobox', { name: '视图' })).toBeTruthy();
     expect(screen.getByText(/条审计/)).toBeTruthy();
@@ -45,7 +47,7 @@ describe('AdminToolAudit', () => {
     renderPage();
     expect(screen.getAllByText('tool.send_email').length).toBeGreaterThan(0);
     expect(screen.getAllByText('tool.delete_record').length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('button', { name: /^打开$/ }).length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(/^查看审计条目 /).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('button', { name: /导出/ }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('button', { name: /^处置$/ }).length).toBeGreaterThan(0);
   });
@@ -95,6 +97,13 @@ describe('AdminToolAudit', () => {
     const toggleBtn = screen.getAllByRole('button', { name: /^停用$/ })[0];
     fireEvent.click(toggleBtn);
     expect(screen.getAllByRole('button', { name: /^启用$/ }).length).toBeGreaterThan(0);
+  });
+
+  it('新建规则进入独立页面', () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: /新建规则/ }));
+    expect(screen.getByRole('heading', { level: 1, name: '新建审计规则' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /返回工具审计/ })).toBeTruthy();
   });
 
   it('export one entry from card shows notice', () => {

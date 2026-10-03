@@ -1,5 +1,5 @@
 /**
- * 管理侧「渠道管理」hooks — channels / webhooks / groups / delivery events,
+ * 管理侧「渠道配置」hooks — 飞书 / 企业微信 / 钉钉 / Web 对话渠道。
  * 以及 create/update/batch operations。
  * 端点 /api/admin/notifications/* 由 features/notifications/mock-handler.ts 接管
  * (全局 mock.ts ladder 未覆盖)。

@@ -1,12 +1,19 @@
 /**
  * AdminEvaluations — 对齐技能管理 / ModelsPage：无子模块 Tab，列表工具栏 + 视图筛选。
  */
-import { describe, expect, it, afterEach } from 'vitest';
+import { describe, expect, it, afterEach, vi } from 'vitest';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { qk } from '@/api/shared/query-keys';
 import { renderWithProviders } from '@/test-utils/seed';
 import { mockEvalResults, mockEvalSuites } from './fixtures';
 import EvaluationsPage from './index';
+
+const navigateMock = vi.fn();
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  return { ...actual, useNavigate: () => navigateMock };
+});
 
 function renderPage() {
   return renderWithProviders(<EvaluationsPage />, {
@@ -18,11 +25,14 @@ function renderPage() {
 }
 
 describe('AdminEvaluations', () => {
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    navigateMock.mockReset();
+  });
 
   it('renders hero without sub-module tabs', async () => {
     renderPage();
-    expect(screen.getByText(/把评测当作质量的尺子/)).toBeTruthy();
+    expect(screen.getByText(/用套件评测智能体质量/)).toBeTruthy();
     expect(screen.queryByLabelText('子模块导航')).toBeNull();
     expect(screen.getByRole('combobox', { name: '视图' })).toBeTruthy();
     await waitFor(() => {
@@ -35,7 +45,7 @@ describe('AdminEvaluations', () => {
     await waitFor(() => {
       expect(screen.getByText('客户沟通能力评测')).toBeTruthy();
     });
-    expect(screen.getAllByRole('button', { name: /^编辑$/ }).length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(/^查看 .* 详情$/).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('button', { name: /^运行$/ }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('button', { name: /^复制$/ }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('button', { name: /^删除$/ }).length).toBeGreaterThan(0);
@@ -66,5 +76,14 @@ describe('AdminEvaluations', () => {
     });
     fireEvent.change(screen.getByRole('combobox', { name: '视图' }), { target: { value: 'template' } });
     expect(screen.getByText('常用评测模板')).toBeTruthy();
+  });
+
+  it('新建套件按钮进入独立页面', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('客户沟通能力评测')).toBeTruthy();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /新建套件/ }));
+    expect(navigateMock).toHaveBeenCalledWith('/admin/evaluations/new');
   });
 });

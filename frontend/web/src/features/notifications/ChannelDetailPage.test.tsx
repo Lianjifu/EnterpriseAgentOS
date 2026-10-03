@@ -28,7 +28,7 @@ describe('AdminChannelDetail', () => {
     const channel = mockChannels[0];
     renderAt(channel.id);
     expect(screen.getByRole('heading', { level: 1, name: channel.name })).toBeTruthy();
-    expect(screen.getByRole('link', { name: /返回渠道管理/ })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /返回渠道配置/ })).toBeTruthy();
   });
 
   it('shows not-found when id is unknown', () => {

@@ -55,7 +55,7 @@ describe('AdminAgents', () => {
 
   it('renders hero headline and primary CTAs', () => {
     renderPage();
-    expect(screen.getByText(/查看、新建并发布智能体/)).toBeTruthy();
+    expect(screen.getByText(/配置、审核并发布智能体/)).toBeTruthy();
     const actions = screen.getByRole('group', { name: '列表操作' });
     expect(within(actions).getByRole('button', { name: '新建智能体' })).toBeTruthy();
     expect(within(actions).getByRole('button', { name: '导入' })).toBeTruthy();
@@ -98,7 +98,7 @@ describe('AdminAgents', () => {
     expect(within(sidebar).getByText(/基本信息/)).toBeTruthy();
     expect(screen.getByRole('button', { name: '编辑' })).toBeTruthy();
     fireEvent.click(within(crumb).getByRole('link', { name: '智能体管理' }));
-    expect(screen.getByText(/查看、新建并发布智能体/)).toBeTruthy();
+    expect(screen.getByText(/配置、审核并发布智能体/)).toBeTruthy();
     const card = screen.getByRole('heading', { name: '客户沟通助手' }).closest('article') as HTMLElement;
     fireEvent.click(within(card).getByRole('button', { name: '编辑' }));
     expect(screen.getByRole('heading', { level: 1, name: '详情页' })).toBeTruthy();
@@ -142,7 +142,7 @@ describe('AdminAgents', () => {
     expect(screen.getByText(/创建并进入编辑器/)).toBeTruthy();
     // 返回上一级:从 /admin/agents/new → /admin/agents
     fireEvent.click(within(crumb).getByRole('link', { name: '智能体管理' }));
-    expect(screen.getByText(/查看、新建并发布智能体/)).toBeTruthy();
+    expect(screen.getByText(/配置、审核并发布智能体/)).toBeTruthy();
   });
 
   it('opens import dialog and previews sample', () => {

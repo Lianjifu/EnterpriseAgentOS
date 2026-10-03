@@ -89,7 +89,6 @@ export function OverviewTab({
               selected={selectedIds.includes(track.id)}
               onToggleSelect={onToggleSelect}
               onSelect={onSelect}
-              onEdit={onSelect}
               onToggleStar={onToggleStar}
               onDuplicate={onDuplicate}
               onRequestDelete={onRequestDelete}

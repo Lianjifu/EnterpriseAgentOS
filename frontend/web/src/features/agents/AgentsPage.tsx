@@ -168,13 +168,13 @@ export default function AgentsPage() {
   return (
     <div className="mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-6">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl border border-[var(--border)] bg-gradient-to-br from-[var(--brand-light)] via-white to-white p-6 shadow-[var(--shadow-sm)] dark:from-[var(--brand)]/10 dark:via-[var(--surface-1)] dark:to-[var(--surface-1)] sm:p-8">
-        <div className="relative z-10">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">能力建设</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">查看、新建并发布智能体</h1>
-          <p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">按状态查看草稿、待审核、灰度和已发布。要增加智能体，直接新建或导入即可。</p>
+      <section className="relative overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--surface-1)] px-6 py-8 shadow-[var(--shadow-sm)] sm:px-8">
+        <div aria-hidden="true" className="pointer-events-none absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,var(--brand-light),transparent_68%)]" />
+        <div className="relative">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--brand)]">ADMIN / 智能体管理</p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">配置、审核并发布智能体。</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">{list.length} 个智能体 · {list.filter((a) => a.status === 'published').length} 已发布。</p>
         </div>
-        <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-[var(--brand)]/10 blur-3xl" />
       </section>
 
       {/* Batch Toolbar */}

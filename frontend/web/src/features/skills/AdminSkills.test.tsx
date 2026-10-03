@@ -34,7 +34,7 @@ describe('AdminSkills', () => {
 
   it('renders the overview with a type filter and no type tabs', () => {
     renderPage();
-    expect(screen.getByText('把所有技能统一管起来,让用户安心选用。')).toBeTruthy();
+    expect(screen.getByText('维护智能体可调用的技能。')).toBeTruthy();
     expect(screen.queryByRole('navigation', { name: '子模块导航' })).toBeNull();
     expect(screen.getByRole('combobox', { name: '类型' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '新建技能' })).toBeTruthy();

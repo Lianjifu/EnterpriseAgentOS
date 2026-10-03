@@ -3,9 +3,11 @@
  * 对齐技能管理 / 模型配置：无子模块 Tab，Hero 轻量，列表工具栏承载筛选与导入/新建。
  * 详情页 + 新建工单 / 新建规则改为独立路由(/admin/feedback/:id · /admin/feedback/new · /admin/feedback/rules/new)。
  */
-import { MessageSquare, Plus, Search, Upload } from 'lucide-react';
+import { Plus, Search, Upload } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AdminListPagination, paginateItems } from '@/components/feedback/AdminListPagination';
+import { AdminListHeader, AdminListHeaderMetrics } from '@/components/feedback/AdminListRow';
 import { NoticeBanner } from '@/components/feedback/NoticeBanner';
 import { useFeedbackList, useFeedbackRules, useFeedbackTickets, useFeedbackTopics } from './useFeedback';
 import type { ExchangeFormat, Feedback, FeedbackPriority, FeedbackSentiment, FeedbackStatus, RoutingRule, Ticket, TopicCluster } from './schema';
@@ -42,6 +44,7 @@ export default function FeedbackPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [notice, setNotice] = useState('');
+  const [page, setPage] = useState(1);
 
   useEffect(() => { setFeedback(feedbackData); }, [feedbackData]);
   useEffect(() => { setTickets(ticketsData); }, [ticketsData]);
@@ -65,6 +68,9 @@ export default function FeedbackPage() {
       (q.length === 0 || `${f.user} ${f.agent} ${f.topic} ${f.comment} ${f.tags.join(' ')}`.toLowerCase().includes(q)),
     );
   }, [feedback, statusFilter, sentimentFilter, priorityFilter, search]);
+
+  useEffect(() => { setPage(1); }, [search, statusFilter, sentimentFilter, priorityFilter, view]);
+  const paged = useMemo(() => paginateItems(visibleFeedback, page), [visibleFeedback, page]);
 
   const toggleSelect = (id: string) => setSelectedIds((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
 
@@ -171,15 +177,10 @@ export default function FeedbackPage() {
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px]">
           <div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.10),transparent_68%)]" />
         </div>
-        <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700 dark:text-amber-300">ADMIN / 用户反馈</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">让用户的每一条反馈都被看见。</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">收集赞踩与修正建议,聚类主题并派单处理,把分散的声音变成改进的燃料。</p>
-          </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-            <MessageSquare className="h-3 w-3" />{feedback.length} 条反馈 · {counts.newOnes} 条待分诊 · 正面率 {positivePct.toFixed(0)}%
-          </div>
+        <div className="relative">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700 dark:text-amber-300">ADMIN / 用户反馈</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">收集、分诊并处理用户意见。</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">{feedback.length} 条反馈 · {counts.newOnes} 条待分诊 · 正面率 {positivePct.toFixed(0)}%。</p>
         </div>
       </section>
 
@@ -246,8 +247,9 @@ export default function FeedbackPage() {
               </button>
             </div>
           </div>
-          <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
-            {visibleFeedback.map((fb) => (
+          <AdminListHeader hasStar={false} metrics={<AdminListHeaderMetrics labels={['评分', '提交时间']} />} />
+          <div className="divide-y divide-[var(--border)]">
+            {paged.slice.map((fb) => (
               <FeedbackCard
                 key={fb.id}
                 fb={fb}
@@ -260,6 +262,14 @@ export default function FeedbackPage() {
               />
             ))}
           </div>
+          <AdminListPagination
+            page={paged.safePage}
+            totalPages={paged.totalPages}
+            total={paged.total}
+            pageStart={paged.pageStart}
+            pageEnd={paged.pageEnd}
+            onPageChange={setPage}
+          />
           {visibleFeedback.length === 0 && (
             <div className="px-5 pb-8 text-center">
               <Search className="mx-auto h-6 w-6 text-[var(--text-muted)]" />

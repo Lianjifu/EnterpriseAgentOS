@@ -1,15 +1,13 @@
 /**
- * 渠道详情抽屉 — 3 个子面板:
- *   1) 基本信息 (name / target / status / description / config)
- *   2) 消息模板 (template + 渲染预览)
- *   3) 投递记录 (events.filter(e.channelId === channel.id))
+ * 渠道详情 — 接入配置 / 对话设置 / 会话记录。
  */
 import { useEffect, useState } from 'react';
 import { Megaphone, Save, Wand2 } from 'lucide-react';
 import { SideDrawer } from '@/components/feedback/SideDrawer';
 import type { ChannelStatus, NotificationChannel, DeliveryEvent } from '../schema';
 import {
-  DELIVERY_BADGE, DRAWER_NAV_ITEMS, KIND_META, STATUS_BADGE,
+  CHANNEL_CONFIG_FIELDS, DELIVERY_BADGE, DRAWER_NAV_ITEMS, KIND_META, STATUS_BADGE,
+  callbackHint,
   type DrawerPanel, type ChannelDetailDrawerProps,
 } from './constants';
 
@@ -27,7 +25,7 @@ export function DrawerPanelDetail({ channel, onChange }: { channel: Notification
           />
         </div>
         <div>
-          <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">目标</label>
+          <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">{KIND_META[channel.kind].targetLabel}</label>
           <input
             type="text"
             value={channel.target}
@@ -56,15 +54,18 @@ export function DrawerPanelDetail({ channel, onChange }: { channel: Notification
         </div>
       </div>
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">配置项</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">{KIND_META[channel.kind].label} 对接配置</p>
+        <p className="mt-1 text-[11px] text-[var(--text-muted)]">事件回调地址：<span className="font-mono">{callbackHint(channel.kind)}</span></p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          {Object.entries(channel.config).map(([key, value]) => (
-            <div key={key}>
-              <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">{key}</label>
+          {CHANNEL_CONFIG_FIELDS[channel.kind].map((field) => (
+            <div key={field.key}>
+              <label className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">{field.label}</label>
               <input
-                type="text"
-                value={value}
-                onChange={(e) => onChange({ config: { ...channel.config, [key]: e.target.value } })}
+                type={field.secret ? 'password' : 'text'}
+                autoComplete="off"
+                value={channel.config[field.key] ?? ''}
+                onChange={(e) => onChange({ config: { ...channel.config, [field.key]: e.target.value } })}
+                placeholder={field.placeholder}
                 className="mt-1 h-9 w-full rounded-lg border border-[var(--border-strong)] bg-[var(--surface-1)] px-2.5 text-xs font-mono outline-none focus:border-[var(--brand)]"
               />
             </div>
@@ -79,14 +80,14 @@ export function DrawerPanelTemplate({ channel, onChange }: { channel: Notificati
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">消息模板</label>
+        <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">欢迎语</label>
         <textarea
           value={channel.template}
           onChange={(e) => onChange({ template: e.target.value })}
           rows={6}
           className="mt-1.5 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 py-2 font-mono text-xs leading-6 outline-none focus:border-[var(--brand)]"
         />
-        <p className="mt-1 text-[10px] text-[var(--text-muted)]">支持占位符:{`{title}`} / {`{body}`} / {`{date}`} / {`{summary}`} / {`{event}`} / {`{payload}`}</p>
+        <p className="mt-1 text-[10px] text-[var(--text-muted)]">用户从该渠道发起会话时，助手先发送这段欢迎语。</p>
       </div>
       <div className="rounded-2xl border border-[var(--brand)] bg-[var(--brand-light)] p-4">
         <div className="flex items-center gap-2">
@@ -94,13 +95,7 @@ export function DrawerPanelTemplate({ channel, onChange }: { channel: Notificati
           <span className="text-xs font-semibold text-[var(--brand)]">渲染预览</span>
         </div>
         <pre className="mt-2 whitespace-pre-wrap rounded-lg bg-[var(--surface-1)] p-3 font-mono text-[11px] leading-6 text-[var(--text-secondary)]">
-{channel.template
-  .replace('{title}', '客户成功部使用率超 80%')
-  .replace('{body}', '请前往额度管理查看详情')
-  .replace('{date}', '2026-09-28')
-  .replace('{summary}', '运营数据摘要')
-  .replace('{event}', 'agent.session.completed')
-  .replace('{payload}', '{ "session_id": "..." }')}
+{channel.template}
         </pre>
       </div>
     </div>
@@ -110,7 +105,7 @@ export function DrawerPanelTemplate({ channel, onChange }: { channel: Notificati
 export function DrawerPanelAudit({ channel, events }: { channel: NotificationChannel; events: DeliveryEvent[] }) {
   const list = events.filter((e) => e.channelId === channel.id);
   if (list.length === 0) {
-    return <p className="text-xs text-[var(--text-muted)]">暂无投递记录。</p>;
+    return <p className="text-xs text-[var(--text-muted)]">暂无会话记录。</p>;
   }
   return (
     <ul className="space-y-2">
@@ -125,7 +120,7 @@ export function DrawerPanelAudit({ channel, events }: { channel: NotificationCha
               <span className="text-xs font-semibold">{e.subject}</span>
               <span className="ml-auto text-[11px] text-[var(--text-muted)]">{e.deliveredAt}</span>
             </div>
-            <p className="mt-1 text-[11px] text-[var(--text-muted)]">收件人:{e.recipient}</p>
+            <p className="mt-1 text-[11px] text-[var(--text-muted)]">会话:{e.recipient}</p>
             {e.error && <p className="mt-1 text-[11px] text-rose-600">错误:{e.error}</p>}
           </li>
         );
@@ -175,7 +170,7 @@ export function ChannelDetailDrawer({ channel, events, onClose, onChange, onSave
       eyebrow={
         <div className="flex items-center gap-2">
           <span className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--brand-light)] text-[var(--brand)]"><Megaphone className="h-4 w-4" /></span>
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-[var(--brand)]">渠道管理</p>
+          <p className="text-[11px] font-semibold tracking-[0.2em] text-[var(--brand)]">渠道配置</p>
         </div>
       }
     >

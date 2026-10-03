@@ -5,7 +5,7 @@ import { useApiQuery, useApiMutation } from '@/services/query';
 import { qk } from '@/api/shared/query-keys';
 import type {
   Model, Provider, RouteRule, HealthEvent, ModelFilters,
-  CreateModelVars, CreateRouteVars, UpdateModelVars,
+  CreateModelVars, ProbeModelsVars, ProbeModelsResult, CreateRouteVars, UpdateModelVars,
   ToggleRouteVars, DeleteModelVars, ToggleStarVars, BatchStatusVars,
 } from './schema';
 
@@ -60,6 +60,13 @@ export function useCreateModel() {
   return useApiMutation<Model, CreateModelVars>(
     '/api/admin/models',
     { invalidateKeys: [ROOT] },
+  );
+}
+
+export function useProbeProviderModels() {
+  return useApiMutation<ProbeModelsResult, ProbeModelsVars>(
+    '/api/admin/models/catalog',
+    { invalidateKeys: [['admin', 'models', 'catalog']] },
   );
 }
 

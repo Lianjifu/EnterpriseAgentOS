@@ -2,27 +2,28 @@
  * NotificationsPage — 对齐模型管理：无子模块 Tab，Hero 轻量，列表工具栏承载导入/新建。
  * 视图筛选：渠道列表 / Webhook / 接收人组；渠道视图可按类型筛选。
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Globe, Plus, Search, Upload } from 'lucide-react';
+import { AdminListPagination, paginateItems } from '@/components/feedback/AdminListPagination';
+import { AdminListHeader, AdminListHeaderMetrics } from '@/components/feedback/AdminListRow';
 import { NoticeBanner } from '@/components/feedback/NoticeBanner';
 import {
-  useBatchChannelStatus, useCreateChannel, useCreateGroup,
+  useBatchChannelStatus, useCreateGroup,
   useNotificationChannels, useNotificationGroups, useNotificationWebhooks, useUpdateChannel,
 } from './useNotifications';
 import type { NotificationChannel, NotificationGroup } from './schema';
 import { BatchToolbar } from './components/BatchToolbar';
 import { ChannelCard } from './components/ChannelCard';
-import { CreateChannelModal } from './components/CreateChannelModal';
 import { CreateGroupModal } from './components/CreateGroupModal';
 import { ExportChannelModal } from './components/ExportChannelModal';
 import { GroupCard } from './components/GroupCard';
 import { ImportChannelModal } from './components/ImportChannelModal';
 import { WebhookCard } from './components/WebhookCard';
-import { HERO_ICON, type ExchangeFormat } from './components/constants';
+import { KIND_META, type ExchangeFormat } from './components/constants';
 
 type ViewId = 'channel' | 'webhook' | 'group';
-type KindFilter = 'all' | 'email' | 'im';
+type KindFilter = 'all' | 'feishu' | 'wecom' | 'dingtalk' | 'web';
 
 function downloadBlob(blob: Blob, filename: string) {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
@@ -42,7 +43,6 @@ export default function NotificationsPage() {
   const { data: webhooks = [] } = useNotificationWebhooks();
   const { data: groups = [] } = useNotificationGroups();
 
-  const createChannel = useCreateChannel();
   const updateChannel = useUpdateChannel();
   const batchStatus = useBatchChannelStatus();
   const createGroup = useCreateGroup();
@@ -51,11 +51,11 @@ export default function NotificationsPage() {
   const [kindFilter, setKindFilter] = useState<KindFilter>('all');
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [createOpen, setCreateOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [notice, setNotice] = useState('');
+  const [page, setPage] = useState(1);
 
   const stats = useMemo(() => {
     const total = channels.length;
@@ -68,9 +68,12 @@ export default function NotificationsPage() {
     const q = search.trim().toLowerCase();
     return channels.filter((c) =>
       (kindFilter === 'all' || c.kind === kindFilter) &&
-      (q.length === 0 || `${c.name} ${c.target} ${c.description}`.toLowerCase().includes(q)),
+      (q.length === 0 || `${c.name} ${c.target} ${c.description} ${KIND_META[c.kind].label}`.toLowerCase().includes(q)),
     );
   }, [channels, search, kindFilter]);
+
+  useEffect(() => { setPage(1); }, [search, kindFilter, view]);
+  const paged = useMemo(() => paginateItems(visibleChannels, page), [visibleChannels, page]);
 
   const toggleSelect = (id: string) =>
     setSelectedIds((current) => current.includes(id) ? current.filter((x) => x !== id) : [...current, id]);
@@ -106,20 +109,6 @@ export default function NotificationsPage() {
   };
   const handleBatchExport = () => setExportOpen(true);
 
-  const handleCreateChannel = (c: NotificationChannel) => {
-    const { id: _ignored, ...payload } = c;
-    void _ignored;
-    createChannel.mutate(
-      { name: payload.name, kind: payload.kind, target: payload.target, description: payload.description },
-      {
-        onSuccess: (created) => setNotice(`已创建渠道「${created.name}」。`),
-        onError: () => setNotice(`创建失败,请重试。`),
-      },
-    );
-    setCreateOpen(false);
-    setView('channel');
-  };
-
   const handleCreateGroup = (g: NotificationGroup) => {
     createGroup.mutate(
       { name: g.name, description: g.description, members: g.members },
@@ -154,23 +143,16 @@ export default function NotificationsPage() {
     );
   };
 
-  const HeroIcon = HERO_ICON;
-
   return (
     <div className="notifications-page mx-auto w-full max-w-[1440px] space-y-6 p-5 pb-16 sm:p-8 xl:px-10">
       <section className="relative overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--surface-1)] px-6 py-8 shadow-[var(--shadow-sm)] sm:px-8">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px]">
           <div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.10),transparent_68%)]" />
         </div>
-        <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-violet-700 dark:text-violet-300">ADMIN / 渠道管理</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">把消息送到对的渠道、对的人。</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">统一管理邮件、IM、Webhook 与接收人组,实时观察投递结果。</p>
-          </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-            <HeroIcon className="h-3 w-3" />{stats.total} 个渠道 · {stats.active} 启用 · 今日投递 {stats.sentToday}
-          </div>
+        <div className="relative">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-violet-700 dark:text-violet-300">ADMIN / 渠道配置</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">接入飞书、企微、钉钉和 Web。</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">{stats.total} 个渠道 · {stats.active} 已接入 · 今日会话 {stats.sentToday}。</p>
         </div>
       </section>
 
@@ -199,7 +181,7 @@ export default function NotificationsPage() {
                 aria-label="搜索渠道"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="搜索渠道 / 目标"
+                placeholder="搜索渠道 / 平台 / 入口"
                 className="h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--bg-elevated)] pl-8 pr-3 text-sm outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--brand)]"
               />
             </label>
@@ -220,20 +202,23 @@ export default function NotificationsPage() {
                 onChange={(e) => setKindFilter(e.target.value as KindFilter)}
                 className="h-9 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-2.5 text-xs outline-none focus:border-[var(--brand)]"
               >
-                <option value="all">全部</option>
-                <option value="email">邮件</option>
-                <option value="im">IM</option>
+                <option value="all">全部平台</option>
+                <option value="feishu">飞书</option>
+                <option value="wecom">企业微信</option>
+                <option value="dingtalk">钉钉</option>
+                <option value="web">Web</option>
               </select>
               <button type="button" onClick={() => setImportOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]">
                 <Upload className="h-3.5 w-3.5" />导入
               </button>
-              <button type="button" onClick={() => setCreateOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
+              <button type="button" onClick={() => navigate('/admin/notifications/new')} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 text-xs font-semibold text-white hover:bg-[var(--brand-hover)]">
                 <Plus className="h-3.5 w-3.5" />新建渠道
               </button>
             </div>
           </div>
-          <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
-            {visibleChannels.map((c) => (
+          <AdminListHeader metrics={<AdminListHeaderMetrics labels={['今日会话', '成功率', '最近']} />} />
+          <div className="divide-y divide-[var(--border)]">
+            {paged.slice.map((c) => (
               <ChannelCard
                 key={c.id}
                 channel={c}
@@ -241,13 +226,20 @@ export default function NotificationsPage() {
                 onToggleSelect={toggleSelect}
                 onSelect={openChannel}
                 onToggleStar={toggleStar}
-                onEdit={openChannel}
                 onEnable={handleEnable}
                 onExportOne={handleExportOne}
                 onRequestDelete={handleRequestDelete}
               />
             ))}
           </div>
+          <AdminListPagination
+            page={paged.safePage}
+            totalPages={paged.totalPages}
+            total={paged.total}
+            pageStart={paged.pageStart}
+            pageEnd={paged.pageEnd}
+            onPageChange={setPage}
+          />
           {visibleChannels.length === 0 && (
             <div className="px-5 pb-8 text-center">
               <Search className="mx-auto h-6 w-6 text-[var(--text-muted)]" />
@@ -297,11 +289,6 @@ export default function NotificationsPage() {
         </div>
       )}
 
-      <CreateChannelModal
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onCreate={handleCreateChannel}
-      />
       <CreateGroupModal
         open={createGroupOpen}
         onClose={() => setCreateGroupOpen(false)}

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Boxes } from 'lucide-react';
 import { NoticeBanner } from '@/components/feedback/NoticeBanner';
 import {
   useAdminSkills, useUpdateSkill, useDeleteSkill, useBulkPublish,
@@ -160,17 +159,10 @@ export default function SkillsPage() {
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px]">
           <div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,0.10),transparent_68%)]" />
         </div>
-        <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-violet-700 dark:text-violet-300">ADMIN / 技能管理</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">把所有技能统一管起来,让用户安心选用。</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">
-              管理员统一维护企业级技能能力,涵盖输入输出、风险等级、可见范围与版本;用户侧只读使用,不修改配置。
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)]">
-            <Boxes className="h-3 w-3" />{skills.length} 个技能 · 已发布 {counts.published}
-          </div>
+        <div className="relative">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-violet-700 dark:text-violet-300">ADMIN / 技能管理</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">维护智能体可调用的技能。</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">{skills.length} 个技能 · 已发布 {counts.published}。</p>
         </div>
       </section>
 

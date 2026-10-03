@@ -6,8 +6,8 @@ import MyInsights from './MyInsights';
 const quickActions = [
   { label: '新建对话', description: '描述目标并开始', href: '/copilot', icon: MessageSquarePlus },
   { label: '选择智能体', description: '使用已授权助手', href: '/agents', icon: Bot },
-  { label: '选择工作流', description: '运行团队流程', href: '/automations', icon: Workflow },
   { label: '查找知识', description: '检索企业资料', href: '/knowledge', icon: Search },
+  { label: '选择工作流', description: '运行团队流程', href: '/automations', icon: Workflow },
 ] as const;
 
 const pendingItems = [

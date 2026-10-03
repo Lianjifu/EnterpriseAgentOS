@@ -155,7 +155,7 @@ export function BrowseAndUseDrawer({
       <div className="sticky bottom-0 -mx-6 mt-auto border-t border-[var(--border)] bg-[var(--surface-1)] px-6 py-4 sm:-mx-8 sm:px-8">
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs text-[var(--text-muted)]">
-            {chosenCount > 0 ? `已选用 ${chosenCount} 个，将显示在智能体库` : '勾选后会出现在智能体库'}
+            {chosenCount > 0 ? `已选用 ${chosenCount} 个，将显示在智能体` : '勾选后会出现在智能体'}
           </p>
           <button
             type="button"

@@ -151,7 +151,7 @@ export default function NotificationsPage() {
         </div>
         <div className="relative">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-violet-700 dark:text-violet-300">ADMIN / 渠道配置</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">接入飞书、企微、钉钉和 Web。</h2>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl xl:text-4xl">接入飞书、企微、钉钉和 Web。</h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">{stats.total} 个渠道 · {stats.active} 已接入 · 今日会话 {stats.sentToday}。</p>
         </div>
       </section>

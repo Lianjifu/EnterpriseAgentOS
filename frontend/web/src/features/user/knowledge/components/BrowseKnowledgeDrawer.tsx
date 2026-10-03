@@ -57,7 +57,7 @@ export function BrowseKnowledgeDrawer({
       <div className="mt-6">
         <h2 className="text-xl font-semibold">浏览资料</h2>
         <p className="mt-2 text-xs leading-6 text-[var(--text-muted)]">
-          列表来自知识管理中已索引、并对工作区开放的文档。加入后会出现在「我的知识」。
+          列表来自知识管理中已索引、并对工作区开放的文档。加入后会出现在「知识」。
         </p>
       </div>
 
@@ -123,7 +123,7 @@ export function BrowseKnowledgeDrawer({
                     }`}
                   >
                     {chosen ? <Check className="h-3.5 w-3.5" /> : null}
-                    {chosen ? '已加入我的知识' : '加入我的知识'}
+                    {chosen ? '已加入知识' : '加入知识'}
                   </button>
                   <button
                     type="button"
@@ -142,7 +142,7 @@ export function BrowseKnowledgeDrawer({
       <div className="sticky bottom-0 -mx-6 mt-auto border-t border-[var(--border)] bg-[var(--surface-1)] px-6 py-4 sm:-mx-8 sm:px-8">
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs text-[var(--text-muted)]">
-            {chosenIds.length > 0 ? `已加入 ${chosenIds.length} 份到我的知识` : '选择后会出现在我的知识'}
+            {chosenIds.length > 0 ? `已加入 ${chosenIds.length} 份到知识` : '选择后会出现在知识'}
           </p>
           <button
             type="button"

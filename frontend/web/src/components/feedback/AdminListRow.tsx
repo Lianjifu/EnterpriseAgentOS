@@ -9,9 +9,9 @@ export const ADMIN_LIST_METRICS_W = 'xl:w-[18rem]';
 export const ADMIN_LIST_ACTIONS_W = 'xl:w-[17.5rem]';
 
 function rowCols(hasCheckbox: boolean, hasStar: boolean) {
-  if (!hasCheckbox) return 'xl:grid-cols-[minmax(0,1fr)_18rem_17.5rem]';
-  if (!hasStar) return 'xl:grid-cols-[1.75rem_minmax(0,1fr)_18rem_17.5rem]';
-  return 'xl:grid-cols-[1.75rem_minmax(0,1fr)_1.75rem_18rem_17.5rem]';
+  if (!hasCheckbox) return 'grid-cols-1 xl:grid-cols-[minmax(0,1fr)_18rem_17.5rem]';
+  if (!hasStar) return 'grid-cols-[1.75rem_minmax(0,1fr)] xl:grid-cols-[1.75rem_minmax(0,1fr)_18rem_17.5rem]';
+  return 'grid-cols-[1.75rem_minmax(0,1fr)_1.75rem] xl:grid-cols-[1.75rem_minmax(0,1fr)_1.75rem_18rem_17.5rem]';
 }
 
 export function AdminListRow({
@@ -27,7 +27,7 @@ export function AdminListRow({
 }) {
   return (
     <article
-      className={`group relative grid grid-cols-1 items-center gap-x-3 gap-y-2 px-5 py-3.5 text-left ${rowCols(hasCheckbox, hasStar)} ${
+      className={`group relative grid items-start gap-x-3 gap-y-2 px-4 py-3.5 text-left sm:px-5 xl:items-center ${rowCols(hasCheckbox, hasStar)} ${
         selected ? 'bg-[var(--brand-light)]/40' : 'hover:bg-[var(--bg-hover)]'
       }`}
     >
@@ -55,7 +55,7 @@ export function AdminListMetric({ children }: { children: ReactNode }) {
 
 export function AdminListActions({ children }: { children: ReactNode }) {
   return (
-    <div className={`relative z-10 flex flex-wrap justify-start gap-1.5 xl:flex-nowrap xl:justify-end ${ADMIN_LIST_ACTIONS_W}`}>
+    <div className={`relative z-10 col-span-full flex flex-wrap justify-start gap-1.5 xl:col-span-1 xl:flex-nowrap xl:justify-end ${ADMIN_LIST_ACTIONS_W}`}>
       {children}
     </div>
   );

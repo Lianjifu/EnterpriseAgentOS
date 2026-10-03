@@ -134,7 +134,7 @@ export default function MetricsPage() {
         </div>
         <div className="relative">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-700 dark:text-indigo-300">ADMIN / 运行指标</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">观测可用率、延迟和成本。</h2>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl xl:text-4xl">观测可用率、延迟和成本。</h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">{remoteModels.length} 个模型 · {remoteDashboards.length} 个看板 · {enabledRules} 条激活阈值。</p>
         </div>
       </section>

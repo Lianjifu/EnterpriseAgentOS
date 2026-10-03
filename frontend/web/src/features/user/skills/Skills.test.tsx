@@ -34,11 +34,11 @@ function renderSkills(chosen: string[] = []) {
   );
 }
 
-describe('我的技能 · 浏览能力', () => {
+describe('技能 · 浏览能力', () => {
   it('opens browse drawer and adds chosen capabilities with related agents', () => {
     renderSkills();
-    expect(screen.getByRole('heading', { name: '我的技能' })).toBeTruthy();
-    expect(screen.getByText('还没有我的技能')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: '技能' })).toBeTruthy();
+    expect(screen.getByText('还没有技能')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: '浏览能力' }));
     const drawer = screen.getByRole('dialog', { name: '浏览并选用能力' });
@@ -47,14 +47,14 @@ describe('我的技能 · 浏览能力', () => {
     expect(within(drawer).getByRole('button', { name: '用客户沟通助手使用资料摘要助手' })).toBeTruthy();
 
     const row = within(drawer).getByText('资料摘要助手').closest('li') as HTMLElement;
-    fireEvent.click(within(row).getByRole('button', { name: '加入我的技能' }));
+    fireEvent.click(within(row).getByRole('button', { name: '加入技能' }));
     fireEvent.click(within(drawer).getByRole('button', { name: '完成' }));
 
     expect(screen.queryByRole('dialog', { name: '浏览并选用能力' })).toBeNull();
     expect(screen.getByRole('heading', { name: '资料摘要助手' })).toBeTruthy();
     expect(screen.getByText(/关联 客户沟通助手/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '移出资料摘要助手' }));
-    expect(screen.getByText('还没有我的技能')).toBeTruthy();
+    expect(screen.getByText('还没有技能')).toBeTruthy();
   });
 
   it('starts copilot with related agent and skill context', () => {

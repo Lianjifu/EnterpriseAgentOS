@@ -33,7 +33,7 @@ function renderDirectory(path = '/agents', chosen: string[] = []) {
 describe('智能体库', () => {
   it('opens browse drawer from empty state and adds chosen agents to the library', () => {
     renderDirectory();
-    expect(screen.getByRole('heading', { name: '可用智能体' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: '智能体' })).toBeTruthy();
     expect(screen.getByText('还没有选用智能体')).toBeTruthy();
     expect(screen.queryByRole('button', { name: '创建智能体' })).toBeNull();
 

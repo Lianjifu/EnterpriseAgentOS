@@ -113,7 +113,7 @@ export default function QuotasPage() {
         </div>
         <div className="relative">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-300">ADMIN / 额度管理</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">控制预算、用量和告警。</h2>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl xl:text-4xl">控制预算、用量和告警。</h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">总预算 ¥ {totals.cap.toLocaleString('zh-CN')} · 已用 ¥ {totals.used.toLocaleString('zh-CN')}。</p>
         </div>
       </section>

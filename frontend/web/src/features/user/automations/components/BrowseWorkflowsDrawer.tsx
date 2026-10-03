@@ -58,7 +58,7 @@ export function BrowseWorkflowsDrawer({
       <div className="mt-6">
         <h2 className="text-xl font-semibold">浏览工作流</h2>
         <p className="mt-2 text-xs leading-6 text-[var(--text-muted)]">
-          列表来自工作流管理中已发布的流程。加入后会出现在「我的工作流」。
+          列表来自工作流管理中已发布的流程。加入后会出现在「工作流」。
         </p>
       </div>
 
@@ -128,7 +128,7 @@ export function BrowseWorkflowsDrawer({
                     }`}
                   >
                     {chosen ? <Check className="h-3.5 w-3.5" /> : null}
-                    {chosen ? '已加入我的工作流' : '加入我的工作流'}
+                    {chosen ? '已加入工作流' : '加入工作流'}
                   </button>
                   <button
                     type="button"
@@ -148,7 +148,7 @@ export function BrowseWorkflowsDrawer({
       <div className="sticky bottom-0 -mx-6 mt-auto border-t border-[var(--border)] bg-[var(--surface-1)] px-6 py-4 sm:-mx-8 sm:px-8">
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs text-[var(--text-muted)]">
-            {chosenIds.length > 0 ? `已加入 ${chosenIds.length} 个到我的工作流` : '选择后会出现在我的工作流'}
+            {chosenIds.length > 0 ? `已加入 ${chosenIds.length} 个到工作流` : '选择后会出现在工作流'}
           </p>
           <button
             type="button"

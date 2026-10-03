@@ -149,12 +149,12 @@ export default function SkillsPage() {
   return (
     <WorkspacePage>
       <PageIntro
-        title="我的技能"
+        title="技能"
         description="从技能管理已发布并对工作区开放的能力中选用，加入后可配合关联智能体使用。"
         meta={
           <>
             <span>可浏览 {availableCount}</span>
-            <span>我的技能 {chosenList.length}</span>
+            <span>技能 {chosenList.length}</span>
             <span>收藏 {favorites.length}</span>
             <span>最近使用 {recent.length}</span>
             {(isLoading || isFetching) && <span>同步中…</span>}
@@ -176,7 +176,7 @@ export default function SkillsPage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
         <section id="skills-catalog" aria-labelledby="skills-title" className="min-w-0 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
-          <h3 id="skills-title" className="sr-only">我的技能列表</h3>
+          <h3 id="skills-title" className="sr-only">技能列表</h3>
           <CatalogToolbar
             search={params.q ?? ''}
             onSearch={(value) => setParams((current) => ({ ...current, q: value }))}
@@ -269,12 +269,12 @@ export default function SkillsPage() {
             </div>
           ) : (
             <EmptyFilterState
-              title={chosenList.length === 0 ? (list.length === 0 ? '管理员尚未开放能力' : '还没有我的技能') : '没有匹配的能力'}
+              title={chosenList.length === 0 ? (list.length === 0 ? '管理员尚未开放能力' : '还没有技能') : '没有匹配的能力'}
               description={
                 chosenList.length === 0
                   ? (list.length === 0
                     ? '请在技能管理中发布并对工作区开放后再来选用。'
-                    : '点击「浏览能力」，从技能管理已开放的条目中加入我的技能。')
+                    : '点击「浏览能力」，从技能管理已开放的条目中加入技能。')
                   : '尝试其他关键词或清除筛选。'
               }
               action={

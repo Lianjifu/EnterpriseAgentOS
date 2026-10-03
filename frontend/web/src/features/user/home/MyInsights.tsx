@@ -75,7 +75,7 @@ function TrendChart({ points, showTable }: { points: TrendPoint[]; showTable: bo
         </div>
       ) : (
         <div className="overflow-x-auto" role="img" aria-label="智能体任务完成率趋势图">
-          <svg viewBox={`0 0 ${width} ${height}`} className="min-w-[620px]" preserveAspectRatio="none">
+          <svg viewBox={`0 0 ${width} ${height}`} className="h-auto w-full min-w-0" preserveAspectRatio="none">
             <defs>
               <linearGradient id="insightTrendFill" x1="0" x2="0" y1="0" y2="1">
                 <stop offset="0%" stopColor="var(--brand)" stopOpacity="0.24" />
@@ -176,7 +176,7 @@ export default function MyInsights({ embedded = false }: { embedded?: boolean })
           <p className="mt-2 text-xs text-[var(--text-muted)]">最近表现最好：{bestDay.label}</p>
         </div>
       </section>
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)]">
         <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>

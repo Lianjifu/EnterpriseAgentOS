@@ -89,7 +89,7 @@ export default function SettingsPage() {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--brand)]">ADMIN / 平台设置</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">配置品牌、合规开关和成员。</h2>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl xl:text-4xl">配置品牌、合规开关和成员。</h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">品牌、合规、审计记录与成员。</p>
         </div>
         <button type="button" onClick={save} className="inline-flex h-9 items-center gap-2 self-start rounded-lg bg-[var(--brand)] px-3.5 text-xs font-semibold text-white hover:bg-[var(--brand-hover)] sm:self-auto">

@@ -128,12 +128,12 @@ export default function KnowledgePage() {
   return (
     <WorkspacePage>
       <PageIntro
-        title="我的知识"
+        title="知识"
         description="从知识管理已索引并对工作区开放的文档中选用，加入后可提问或带入对话。"
         meta={
           <>
             <span>可浏览 {resources.length}</span>
-            <span>我的知识 {chosenList.length}</span>
+            <span>知识 {chosenList.length}</span>
             <span>收藏 {favorites.length}</span>
             {(isLoading || isFetching) && <span>同步中…</span>}
           </>
@@ -157,7 +157,7 @@ export default function KnowledgePage() {
           <div>
             <h3 className="text-sm font-semibold">基于资料提问</h3>
             <p className="mt-1 text-xs text-[var(--text-muted)]">
-              {chosenList.length === 0 ? '先浏览并加入资料，再基于我的知识查看示例回答。' : '在已加入的资料中查看示例回答与参考来源。'}
+              {chosenList.length === 0 ? '先浏览并加入资料，再基于知识查看示例回答。' : '在已加入的资料中查看示例回答与参考来源。'}
             </p>
           </div>
         </div>
@@ -187,7 +187,7 @@ export default function KnowledgePage() {
       </section>
 
       <section aria-labelledby="knowledge-list-title" className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
-        <h3 id="knowledge-list-title" className="sr-only">我的知识列表</h3>
+        <h3 id="knowledge-list-title" className="sr-only">知识列表</h3>
         <CatalogToolbar
           search={query}
           onSearch={setQuery}
@@ -248,12 +248,12 @@ export default function KnowledgePage() {
           </div>
         ) : (
           <EmptyFilterState
-            title={chosenList.length === 0 ? (resources.length === 0 ? '管理员尚未开放资料' : '还没有我的知识') : '没有找到匹配的资料'}
+            title={chosenList.length === 0 ? (resources.length === 0 ? '管理员尚未开放资料' : '还没有知识') : '没有找到匹配的资料'}
             description={
               chosenList.length === 0
                 ? (resources.length === 0
                   ? '请在知识管理中索引公开/部门知识库后再来选用。'
-                  : '点击「浏览资料」，从已开放文档中加入我的知识。')
+                  : '点击「浏览资料」，从已开放文档中加入知识。')
                 : '试试其他关键词，或清除筛选条件。'
             }
             action={
@@ -319,7 +319,7 @@ export default function KnowledgePage() {
             </div>
             <CardActions>
               <CardActionButton onClick={() => toggleChosen(selected.id)}>
-                {chosenIds.includes(selected.id) ? '移出我的知识' : '加入我的知识'}
+                {chosenIds.includes(selected.id) ? '移出知识' : '加入知识'}
               </CardActionButton>
               <CardActionButton onClick={() => toggleFavorite(selected)}>
                 <Heart className="h-3.5 w-3.5" fill={favorites.includes(selected.id) ? 'currentColor' : 'none'} />

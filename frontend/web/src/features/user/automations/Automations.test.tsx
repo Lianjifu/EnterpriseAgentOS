@@ -28,11 +28,11 @@ function renderAutomations(chosen: string[] = []) {
   );
 }
 
-describe('我的工作流 · 浏览工作流', () => {
+describe('工作流 · 浏览工作流', () => {
   it('opens browse drawer from admin published flows and adds to my workflows', () => {
     renderAutomations();
-    expect(screen.getByRole('heading', { name: '我的工作流' })).toBeTruthy();
-    expect(screen.getByText('还没有我的工作流')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: '工作流' })).toBeTruthy();
+    expect(screen.getByText('还没有工作流')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: '浏览工作流' }));
     const drawer = screen.getByRole('dialog', { name: '浏览并选用工作流' });
@@ -40,13 +40,13 @@ describe('我的工作流 · 浏览工作流', () => {
     expect(within(drawer).queryByText('新成员入职准备')).toBeNull();
 
     const row = within(drawer).getByText('销售周报自动整理').closest('li') as HTMLElement;
-    fireEvent.click(within(row).getByRole('button', { name: '加入我的工作流' }));
+    fireEvent.click(within(row).getByRole('button', { name: '加入工作流' }));
     fireEvent.click(within(drawer).getByRole('button', { name: '完成' }));
 
     expect(screen.queryByRole('dialog', { name: '浏览并选用工作流' })).toBeNull();
     expect(screen.getByRole('button', { name: '销售周报自动整理' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '移出销售周报自动整理' }));
-    expect(screen.getByText('还没有我的工作流')).toBeTruthy();
+    expect(screen.getByText('还没有工作流')).toBeTruthy();
   });
 
   it('uses a chosen workflow and records a local demo run', () => {

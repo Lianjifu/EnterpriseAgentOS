@@ -61,7 +61,7 @@ export function BrowseCapabilitiesDrawer({
       <div className="mt-6">
         <h2 className="text-xl font-semibold">浏览能力</h2>
         <p className="mt-2 text-xs leading-6 text-[var(--text-muted)]">
-          列表来自技能管理中已发布并对工作区开放的 Skill / Tool / MCP。加入后会出现在「我的技能」。
+          列表来自技能管理中已发布并对工作区开放的 Skill / Tool / MCP。加入后会出现在「技能」。
         </p>
       </div>
 
@@ -155,7 +155,7 @@ export function BrowseCapabilitiesDrawer({
                     }`}
                   >
                     {chosen ? <Check className="h-3.5 w-3.5" /> : null}
-                    {chosen ? '已加入我的技能' : '加入我的技能'}
+                    {chosen ? '已加入技能' : '加入技能'}
                   </button>
                   <button
                     type="button"
@@ -175,7 +175,7 @@ export function BrowseCapabilitiesDrawer({
       <div className="sticky bottom-0 -mx-6 mt-auto border-t border-[var(--border)] bg-[var(--surface-1)] px-6 py-4 sm:-mx-8 sm:px-8">
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs text-[var(--text-muted)]">
-            {chosenIds.length > 0 ? `已加入 ${chosenIds.length} 个到我的技能` : '选择后会出现在我的技能'}
+            {chosenIds.length > 0 ? `已加入 ${chosenIds.length} 个到技能` : '选择后会出现在技能'}
           </p>
           <button
             type="button"

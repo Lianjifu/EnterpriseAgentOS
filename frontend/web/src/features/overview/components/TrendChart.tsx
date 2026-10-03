@@ -38,7 +38,7 @@ export function TrendChart({ series }: { series: TrendSeries }) {
 
   return (
     <div className="overflow-x-auto">
-      <svg viewBox={`0 0 ${width} ${height}`} className="min-w-[640px] w-full" role="img" aria-label={`${series.range} 调用量与质量趋势`} onMouseMove={onMove} onMouseLeave={onLeave}>
+      <svg viewBox={`0 0 ${width} ${height}`} className="h-auto w-full min-w-0" role="img" aria-label={`${series.range} 调用量与质量趋势`} onMouseMove={onMove} onMouseLeave={onLeave}>
         <defs>
           <linearGradient id="overviewCallFill" x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%" stopColor="var(--brand)" stopOpacity="0.22" />

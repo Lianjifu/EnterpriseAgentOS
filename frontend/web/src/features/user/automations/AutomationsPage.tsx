@@ -133,12 +133,12 @@ export default function AutomationsPage() {
   return (
     <WorkspacePage>
       <PageIntro
-        title="我的工作流"
+        title="工作流"
         description="从工作流管理已发布的流程中选用，加入后可在此使用。"
         meta={
           <>
             <span>可浏览 {availableCount}</span>
-            <span>我的工作流 {chosenList.length}</span>
+            <span>工作流 {chosenList.length}</span>
             <span>收藏 {favorites.length}</span>
             <span>最近使用 {runs.length}</span>
             {(isLoading || isFetching) && <span>同步中…</span>}
@@ -159,7 +159,7 @@ export default function AutomationsPage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
         <section id="automation-list" aria-labelledby="automation-list-title" className="min-w-0 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-1)]">
-          <h3 id="automation-list-title" className="sr-only">我的工作流列表</h3>
+          <h3 id="automation-list-title" className="sr-only">工作流列表</h3>
           <CatalogToolbar
             search={search}
             onSearch={setSearch}
@@ -232,12 +232,12 @@ export default function AutomationsPage() {
             </div>
           ) : (
             <EmptyFilterState
-              title={chosenList.length === 0 ? (flows.length === 0 ? '管理员尚未发布工作流' : '还没有我的工作流') : '没有匹配的工作流'}
+              title={chosenList.length === 0 ? (flows.length === 0 ? '管理员尚未发布工作流' : '还没有工作流') : '没有匹配的工作流'}
               description={
                 chosenList.length === 0
                   ? (flows.length === 0
                     ? '请在工作流管理中发布流程后再来选用。'
-                    : '点击「浏览工作流」，从已发布目录中加入我的工作流。')
+                    : '点击「浏览工作流」，从已发布目录中加入工作流。')
                   : '尝试其他关键词、场景或可用性。'
               }
               action={
@@ -326,7 +326,7 @@ export default function AutomationsPage() {
                 onClick={() => toggleChosen(selected.id)}
                 className="inline-flex items-center justify-center rounded-xl border border-[var(--border)] px-4 py-3 text-sm font-semibold"
               >
-                {chosenIds.includes(selected.id) ? '移出我的工作流' : '加入我的工作流'}
+                {chosenIds.includes(selected.id) ? '移出工作流' : '加入工作流'}
               </button>
               <button
                 type="button"

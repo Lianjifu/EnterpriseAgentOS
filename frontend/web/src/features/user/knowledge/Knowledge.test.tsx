@@ -29,11 +29,11 @@ function renderKnowledge(chosen: string[] = []) {
   );
 }
 
-describe('我的知识 · 浏览资料', () => {
+describe('知识 · 浏览资料', () => {
   it('opens browse drawer from admin knowledge and adds to my knowledge', () => {
     renderKnowledge();
-    expect(screen.getByRole('heading', { name: '我的知识' })).toBeTruthy();
-    expect(screen.getByText('还没有我的知识')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: '知识' })).toBeTruthy();
+    expect(screen.getByText('还没有知识')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: '浏览资料' }));
     const drawer = screen.getByRole('dialog', { name: '浏览并选用资料' });
@@ -41,13 +41,13 @@ describe('我的知识 · 浏览资料', () => {
     expect(within(drawer).queryByText('信息安全等级保护指南.pdf')).toBeNull();
 
     const row = within(drawer).getByText('差旅报销指南.md').closest('li') as HTMLElement;
-    fireEvent.click(within(row).getByRole('button', { name: '加入我的知识' }));
+    fireEvent.click(within(row).getByRole('button', { name: '加入知识' }));
     fireEvent.click(within(drawer).getByRole('button', { name: '完成' }));
 
     expect(screen.queryByRole('dialog', { name: '浏览并选用资料' })).toBeNull();
     expect(screen.getAllByText('差旅报销指南.md').length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: '移出差旅报销指南.md' }));
-    expect(screen.getByText('还没有我的知识')).toBeTruthy();
+    expect(screen.getByText('还没有知识')).toBeTruthy();
   });
 
   it('starts copilot from browse drawer with knowledge context', () => {

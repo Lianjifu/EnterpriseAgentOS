@@ -39,7 +39,7 @@ export default function AccountSettings() {
         <div className="relative flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--brand)]">ACCOUNT / 设置</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">把工作台调成你的样子。</h2>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl xl:text-4xl">把工作台调成你的样子。</h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">管理个人信息、通知偏好和账号安全。设置只影响当前浏览器中的前端演示状态。</p>
           </div>
           <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-3">

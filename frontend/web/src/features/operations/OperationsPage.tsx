@@ -163,7 +163,7 @@ export default function OperationsPage() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-700 dark:text-sky-300">
             ADMIN / 调用链路
           </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl xl:text-4xl">
             还原会话的完整调用过程。
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">

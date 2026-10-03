@@ -114,7 +114,7 @@ export function WorkspaceShell() {
       <div className="hidden lg:block">{sidebar}</div>
       {mobileDrawerOpen ? <div className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden" onClick={closeMobileDrawer} aria-hidden="true" /> : null}
       <div className={`fixed inset-y-0 left-0 z-50 transition-transform lg:hidden ${mobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'}`}>{sidebar}</div>
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex h-svh min-h-0 min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-[var(--border)] bg-[var(--surface-1)] px-4 sm:px-5">
           <div className="flex min-w-0 items-center gap-2.5">
             <button type="button" className="rounded-md p-2 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] lg:hidden" onClick={openMobileDrawer} aria-label="打开导航菜单"><Menu className="h-5 w-5" /></button>
@@ -129,7 +129,7 @@ export function WorkspaceShell() {
               ) : (
                 <h1 className="truncate text-sm font-semibold leading-5">{pageLabel}</h1>
               )}
-              {pageHint ? <p className="truncate text-[11px] leading-4 text-[var(--text-muted)]">{pageHint}</p> : null}
+              {pageHint ? <p className="hidden truncate text-[11px] leading-4 text-[var(--text-muted)] sm:block">{pageHint}</p> : null}
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -137,10 +137,12 @@ export function WorkspaceShell() {
               <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--brand)]" />
               <span className="truncate">{workspaceName}</span>
             </span>
-            <button type="button" className="rounded-md p-1 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] lg:hidden" onClick={closeMobileDrawer} aria-label="关闭导航菜单"><X className="h-4 w-4" /></button>
+            {mobileDrawerOpen ? (
+              <button type="button" className="rounded-md p-1 text-[var(--text-muted)] hover:bg-[var(--bg-hover)] lg:hidden" onClick={closeMobileDrawer} aria-label="关闭导航菜单"><X className="h-4 w-4" /></button>
+            ) : null}
           </div>
         </header>
-        <main id="main-content" className="flex-1 overflow-auto"><Outlet /></main>
+        <main id="main-content" className="flex min-h-0 flex-1 flex-col overflow-auto"><Outlet /></main>
       </div>
     </div>
   );

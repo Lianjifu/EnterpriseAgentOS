@@ -179,7 +179,7 @@ export default function FeedbackPage() {
         </div>
         <div className="relative">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700 dark:text-amber-300">ADMIN / 用户反馈</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">收集、分诊并处理用户意见。</h2>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl xl:text-4xl">收集、分诊并处理用户意见。</h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">{feedback.length} 条反馈 · {counts.newOnes} 条待分诊 · 正面率 {positivePct.toFixed(0)}%。</p>
         </div>
       </section>

@@ -3,12 +3,12 @@ import { useLocation } from 'react-router-dom';
 
 const pageCopy: Record<string, { title: string; description: string; actions: string[] }> = {
   '/home': { title: '首页', description: '从今天要完成的工作开始，让智能体帮你更快得到结果。', actions: ['新建对话', '运行智能体', '发起工作流', '搜索知识'] },
-  '/agents': { title: '智能体库', description: '查看管理员已开放的智能体，按需选用并进入对话。', actions: ['浏览可用智能体', '查看团队智能体', '开始对话'] },
-  '/copilot': { title: '我的对话', description: '发起一项工作，查看执行进度，并在需要时完成确认。', actions: ['新建对话', '查看历史会话', '查看产出物'] },
-  '/tasks': { title: '任务记录', description: '集中查看待处理、进行中、已完成和异常的执行任务。', actions: ['待我处理', '我发起的', '失败与异常'] },
-  '/knowledge': { title: '我的知识', description: '基于企业资料提问，查看答案来源和引用位置。', actions: ['开始问答', '上传资料', '查看我的知识库'] },
-  '/automations': { title: '我的工作流', description: '把重复工作配置成可追踪、可复用的工作流。', actions: ['我的工作流', '新建工作流', '执行记录'] },
-  '/team': { title: '我的协作', description: '共享智能体、知识和执行结果，让团队减少重复配置。', actions: ['协作空间', '共享智能体', '协作产出物'] },
+  '/agents': { title: '智能体', description: '查看管理员已开放的智能体，按需选用并进入对话。', actions: ['浏览可用智能体', '查看团队智能体', '开始对话'] },
+  '/copilot': { title: '对话', description: '发起一项工作，查看执行进度，并在需要时完成确认。', actions: ['新建对话', '查看历史会话', '查看产出物'] },
+  '/tasks': { title: '任务', description: '集中查看待处理、进行中、已完成和异常的执行任务。', actions: ['待我处理', '我发起的', '失败与异常'] },
+  '/knowledge': { title: '知识', description: '基于企业资料提问，查看答案来源和引用位置。', actions: ['开始问答', '上传资料', '查看知识库'] },
+  '/automations': { title: '工作流', description: '把重复工作配置成可追踪、可复用的工作流。', actions: ['工作流', '新建工作流', '执行记录'] },
+  '/team': { title: '协作', description: '共享智能体、知识和执行结果，让团队减少重复配置。', actions: ['协作空间', '共享智能体', '协作产出物'] },
   '/insights': { title: '效果看板', description: '查看智能体任务完成情况和预计节省时长。', actions: ['我的使用小结', '任务完成率', '满意度与反馈'] },
   '/account': { title: '个人中心', description: '管理个人资料、账号安全、通知和使用偏好。', actions: ['个人资料', '账号安全', '偏好设置'] },
   '/admin/overview': { title: '运营概览', description: '查看平台健康、异常事项和下一步建议动作。', actions: ['查看运营概览', '处理待办事项', '查看平台健康'] },

@@ -37,13 +37,13 @@ export interface NavigationSection {
 
 export const workspaceNavigation: NavigationItem[] = [
   { label: '首页', href: '/home', icon: Gauge, description: '查看今天需要处理的事项' },
-  { label: '我的对话', href: '/copilot', icon: MessagesSquare, description: '发起对话并跟进执行结果' },
-  { label: '我的任务', href: '/tasks', icon: ListTodo, description: '查看待处理、执行中和已完成的工作' },
-  { label: '智能体库', href: '/agents', icon: Bot, description: '查看管理员已开放的智能体并选用' },
-  { label: '我的知识', href: '/knowledge', icon: FileText, description: '基于企业资料获取可信答案' },
-  { label: '我的技能', href: '/skills', icon: Sparkles, description: '选择可用 Skill、Tool 和 MCP 能力' },
-  { label: '我的工作流', href: '/automations', icon: Workflow, description: '选择和使用团队准备好的工作流' },
-  { label: '我的协作', href: '/team', icon: UsersRound, description: '共享团队智能体与知识' },
+  { label: '对话', href: '/copilot', icon: MessagesSquare, description: '发起对话并跟进执行结果' },
+  { label: '智能体', href: '/agents', icon: Bot, description: '查看管理员已开放的智能体并选用' },
+  { label: '知识', href: '/knowledge', icon: FileText, description: '基于企业资料获取可信答案' },
+  { label: '技能', href: '/skills', icon: Sparkles, description: '选择可用 Skill、Tool 和 MCP 能力' },
+  { label: '工作流', href: '/automations', icon: Workflow, description: '选择和使用团队准备好的工作流' },
+  { label: '任务', href: '/tasks', icon: ListTodo, description: '查看待处理、执行中和已完成的工作' },
+  { label: '协作', href: '/team', icon: UsersRound, description: '共享团队智能体与知识' },
 ];
 
 export const utilityNavigation: NavigationItem[] = [

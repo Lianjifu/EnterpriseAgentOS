@@ -56,7 +56,7 @@ export default function OverviewPage() {
         <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--brand)]">ADMIN / 运营总览</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">看调用量、可用率和告警。</h2>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl xl:text-4xl">看调用量、可用率和告警。</h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">6 个核心指标 · 实时告警 · 服务健康与 Top 智能体。</p>
           </div>
           <TimeRangeDropdown value={range} onChange={setRange} options={RANGE_OPTIONS} />
@@ -71,7 +71,7 @@ export default function OverviewPage() {
           : kpiTiles.map((tile) => <KpiTileCard key={tile.label} tile={tile} />)}
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)]">
         <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-5 sm:p-7">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -108,7 +108,7 @@ export default function OverviewPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <ServicesPanel
           services={services}
           onViewAll={() =>

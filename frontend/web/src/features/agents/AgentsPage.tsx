@@ -172,7 +172,7 @@ export default function AgentsPage() {
         <div aria-hidden="true" className="pointer-events-none absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_top_right,var(--brand-light),transparent_68%)]" />
         <div className="relative">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--brand)]">ADMIN / 智能体管理</p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">配置、审核并发布智能体。</h1>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl xl:text-4xl">配置、审核并发布智能体。</h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">{list.length} 个智能体 · {list.filter((a) => a.status === 'published').length} 已发布。</p>
         </div>
       </section>

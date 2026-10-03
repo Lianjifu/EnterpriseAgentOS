@@ -156,7 +156,7 @@ export default function AuditPage() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-rose-700 dark:text-rose-300">
             ADMIN / 工具审计
           </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl xl:text-4xl">
             审查工具调用与风险规则。
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--text-muted)]">

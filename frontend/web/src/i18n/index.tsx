@@ -28,7 +28,7 @@ const zh: Dict = {
   'nav.memory.auditor': '记忆策略',
   'nav.skills': '技能中心',
   'nav.skills.market': '技能·工具·MCP',
-  'nav.skills.mine': '我的技能',
+  'nav.skills.mine': '技能',
   'nav.skills.user': '技能清单',
   'nav.skills.auditor': '技能权限',
   'nav.models': '模型服务',

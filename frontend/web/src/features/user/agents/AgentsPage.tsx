@@ -113,7 +113,7 @@ export default function AgentsPage() {
   return (
     <WorkspacePage>
       <PageIntro
-        title={isTeamView ? '团队智能体' : '可用智能体'}
+        title={isTeamView ? '团队智能体' : '智能体'}
         description={isTeamView ? '来自智能体管理、已对工作区开放的助手。' : '从管理员已发布的智能体中选用，进入对话完成工作。'}
         meta={
           <>

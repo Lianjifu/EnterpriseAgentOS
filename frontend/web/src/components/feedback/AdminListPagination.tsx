@@ -64,7 +64,7 @@ export function AdminListPagination({
                 onClick={() => onPageChange(n)}
                 aria-current={active ? 'page' : undefined}
                 aria-label={`第 ${n} 页`}
-                className={`grid h-7 w-7 place-items-center rounded-lg text-[11px] font-semibold transition ${active ? 'bg-[var(--brand)] text-white' : 'border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]'}`}
+                className={`hidden h-7 w-7 place-items-center rounded-lg text-[11px] font-semibold transition sm:grid ${active ? 'bg-[var(--brand)] text-white' : 'border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)]'}`}
               >
                 {n}
               </button>

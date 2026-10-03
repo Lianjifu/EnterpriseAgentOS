@@ -5,11 +5,17 @@
 import type { Flow } from './schema';
 import { mockFlows } from './fixtures';
 
+const workflows: Flow[] = mockFlows;
+
+/** 供用户侧 catalog 投影读取同一份内存 store */
+export function listAdminWorkflows(): Flow[] {
+  return workflows.slice();
+}
+
 export function wrapMockHandlerWithAdminWorkflows<F extends (path: string, opts: any) => Promise<unknown>>(fallback: F): F {
   const wrapped = (async (path: string, opts: any) => {
     if (path === '/api/admin/workflows' && (!opts?.method || opts.method === 'GET')) {
-      const list: Flow[] = mockFlows;
-      return list;
+      return workflows.slice();
     }
     if (path === '/api/admin/workflows' && opts?.method === 'POST') {
       const body = (opts?.body ?? {}) as Partial<Flow>;
@@ -32,14 +38,14 @@ export function wrapMockHandlerWithAdminWorkflows<F extends (path: string, opts:
         initialNodes: body.initialNodes ?? [],
         initialEdges: body.initialEdges ?? [],
       };
-      mockFlows.unshift(created);
+      workflows.unshift(created);
       return created;
     }
     const detailMatch = /^\/api\/admin\/workflows\/([^/]+)$/.exec(path);
     if (detailMatch && (!opts?.method || opts.method === 'GET')) {
       const id = detailMatch[1];
       if (id === '__noop__') return null;
-      const flow = mockFlows.find((f) => f.id === id) ?? null;
+      const flow = workflows.find((f) => f.id === id) ?? null;
       if (!flow) throw Object.assign(new Error('workflow not found'), { status: 404 });
       return flow;
     }

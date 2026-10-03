@@ -131,6 +131,14 @@ export async function adminKnowledgeMockHandler(path: string, opts: MockOpts): P
   return undefined;
 }
 
+/** 供用户侧 catalog 投影读取同一份内存 store */
+export function listAdminKnowledge() {
+  return {
+    kbs: state.kbs.slice(),
+    docs: state.docs.slice(),
+  };
+}
+
 export function wrapMockHandlerWithAdminKnowledge(fallback: MockFn): MockFn {
   return async (path, opts) => {
     const r = await adminKnowledgeMockHandler(path, opts);

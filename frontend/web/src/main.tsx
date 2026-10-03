@@ -9,10 +9,11 @@ import { setApiClient, ApiClient, mockHandlerWithAdapters } from '@de/web-api';
 import { useAuthStore } from './features/auth';
 import { apiBaseURL, isDemoApiMode } from './lib/api-mode';
 import { resolveWorkspaceHeader } from './lib/workspace-header';
-import { wrapMockHandlerWithSkills } from './lib/skills-mock-handler';
-import { wrapMockHandlerWithAutomations } from './lib/automations-mock-handler';
-import { wrapMockHandlerWithTeam } from './lib/team-mock-handler';
-import { wrapMockHandlerWithUserKnowledge } from './lib/user-knowledge-mock-handler';
+import { wrapMockHandlerWithCatalog } from './features/user/catalog';
+import { wrapMockHandlerWithSkills } from './features/user/skills/mock-handler';
+import { wrapMockHandlerWithAutomations } from './features/user/automations/mock-handler';
+import { wrapMockHandlerWithTeam } from './features/user/team/mock-handler';
+import { wrapMockHandlerWithUserKnowledge } from './features/user/knowledge/mock-handler';
 import { wrapMockHandlerWithAdminNotifications } from './features/notifications/mock-handler';
 import { wrapMockHandlerWithAdminKnowledge } from './features/knowledge/mock-handler';
 import { wrapMockHandlerWithAdminQuotas } from './features/quotas/mock-handler';
@@ -31,27 +32,30 @@ import { wrapMockHandlerWithAdminFeedback } from './features/feedback/mock-handl
 
 function installApiClient() {
   // 默认真实 API；仅演示模式注入本地 Handler。
+  // Catalog 投影需在最外层，优先于旧用户 mock，读取内层 admin store。
   const demoMode = isDemoApiMode();
   const mockHandler = demoMode
-    ? wrapMockHandlerWithSkills(
-        wrapMockHandlerWithAutomations(
-          wrapMockHandlerWithTeam(
-            wrapMockHandlerWithUserKnowledge(
-              wrapMockHandlerWithAdminKnowledge(
-                wrapMockHandlerWithAdminNotifications(
-                  wrapMockHandlerWithAdminQuotas(
-                    wrapMockHandlerWithAdminModels(
-                      wrapMockHandlerWithAdminAgents(
-                        wrapMockHandlerWithAdminSkills(
-                          wrapMockHandlerWithAdminOverview(
-                            wrapMockHandlerWithAdminOperations(
-                              wrapMockHandlerWithAdminAudit(
-                                wrapMockHandlerWithAdminMetrics(
-                                  wrapMockHandlerWithAdminMemory(
-                                    wrapMockHandlerWithAdminWorkflows(
-                                      wrapMockHandlerWithAdminEvaluations(
-                                        wrapMockHandlerWithAdminRegressions(
-                                          wrapMockHandlerWithAdminFeedback(mockHandlerWithAdapters),
+    ? wrapMockHandlerWithCatalog(
+        wrapMockHandlerWithSkills(
+          wrapMockHandlerWithAutomations(
+            wrapMockHandlerWithTeam(
+              wrapMockHandlerWithUserKnowledge(
+                wrapMockHandlerWithAdminKnowledge(
+                  wrapMockHandlerWithAdminNotifications(
+                    wrapMockHandlerWithAdminQuotas(
+                      wrapMockHandlerWithAdminModels(
+                        wrapMockHandlerWithAdminAgents(
+                          wrapMockHandlerWithAdminSkills(
+                            wrapMockHandlerWithAdminOverview(
+                              wrapMockHandlerWithAdminOperations(
+                                wrapMockHandlerWithAdminAudit(
+                                  wrapMockHandlerWithAdminMetrics(
+                                    wrapMockHandlerWithAdminMemory(
+                                      wrapMockHandlerWithAdminWorkflows(
+                                        wrapMockHandlerWithAdminEvaluations(
+                                          wrapMockHandlerWithAdminRegressions(
+                                            wrapMockHandlerWithAdminFeedback(mockHandlerWithAdapters),
+                                          ),
                                         ),
                                       ),
                                     ),

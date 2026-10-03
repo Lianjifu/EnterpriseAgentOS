@@ -3,10 +3,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { ReactNode } from 'react';
-import MyInsights from '@/pages/user/home/MyInsights';
-import MyTasks from '@/pages/user/tasks';
+import MyInsights from '@/features/user/home/MyInsights';
+import MyTasks from '@/features/user/tasks';
 import AccountSettings from '@/pages/shared/AccountSettings';
-import { mockTasks } from '@/mock/user/tasks.fixtures';
+import { mockTasks } from '@/features/user/tasks/fixtures';
 import { qk } from '@/api/shared/query-keys';
 
 function makeClient() {
@@ -66,8 +66,8 @@ describe('我的任务', () => {
 
   it('switches to the schedule view', () => {
     renderTasks();
-    fireEvent.click(screen.getByRole('button', { name: '日程视图' }));
-    expect(screen.getByRole('button', { name: '日程视图' }).getAttribute('aria-pressed')).toBe('true');
+    fireEvent.change(screen.getByLabelText('任务视图'), { target: { value: 'schedule' } });
+    expect((screen.getByLabelText('任务视图') as HTMLSelectElement).value).toBe('schedule');
   });
 });
 

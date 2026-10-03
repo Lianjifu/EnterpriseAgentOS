@@ -234,6 +234,11 @@ export async function adminAgentsMockHandler(path: string, opts: MockOpts): Prom
   return undefined;
 }
 
+/** 供用户侧 catalog 投影读取同一份内存 store */
+export function listAdminAgents(): AgentEntry[] {
+  return state.agents.slice();
+}
+
 export function wrapMockHandlerWithAdminAgents(fallback: (path: string, opts: any) => Promise<unknown>): (path: string, opts: any) => Promise<unknown> {
   return async (path, opts) => {
     const r = await adminAgentsMockHandler(path, opts);

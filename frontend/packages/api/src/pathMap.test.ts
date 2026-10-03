@@ -44,22 +44,20 @@ describe('translateApiPath', () => {
   });
 
   it('matches the longest prefix first', () => {
-    // /api/skills/:id 应优先于 /api/skills 命中(skills/:id/...)路径
-    const out = translateApiPath('/api/skills/sk-1/install', 'POST');
-    expect(out.backendPath).toBe('/v1/skills/sk-1/install');
+    const out = translateApiPath('/api/memory/records/mem-1', 'GET');
+    expect(out.backendPath).toBe('/v1/memories/mem-1');
     expect(out.matched).toBe(true);
   });
 
-  it('rewrites /api/skills/:id/install → /v1/skills/:id/install', () => {
+  it('does not rewrite retired /api/skills sandbox routes', () => {
     const out = translateApiPath('/api/skills/sk-1/install', 'POST');
-    expect(out.backendPath).toBe('/v1/skills/sk-1/install');
-    expect(out.matched).toBe(true);
+    expect(out.matched).toBe(false);
   });
 
-  it('rewrites /api/skills/:id/uninstall → /v1/skills/:id/uninstall', () => {
-    const out = translateApiPath('/api/skills/sk-1/uninstall', 'POST');
-    expect(out.backendPath).toBe('/v1/skills/sk-1/uninstall');
-    expect(out.matched).toBe(true);
+  it('passthroughs /api/admin/skills to the catalog backend', () => {
+    const out = translateApiPath('/api/admin/skills', 'GET');
+    expect(out.matched).toBe(false);
+    expect(out.backendPath).toBe('/api/admin/skills');
   });
 
   it('rewrites PATCH /api/agents/:id → PATCH /v1/agents/:id', () => {
@@ -97,9 +95,16 @@ describe('translateApiPath', () => {
     expect(out.backendPath).toBe('/v1/orchestration/plans/wf-1/runs');
   });
 
-  it('rewrites /api/knowledge/doc/:id → /v1/knowledge/assets/:id', () => {
-    const out = translateApiPath('/api/knowledge/doc/kb-7', 'GET');
-    expect(out.backendPath).toBe('/v1/knowledge/assets/kb-7');
+  it('passthroughs /api/admin/knowledge and /api/catalog/knowledge', () => {
+    const admin = translateApiPath('/api/admin/knowledge/kbs', 'GET');
+    expect(admin.matched).toBe(false);
+    expect(admin.backendPath).toBe('/api/admin/knowledge/kbs');
+    const catalog = translateApiPath('/api/catalog/knowledge', 'GET');
+    expect(catalog.matched).toBe(false);
+    expect(catalog.backendPath).toBe('/api/catalog/knowledge');
+    const docs = translateApiPath('/api/knowledge/docs', 'GET');
+    expect(docs.matched).toBe(false);
+    expect(docs.backendPath).toBe('/api/knowledge/docs');
   });
 
   it('picks method-aware rule for same path', () => {
@@ -212,12 +217,9 @@ describe('translateApiPath', () => {
   });
 
   // ── batch 5:knowledge packages verb mismatch ─────────────────────────
-  it('rewrites DELETE /api/knowledge/packages/:id/delete → DELETE /v1/knowledge/packages/:id', () => {
-    // mock 走 /packages/:id/delete 子路径,backend 走 /packages/:id DELETE 动词
+  it('falls through DELETE /api/knowledge/packages/:id/delete (package API retired)', () => {
     const out = translateApiPath('/api/knowledge/packages/p-1/delete', 'DELETE');
-    expect(out.matched).toBe(true);
-    expect(out.method).toBe('DELETE');
-    expect(out.backendPath).toBe('/v1/knowledge/packages/p-1');
+    expect(out.matched).toBe(false);
   });
 
   // ── batch 6:uid-注入型路径 ────────────────────────────────────────
@@ -388,16 +390,14 @@ describe('translateApiPath', () => {
     expect(out.backendPath).toBe('/v1/memories/mem-1');
   });
 
-  it('rewrites GET /api/skills/invocations → GET /v1/skills/invocations', () => {
+  it('falls through GET /api/skills/invocations (sandbox skill API retired)', () => {
     const out = translateApiPath('/api/skills/invocations', 'GET');
-    expect(out.matched).toBe(true);
-    expect(out.backendPath).toBe('/v1/skills/invocations');
+    expect(out.matched).toBe(false);
   });
 
-  it('rewrites POST /api/skills/invocations/:invId/cancel → POST /v1/skills/invocations/:invId/cancel', () => {
+  it('falls through POST /api/skills/invocations/:invId/cancel (sandbox skill API retired)', () => {
     const out = translateApiPath('/api/skills/invocations/inv-1/cancel', 'POST');
-    expect(out.matched).toBe(true);
-    expect(out.backendPath).toBe('/v1/skills/invocations/inv-1/cancel');
+    expect(out.matched).toBe(false);
   });
 
   it('rewrites POST /api/workflows/:id/runs/:runId/cancel → POST /v1/orchestration/runs/:runId/cancel', () => {

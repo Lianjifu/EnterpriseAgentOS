@@ -111,23 +111,19 @@ const ROUTE_TABLE: Array<{ key: string; rule: RouteRule }> = [
   // 通过 getUserId 回调在 fetch 前替换 <<USER_ID>>
   { key: '/api/api-keys', rule: { method: 'GET', backendPath: '/v1/identity/users/<<USER_ID>>/api-keys', note: '需要当前用户 uid' } },
 
-  // ── skill(prefix=/v1/skills)─────────────────────────────────────────
-  // backend 实际端点: GET/POST ""(列表/创建), GET/PATCH/DELETE "/{skill_id}",
-  // POST "/{skill_id}/install", POST "/{skill_id}/invoke",
-  // GET "/invocations/{id}", GET "/invocations", POST "/invocations/{id}/cancel"
-  // 无 /governance/* /catalog* /audit /permissions /import* /preflight /impact /
-  //   uninstall /lifecycle /runtime /test /versions /packs —— 全部走 passthrough
-  { key: '/api/skills/:id/invoke', rule: { method: 'POST', backendPath: '/v1/skills/:id/invoke' } },
-  { key: '/api/skills/:id/install', rule: { method: 'POST', backendPath: '/v1/skills/:id/install' } },
-  { key: '/api/skills/:id/uninstall', rule: { method: 'POST', backendPath: '/v1/skills/:id/uninstall' } },
-  { key: '/api/skills/:id', rule: { method: 'PATCH', backendPath: '/v1/skills/:id' } },
-  { key: '/api/skills/:id', rule: { method: 'DELETE', backendPath: '/v1/skills/:id' } },
-  { key: '/api/skills/:id', rule: { method: 'GET', backendPath: '/v1/skills/:id' } },
-  { key: '/api/skills/invocations/:invId/cancel', rule: { method: 'POST', backendPath: '/v1/skills/invocations/:invId/cancel' } },
-  { key: '/api/skills/invocations/:invId', rule: { method: 'GET', backendPath: '/v1/skills/invocations/:invId' } },
-  { key: '/api/skills/invocations', rule: { method: 'GET', backendPath: '/v1/skills/invocations' } },
-  { key: '/api/skills', rule: { method: 'POST', backendPath: '/v1/skills' } },
-  { key: '/api/skills', rule: { method: 'GET', backendPath: '/v1/skills' } },
+  // ── skill catalog: frontend already calls /api/admin/skills + /api/catalog/skills
+  // (passthrough to eos-app). Old /api/skills → /v1/skills sandbox routes are gone.
+  { key: '/api/skills/:id/invoke', rule: { method: 'POST', backendPath: '', unmatched: true } },
+  { key: '/api/skills/:id/install', rule: { method: 'POST', backendPath: '', unmatched: true } },
+  { key: '/api/skills/:id/uninstall', rule: { method: 'POST', backendPath: '', unmatched: true } },
+  { key: '/api/skills/:id', rule: { method: 'PATCH', backendPath: '', unmatched: true } },
+  { key: '/api/skills/:id', rule: { method: 'DELETE', backendPath: '', unmatched: true } },
+  { key: '/api/skills/:id', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/skills/invocations/:invId/cancel', rule: { method: 'POST', backendPath: '', unmatched: true } },
+  { key: '/api/skills/invocations/:invId', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/skills/invocations', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/skills', rule: { method: 'POST', backendPath: '', unmatched: true } },
+  { key: '/api/skills', rule: { method: 'GET', backendPath: '', unmatched: true } },
 
   // ── memory(prefix=/v1/memories)─────────────────────────────────────
   // backend 实际端点: POST "" / POST "/recall" / GET|DELETE "/{memory_id}" / GET ""
@@ -140,22 +136,16 @@ const ROUTE_TABLE: Array<{ key: string; rule: RouteRule }> = [
   { key: '/api/memory/records', rule: { method: 'POST', backendPath: '/v1/memories' } },
   { key: '/api/memory/records', rule: { method: 'GET', backendPath: '/v1/memories' } },
 
-  // ── knowledge(prefix=/v1/knowledge)─────────────────────────────────
-  // backend 实际端点: POST|GET "/packages", GET|DELETE "/packages/{id}",
-  // GET "/packages/{id}/assets", POST "/packages/{id}/assets" /assets/text,
-  // POST "/packages/{id}/search", POST "/search", DELETE "/assets/{id}"
-  // 注意:前端用 /api/knowledge/doc/:id(单数 doc),backend 用 /assets/:id
-  // 注意:前端用 /api/knowledge/packages/:id/delete 子路径,backend 用 DELETE 动词
-  // 无 /reindex /sources* /governance /audit /eval /packages/:id/publish/process —— 走 passthrough
-  { key: '/api/knowledge/doc/:id', rule: { method: 'DELETE', backendPath: '/v1/knowledge/assets/:id' } },
-  { key: '/api/knowledge/doc/:id', rule: { method: 'GET', backendPath: '/v1/knowledge/assets/:id' } },
-  { key: '/api/knowledge/docs', rule: { method: 'POST', backendPath: '/v1/knowledge/assets' } },
-  { key: '/api/knowledge/docs', rule: { method: 'GET', backendPath: '/v1/knowledge/assets' } },
-  { key: '/api/knowledge/packages/:id/delete', rule: { method: 'DELETE', backendPath: '/v1/knowledge/packages/:id' } },
-  { key: '/api/knowledge/packages/:id', rule: { method: 'GET', backendPath: '/v1/knowledge/packages/:id' } },
-  { key: '/api/knowledge/packages', rule: { method: 'POST', backendPath: '/v1/knowledge/packages' } },
-  { key: '/api/knowledge/packages', rule: { method: 'GET', backendPath: '/v1/knowledge/packages' } },
-  { key: '/api/knowledge/retrieve', rule: { method: 'POST', backendPath: '/v1/knowledge/search' } },
+  // ── knowledge catalog: /api/admin/knowledge + /api/catalog/knowledge
+  // Old /api/knowledge → /v1/knowledge package/asset routes are gone.
+  { key: '/api/knowledge/doc/:id', rule: { method: 'DELETE', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/doc/:id', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/docs', rule: { method: 'POST', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/packages/:id/delete', rule: { method: 'DELETE', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/packages/:id', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/packages', rule: { method: 'POST', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/packages', rule: { method: 'GET', backendPath: '', unmatched: true } },
+  { key: '/api/knowledge/retrieve', rule: { method: 'POST', backendPath: '', unmatched: true } },
 
   // ── orchestration(prefix=/v1/orchestration)────────────────────────
   // backend 实际端点: POST|GET "/plans", GET "/plans/{id}",

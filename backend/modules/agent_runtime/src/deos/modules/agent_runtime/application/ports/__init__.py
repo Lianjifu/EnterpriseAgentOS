@@ -99,9 +99,8 @@ class MemoryPort(Protocol):
 class SkillPort(Protocol):
     """Sync invoke. Returns the result dict or raises an AppError.
 
-    Concrete adapter: `SkillServiceAdapter` resolves the latest INSTALLED
-    install for `(tenant, workspace, skill_name)` and forwards to
-    `SkillService.invoke_skill().execute(...)`.
+    Concrete adapter: `SkillServiceAdapter` resolves a published catalog
+    skill by name and records the call via `SkillService.bump_and_describe`.
     """
 
     async def invoke(

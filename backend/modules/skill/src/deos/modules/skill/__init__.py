@@ -1,25 +1,7 @@
-"""Skill module — package CRUD, install with RunToken, sandbox invocation."""
+"""Skill catalog module — admin CRUD + user projection."""
 
-from deos.modules.skill.application.invocation_runner import InvocationRunner
 from deos.modules.skill.application.services import SkillService
-from deos.modules.skill.application.skill_factory import SkillServiceFactory
-from deos.modules.skill.domain.entities import (
-    NetworkPolicy,
-    SkillInstall,
-    SkillInstallStatus,
-    SkillInvocation,
-    SkillInvocationStatus,
-    SkillPackage,
-)
+from deos.modules.skill.domain.entities import Skill
+from deos.modules.skill.domain.errors import SkillNotFound
 
-__all__ = [
-    "InvocationRunner",
-    "NetworkPolicy",
-    "SkillInstall",
-    "SkillInstallStatus",
-    "SkillInvocation",
-    "SkillInvocationStatus",
-    "SkillPackage",
-    "SkillService",
-    "SkillServiceFactory",
-]
+__all__ = ["Skill", "SkillNotFound", "SkillService"]

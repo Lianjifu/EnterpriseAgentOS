@@ -27,7 +27,7 @@ export EAOS_EOSAPP_HOST="${EAOS_EOSAPP_HOST:-127.0.0.1}"
 # Frontend pathMap translates /api/identity/* → /v1/identity/*, so any
 # /v1/identity/* traffic should reach the eos-app identity router.
 # Comma-separated; default = identity only (other modules still de-app).
-export EAOS_EOSAPP_PATH_PREFIXES="${EAOS_EOSAPP_PATH_PREFIXES:-/v1/identity}"
+export EAOS_EOSAPP_PATH_PREFIXES="${EAOS_EOSAPP_PATH_PREFIXES:-/v1/identity,/api/admin,/api/catalog,/api/user/skills,/api/knowledge}"
 
 # ── Postgres (eaos-specific, separate from de-app's :5432) ────────────
 export EAOS_PG_PORT="${EAOS_PG_PORT:-5434}"

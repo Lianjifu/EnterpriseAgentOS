@@ -28,7 +28,10 @@ EOSAPP_HOST = os.environ.get("EAOS_EOSAPP_HOST", "127.0.0.1")
 EOSAPP_PORT = int(os.environ.get("EAOS_EOSAPP_PORT", "8200"))
 EOSAPP_PATH_PREFIXES = [
     p.strip()
-    for p in os.environ.get("EAOS_EOSAPP_PATH_PREFIXES", "/v1/identity").split(",")
+    for p in os.environ.get(
+        "EAOS_EOSAPP_PATH_PREFIXES",
+        "/v1/identity,/api/admin,/api/catalog,/api/user/skills,/api/knowledge",
+    ).split(",")
     if p.strip()
 ]
 LOG_DIR = os.environ.get(

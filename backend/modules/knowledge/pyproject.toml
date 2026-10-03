@@ -1,15 +1,15 @@
 [project]
 name = "deos-knowledge"
 version = "0.1.0"
-description = "Knowledge module — RAG ingestion + retrieval; P7 of doc 12."
+description = "Knowledge catalog: admin KBs/docs/sources and user-side published projection"
 requires-python = ">=3.12"
 dependencies = [
     "eos-kernel",
     "eos-schema",
     "eos-persistence",
-    "eos-vector",
-    "eos-messaging",
-    "eos-pack-signing",
+    "eos-auth",
+    "eos-http",
+    "fastapi>=0.115.0",
     "pydantic>=2.9",
 ]
 

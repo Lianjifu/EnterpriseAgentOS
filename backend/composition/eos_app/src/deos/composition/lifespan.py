@@ -142,7 +142,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             if knowledge_factory is not None:
                 try:
                     knowledge_adapter = KnowledgeServiceAdapter(
-                        knowledge_factory.for_session()
+                        knowledge_factory.for_session(session)
                     )
                 except Exception:  # pragma: no cover - defensive  # noqa: BLE001
                     _log.warning(
@@ -226,94 +226,23 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.tool_factory = _ToolFactory()
 
     # ── per-request skill factory ─────────────────────────────────────────
-    from deos.modules.skill.adapter.events import MessagingSkillEventPublisher
     from deos.modules.skill.adapter.persistence.repositories import (
-        SqlSkillInstallRepository,
-        SqlSkillInvocationRepository,
         SqlSkillRepository,
+        SqlSkillUserStateRepository,
     )
-    from deos.modules.skill.adapter.persistence.uow import SqlSkillUnitOfWork
-    from deos.modules.skill.adapter.run_token import EosRunTokenIssuer
-    from deos.modules.skill.application.invocation_runner import InvocationRunner
     from deos.modules.skill.application.services import SkillService
 
-    skill_bus = container.bus()
-    skill_publisher = MessagingSkillEventPublisher(skill_bus)
-    skill_run_token_issuer = EosRunTokenIssuer(
-        secret=container.settings.run_token_secret,
-        default_ttl_seconds=container.settings.skill_run_token_ttl_seconds,
-    )
-    skill_artifacts = container.skill_artifact_store()
-    app.state.sandbox = container.sandbox()
-
     class _SkillFactory:
-        def __init__(self) -> None:
-            self._publisher = skill_publisher
-            self._run_token_issuer = skill_run_token_issuer
-            self._artifacts = skill_artifacts
-            self._default_timeout = (
-                container.settings.skill_invocation_default_timeout_seconds
-            )
-            self._tail_cap = container.settings.skill_artifact_tail_max_bytes
-            self._sandbox = app.state.sandbox
-            self._vetter = container.skill_vetter()
-            # LLM credentials forwarded to the sandbox so the
-            # ``skp.office.*`` entry-points can call the platform
-            # model. Empty fields are passed through as empty strings;
-            # the entry-points treat that as "fall back to placeholder".
-            self._llm_http_url = container.settings.llm_base_url
-            self._llm_api_key = container.settings.llm_api_key
-            self._llm_model = container.settings.llm_default_model
-
-        def _build_runner(self, session) -> InvocationRunner:  # type: ignore[no-untyped-def]
-            invocations_repo = SqlSkillInvocationRepository(session)
-            return InvocationRunner(
-                sandbox=self._sandbox,
-                invocations=invocations_repo,
-                publisher=self._publisher,
-                artifacts=self._artifacts,
-                default_timeout_seconds=self._default_timeout,
-                tail_cap_bytes=self._tail_cap,
-                llm_http_url=self._llm_http_url,
-                llm_api_key=self._llm_api_key,
-                llm_model=self._llm_model,
-            )
-
         def for_session(self, session):  # type: ignore[no-untyped-def]
-            class _SessionBoundUoW(SqlSkillUnitOfWork):
-                def __init__(self, s) -> None:  # type: ignore[no-untyped-def]
-                    self._s = s
-                    self.skills = SqlSkillRepository(s)
-                    self.installs = SqlSkillInstallRepository(s)
-                    self.invocations = SqlSkillInvocationRepository(s)
-
-                async def __aenter__(self):  # type: ignore[no-untyped-def,override]
-                    return self
-
-                async def __aexit__(self, *exc) -> None:
-                    return None
-
-                async def commit(self) -> None:
-                    return None
-
-                async def rollback(self) -> None:
-                    return None
-
             return SkillService(
-                uow_factory=lambda: _SessionBoundUoW(session),
-                publisher=self._publisher,
-                run_token_issuer=self._run_token_issuer,
-                runner=self._build_runner(session),
-                skill_repository=SqlSkillRepository(session),
-                install_repository=SqlSkillInstallRepository(session),
-                invocation_repository=SqlSkillInvocationRepository(session),
-                artifacts=self._artifacts,
-                run_token_ttl_seconds=container.settings.skill_run_token_ttl_seconds,
-                vetter=self._vetter,
+                skills=SqlSkillRepository(session),
+                user_state=SqlSkillUserStateRepository(session),
             )
+
+        def __call__(self, session):  # type: ignore[no-untyped-def]
+            return self.for_session(session)
 
     app.state.skill_factory = _SkillFactory()
-    app.state.skill_vetter = container.skill_vetter()
 
     # ── per-request memory factory ──────────────────────────────────────
     from deos.modules.memory.adapter.events import MessagingMemoryEventPublisher
@@ -347,40 +276,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.memory_service_factory = _MemoryFactory()
 
     # ── per-request knowledge factory ───────────────────────────────────
-    from deos.modules.knowledge.adapter.events import (
-        MessagingKnowledgeEventPublisher,
-    )
     from deos.modules.knowledge.adapter.persistence.repositories import (
-        SqlKnowledgeRepository,
+        SqlKnowledgeCatalogRepository,
     )
-    from deos.modules.knowledge.adapter.persistence.vector_adapter import (
-        PgKnowledgeVectorAdapter,
-    )
-    from deos.modules.knowledge.application.chunker import FixedWindowChunker
     from deos.modules.knowledge.application.services import KnowledgeService
 
-    knowledge_bus = container.bus()
-    knowledge_publisher = MessagingKnowledgeEventPublisher(knowledge_bus)
-
     class _KnowledgeFactory:
-        def for_session(self):  # type: ignore[no-untyped-def]
-            sf = container.session_factory().maker()
-            return KnowledgeService.from_parts(
-                repository=SqlKnowledgeRepository(sf),
-                storage=container.knowledge_storage(),
-                embedding=container.memory_embedding_adapter(),
-                vector_search=PgKnowledgeVectorAdapter(
-                    store=container.knowledge_vector_store(),
-                ),
-                publisher=knowledge_publisher,
-                chunker=FixedWindowChunker(),
-                policy_guard=policy_guard,
-                default_chunk_size=container.settings.knowledge_default_chunk_size,
-                default_chunk_overlap=(
-                    container.settings.knowledge_default_chunk_overlap
-                ),
-                vetter=container.knowledge_vetter(),
-            )
+        def for_session(self, session):  # type: ignore[no-untyped-def]
+            return KnowledgeService(SqlKnowledgeCatalogRepository(session))
+
+        def __call__(self, session):  # type: ignore[no-untyped-def]
+            return self.for_session(session)
 
     app.state.knowledge_service_factory = _KnowledgeFactory()
 
@@ -595,18 +501,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     if container.settings.platform_seed_default_plans:
         await _seed_default_plans(container)
 
-    # A6 — Office skill packs: walks packs_root for signed manifests
-    # and registers each via the wired vetter.  Idempotent (per-pack
-    # SkillAlreadyExists is swallowed).  Skipped silently when the
-    # pack root doesn't exist (e.g. tests, ephemeral deploys).
+    # Catalog skills are created via /api/admin/skills; signed office
+    # skill packs are no longer seeded into sandbox runtimes.
     if container.settings.platform_seed_office_skill_packs:
-        await _seed_office_skill_packs(app, container)
+        _log.info("office skill pack seed skipped (skill catalog replaces packs)")
 
-    # Tier B — Office knowledge + plan packs mirror the skill seeder.
-    # Both honor their own ``*SigningMode`` setting so a pack signed for
-    # a local trust dir is rejected when ``disabled`` is in effect.
+    # Catalog knowledge is created via /api/admin/knowledge; signed office
+    # knowledge packs are no longer seeded into RAG packages.
     if container.settings.platform_seed_office_knowledge_packs:
-        await _seed_office_knowledge_packs(app, container)
+        _log.info("office knowledge pack seed skipped (knowledge catalog replaces packs)")
     if container.settings.platform_seed_office_plan_packs:
         await _seed_office_plan_packs(app, container)
 
@@ -948,293 +851,6 @@ async def _seed_builtin_eval_datasets(app: FastAPI, container: Container) -> Non
     await sf.commit()
     if seeded:
         _log.info("seeded golden-default eval dataset for %d tenants", seeded)
-
-
-async def _seed_office_skill_packs(app: FastAPI, container: Container) -> None:
-    """A6 — walk ``packs/office/skills/*/`` and register every pack.
-
-    For every ``<pack_dir>/manifest.json`` + ``<pack_dir>/signature.json``
-    pair, calls :class:`RegisterSkillUseCase` against the demo tenant +
-    workspace using the wired vetter (``LocalTrustStoreSkillVetter`` or
-    ``NoOpSkillVetter`` depending on ``EOS_SKILL_SIGNING_MODE``).
-
-    Idempotent — :class:`SkillAlreadyExists` is swallowed per-pack.
-    Malformed packs (missing fields, bad signature) are logged at
-    ``warning`` and skipped — the boot never crashes on a bad pack.
-    """
-    import json
-    from pathlib import Path
-
-    from deos.modules.identity.adapter.persistence.repositories import (
-        SqlTenantRepository,
-        SqlWorkspaceRepository,
-    )
-    from deos.modules.skill.domain.entities import NetworkPolicy
-    from deos.modules.skill.domain.errors import (
-        InvalidSkillSpec,
-        SkillAlreadyExists,
-        SkillSignatureInvalid,
-        SkillSignerUntrusted,
-    )
-    from eos_schema.ids import TenantId, UserId, WorkspaceId
-
-    packs_root = Path(container.settings.platform_office_skill_packs_root)
-    if not packs_root.is_absolute():
-        # Resolve relative to the repo root (lifespan.py lives at
-        # backend/composition/eos_app/src/deos/composition/lifespan.py;
-        # parents[3] lands on backend/).
-        packs_root = (Path(__file__).parents[3] / packs_root).resolve()
-    if not packs_root.is_dir():
-        _log.info("office skill packs root %s does not exist; skipping", packs_root)
-        return
-
-    vetter = container.skill_vetter()
-    vetter_label = type(vetter).__name__
-    trust_key_count = (
-        getattr(vetter, "trust_key_count", None)
-        if vetter_label == "LocalTrustStoreSkillVetter"
-        else None
-    )
-
-    factory = getattr(app.state, "skill_factory", None)
-    if factory is None:
-        _log.warning("skill_factory not wired; skipping office skill pack seed")
-        return
-
-    sf = container.session_factory()
-    async with sf.session() as session:
-        tenant_repo = SqlTenantRepository(session)
-        workspace_repo = SqlWorkspaceRepository(session)
-
-        demo_tenant = await tenant_repo.get_by_slug("demo")
-        if demo_tenant is None:
-            _log.info("demo tenant not present; skipping office skill pack seed")
-            return
-        workspaces = await workspace_repo.list_for_tenant(
-            tenant_id=demo_tenant.id, limit=1, offset=0
-        )
-        if not workspaces:
-            _log.info("demo workspace not present; skipping office skill pack seed")
-            return
-        demo_workspace = workspaces[0]
-
-        svc = factory.for_session(session)
-        register_uc = svc.register_skill
-
-        seeded = 0
-        skipped_existing = 0
-        rejected: list[tuple[str, str]] = []
-        for pack_dir in sorted(packs_root.iterdir()):
-            if not pack_dir.is_dir():
-                continue
-            manifest_path = pack_dir / "manifest.json"
-            signature_path = pack_dir / "signature.json"
-            if not manifest_path.is_file():
-                _log.warning(
-                    "office pack %s: missing manifest.json; skipping", pack_dir.name
-                )
-                continue
-            if not signature_path.is_file():
-                _log.warning(
-                    "office pack %s: missing signature.json; skipping",
-                    pack_dir.name,
-                )
-                continue
-            try:
-                manifest = json.loads(manifest_path.read_text())
-                signature_doc = json.loads(signature_path.read_text())
-                # Build SkillPackage directly (re-validates triple +
-                # canonical fields).  RegisterSkillUseCase then runs the
-                # vetter.  Using ``create()`` keeps the same code path
-                # the HTTP layer takes.
-                await register_uc.execute(
-                    tenant_id=TenantId(demo_tenant.id),
-                    workspace_id=WorkspaceId(demo_workspace.id),
-                    registered_by=UserId(demo_tenant.id),
-                    name=str(manifest["name"]),
-                    version=str(manifest["version"]),
-                    description=str(manifest.get("description", "")),
-                    entrypoint=str(manifest["entrypoint"]),
-                    image=str(manifest["image"]),
-                    parameters_schema=dict(manifest.get("parameters_schema") or {}),
-                    artifact_uri=str(manifest.get("artifact_uri", "")),
-                    network_policy=NetworkPolicy(
-                        str(manifest.get("network_policy", "default"))
-                    ),
-                    cpu_quota=manifest.get("cpu_quota"),
-                    memory_bytes=manifest.get("memory_bytes"),
-                    timeout_seconds=int(manifest.get("timeout_seconds", 30)),
-                    signature=str(signature_doc.get("signature", "")),
-                    signer_key_id=str(signature_doc.get("signer_key_id", "")),
-                    image_digest=str(manifest.get("image_digest", "")),
-                )
-                seeded += 1
-            except SkillAlreadyExists:
-                skipped_existing += 1
-            except InvalidSkillSpec as exc:
-                rejected.append((pack_dir.name, f"INVALID_SKILL_SPEC: {exc}"))
-            except SkillSignatureInvalid as exc:
-                rejected.append((pack_dir.name, f"SKILL_SIGNATURE_INVALID: {exc}"))
-            except SkillSignerUntrusted as exc:
-                rejected.append((pack_dir.name, f"SKILL_SIGNER_UNTRUSTED: {exc}"))
-            except Exception as exc:  # noqa: BLE001 — pack loader must never crash boot
-                rejected.append((pack_dir.name, f"{type(exc).__name__}: {exc}"))
-
-        for name, reason in rejected:
-            _log.warning("office pack rejected: %s — %s", name, reason)
-        if trust_key_count is not None:
-            _log.info(
-                "seeded %d office skill packs (vetter=%s, trust_keys=%d, "
-                "skipped_existing=%d, rejected=%d)",
-                seeded,
-                vetter_label,
-                trust_key_count,
-                skipped_existing,
-                len(rejected),
-            )
-        else:
-            _log.info(
-                "seeded %d office skill packs (vetter=%s, skipped_existing=%d, "
-                "rejected=%d)",
-                seeded,
-                vetter_label,
-                skipped_existing,
-                len(rejected),
-            )
-
-
-async def _seed_office_knowledge_packs(app: FastAPI, container: Container) -> None:
-    """Tier B — walk ``packs/office/knowledge/*/`` and register every pack.
-
-    For every ``<pack_dir>/manifest.json`` + ``<pack_dir>/signature.json``
-    pair, calls :class:`CreateKnowledgePackageUseCase` against the demo
-    tenant + workspace using the wired vetter (``LocalTrustStoreKnowledgeVetter``
-    or ``NoOpKnowledgeVetter`` depending on ``EOS_KNOWLEDGE_SIGNING_MODE``).
-
-    Idempotent — :class:`KnowledgePackageNameConflict` is swallowed per-pack.
-    Malformed packs (missing fields, bad signature) are logged at
-    ``warning`` and skipped — the boot never crashes on a bad pack.
-    """
-    import json
-    from pathlib import Path
-
-    from deos.modules.identity.adapter.persistence.repositories import (
-        SqlTenantRepository,
-        SqlWorkspaceRepository,
-    )
-    from deos.modules.knowledge.domain.errors import (
-        KnowledgePackageNameConflict,
-        KnowledgeSignatureInvalid,
-        KnowledgeSignerUntrusted,
-        KnowledgeValidationError,
-    )
-    from eos_schema.ids import TenantId, WorkspaceId
-
-    packs_root = Path(container.settings.platform_office_knowledge_packs_root)
-    if not packs_root.is_absolute():
-        packs_root = (Path(__file__).parents[3] / packs_root).resolve()
-    if not packs_root.is_dir():
-        _log.info("office knowledge packs root %s does not exist; skipping", packs_root)
-        return
-
-    vetter = container.knowledge_vetter()
-    vetter_label = type(vetter).__name__
-    trust_key_count = getattr(vetter, "trust_key_count", None)
-
-    factory = getattr(app.state, "knowledge_service_factory", None)
-    if factory is None:
-        _log.warning(
-            "knowledge_service_factory not wired; skipping office knowledge pack seed"
-        )
-        return
-
-    sf = container.session_factory()
-    async with sf.session() as session:
-        tenant_repo = SqlTenantRepository(session)
-        workspace_repo = SqlWorkspaceRepository(session)
-
-        demo_tenant = await tenant_repo.get_by_slug("demo")
-        if demo_tenant is None:
-            _log.info("demo tenant not present; skipping office knowledge pack seed")
-            return
-        workspaces = await workspace_repo.list_for_tenant(
-            tenant_id=demo_tenant.id, limit=1, offset=0
-        )
-        if not workspaces:
-            _log.info("demo workspace not present; skipping office knowledge pack seed")
-            return
-        demo_workspace = workspaces[0]
-
-    svc = factory.for_session()
-    create_uc = svc.create_package
-
-    seeded = 0
-    skipped_existing = 0
-    rejected: list[tuple[str, str]] = []
-    for pack_dir in sorted(packs_root.iterdir()):
-        if not pack_dir.is_dir():
-            continue
-        manifest_path = pack_dir / "manifest.json"
-        signature_path = pack_dir / "signature.json"
-        if not manifest_path.is_file():
-            _log.warning(
-                "office knowledge pack %s: missing manifest.json; skipping",
-                pack_dir.name,
-            )
-            continue
-        if not signature_path.is_file():
-            _log.warning(
-                "office knowledge pack %s: missing signature.json; skipping",
-                pack_dir.name,
-            )
-            continue
-        try:
-            manifest = json.loads(manifest_path.read_text())
-            signature_doc = json.loads(signature_path.read_text())
-            metadata = dict(manifest.get("metadata") or {})
-            await create_uc.execute(
-                tenant_id=TenantId(demo_tenant.id),
-                workspace_id=WorkspaceId(demo_workspace.id),
-                name=str(manifest["name"]),
-                description=str(manifest.get("description", "")),
-                metadata=metadata,
-                signature=str(signature_doc.get("signature", "")),
-                signer_key_id=str(signature_doc.get("signer_key_id", "")),
-                image_digest=str(manifest.get("image_digest", "")),
-            )
-            seeded += 1
-        except KnowledgePackageNameConflict:
-            skipped_existing += 1
-        except KnowledgeValidationError as exc:
-            rejected.append((pack_dir.name, f"INVALID_KNOWLEDGE_SPEC: {exc}"))
-        except KnowledgeSignatureInvalid as exc:
-            rejected.append((pack_dir.name, f"KNOWLEDGE_SIGNATURE_INVALID: {exc}"))
-        except KnowledgeSignerUntrusted as exc:
-            rejected.append((pack_dir.name, f"KNOWLEDGE_SIGNER_UNTRUSTED: {exc}"))
-        except Exception as exc:  # noqa: BLE001 — pack loader must never crash boot
-            rejected.append((pack_dir.name, f"{type(exc).__name__}: {exc}"))
-
-    for name, reason in rejected:
-        _log.warning("office knowledge pack rejected: %s — %s", name, reason)
-    if trust_key_count is not None:
-        _log.info(
-            "seeded %d office knowledge packs (vetter=%s, trust_keys=%d, "
-            "skipped_existing=%d, rejected=%d)",
-            seeded,
-            vetter_label,
-            trust_key_count,
-            skipped_existing,
-            len(rejected),
-        )
-    else:
-        _log.info(
-            "seeded %d office knowledge packs (vetter=%s, skipped_existing=%d, "
-            "rejected=%d)",
-            seeded,
-            vetter_label,
-            skipped_existing,
-            len(rejected),
-        )
 
 
 async def _seed_office_plan_packs(app: FastAPI, container: Container) -> None:

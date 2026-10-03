@@ -1,204 +1,227 @@
-"""KnowledgeService — composition root for knowledge use cases.
-
-Mirrors :class:`MemoryService` from P4: a dataclass holds the ports
-and lazily wires the use cases. ``from_parts`` is the factory used by
-the composition root in the FastAPI app.
-"""
+"""Knowledge catalog service — admin CRUD + user catalog projection."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any
+from uuid import UUID, uuid4
 
-from eos_schema.ids import (
-    KnowledgeAssetId,
-    KnowledgePackageId,
-    TenantId,
-    UserId,
-    WorkspaceId,
+from deos.modules.knowledge.application.ports import KnowledgeCatalogRepository
+from deos.modules.knowledge.domain.entities import (
+    KB_SCOPES,
+    RETRIEVAL_MODES,
+    SOURCE_TYPES,
+    KnowledgeBase,
+    KnowledgeSource,
+    is_workspace_visible,
 )
-
-from deos.modules.knowledge.application.chunker import ChunkerPort
-from deos.modules.knowledge.application.ports import (
-    EmbeddingPort,
-    KnowledgeEventPublisher,
-    KnowledgeRepository,
-    StoragePort,
-    VectorSearchPort,
-)
-from deos.modules.knowledge.application.use_cases.create_package import (
-    CreateKnowledgePackageUseCase,
-)
-from deos.modules.knowledge.application.use_cases.get_package import (
-    GetKnowledgePackageUseCase,
-    ListKnowledgePackagesUseCase,
-)
-from deos.modules.knowledge.application.use_cases.ingest_asset import (
-    IngestKnowledgeAssetUseCase,
-)
-from deos.modules.knowledge.application.use_cases.ingest_text import IngestTextUseCase
-from deos.modules.knowledge.application.use_cases.manage_assets import (
-    DetachKnowledgeAssetUseCase,
-    ListKnowledgeAssetsUseCase,
-)
-from deos.modules.knowledge.application.use_cases.revoke_package import (
-    RevokeKnowledgePackageUseCase,
-)
-from deos.modules.knowledge.application.use_cases.search_knowledge import (
-    SearchKnowledgeUseCase,
-)
-from deos.modules.knowledge.application.use_cases.upload_asset import (
-    UploadKnowledgeAssetUseCase,
-)
-from deos.modules.knowledge.application.vetter import KnowledgeVetter
-from deos.modules.knowledge.domain.entities import KnowledgeAsset, KnowledgePackage
-from deos.modules.knowledge.domain.value_objects import (
-    DEFAULT_CHUNK_OVERLAP,
-    DEFAULT_CHUNK_SIZE,
-    KnowledgeAssetKind,
-    RetrievalQuery,
-)
+from deos.modules.knowledge.domain.errors import KnowledgeNotFound
 
 
-@dataclass(slots=True)
 class KnowledgeService:
-    repository: KnowledgeRepository
-    storage: StoragePort
-    embedding: EmbeddingPort
-    vector_search: VectorSearchPort
-    publisher: KnowledgeEventPublisher | None = None
-    chunker: ChunkerPort | None = None
-    policy_guard: object | None = None
-    default_chunk_size: int = DEFAULT_CHUNK_SIZE
-    default_chunk_overlap: int = DEFAULT_CHUNK_OVERLAP
-    vetter: KnowledgeVetter | None = None
+    def __init__(self, catalog: KnowledgeCatalogRepository) -> None:
+        self._catalog = catalog
 
-    create_package: CreateKnowledgePackageUseCase | None = None
-    get_package: GetKnowledgePackageUseCase | None = None
-    list_packages: ListKnowledgePackagesUseCase | None = None
-    revoke_package: RevokeKnowledgePackageUseCase | None = None
-    upload_asset: UploadKnowledgeAssetUseCase | None = None
-    ingest_asset: IngestKnowledgeAssetUseCase | None = None
-    ingest_text: IngestTextUseCase | None = None
-    list_assets: ListKnowledgeAssetsUseCase | None = None
-    detach_asset: DetachKnowledgeAssetUseCase | None = None
-    search: SearchKnowledgeUseCase | None = None
+    async def list_kbs(self, *, workspace_id: UUID) -> list[dict[str, Any]]:
+        items = await self._catalog.list_kbs(workspace_id)
+        items.sort(key=lambda item: item.updated_at, reverse=True)
+        return [item.to_admin_dict() for item in items]
 
-    def __post_init__(self) -> None:
-        self.create_package = CreateKnowledgePackageUseCase(
-            repository=self.repository,
-            publisher=self.publisher,
-            policy_guard=self.policy_guard,
-            vetter=self.vetter,
-        )
-        self.get_package = GetKnowledgePackageUseCase(repository=self.repository)
-        self.list_packages = ListKnowledgePackagesUseCase(repository=self.repository)
-        self.revoke_package = RevokeKnowledgePackageUseCase(
-            repository=self.repository,
-            vector_search=self.vector_search,
-            publisher=self.publisher,
-            policy_guard=self.policy_guard,
-        )
-        self.upload_asset = UploadKnowledgeAssetUseCase(
-            repository=self.repository,
-            storage=self.storage,
-            publisher=self.publisher,
-            policy_guard=self.policy_guard,
-        )
-        self.ingest_asset = IngestKnowledgeAssetUseCase(
-            repository=self.repository,
-            storage=self.storage,
-            embedding=self.embedding,
-            chunker=self.chunker,
-            vector_search=self.vector_search,
-            publisher=self.publisher,
-            default_chunk_size=self.default_chunk_size,
-            default_chunk_overlap=self.default_chunk_overlap,
-        )
-        self.ingest_text = IngestTextUseCase(
-            repository=self.repository,
-            storage=self.storage,
-            publisher=self.publisher,
-            policy_guard=self.policy_guard,
-        )
-        self.list_assets = ListKnowledgeAssetsUseCase(repository=self.repository)
-        self.detach_asset = DetachKnowledgeAssetUseCase(
-            repository=self.repository,
-            vector_search=self.vector_search,
-            publisher=self.publisher,
-            policy_guard=self.policy_guard,
-        )
-        self.search = SearchKnowledgeUseCase(
-            repository=self.repository,
-            vector_search=self.vector_search,
-            embedding=self.embedding,
-            policy_guard=self.policy_guard,
-        )
+    async def get_kb(self, kb_id: UUID) -> dict[str, Any]:
+        kb = await self._require_kb(kb_id)
+        return kb.to_admin_dict()
 
-    # ---- façade methods --------------------------------------------------
+    async def create_kb(
+        self, *, tenant_id: UUID, workspace_id: UUID, body: dict[str, Any], owner: str
+    ) -> dict[str, Any]:
+        scope = body.get("scope") if body.get("scope") in KB_SCOPES else "部门"
+        retrieval = body.get("retrieval") if body.get("retrieval") in RETRIEVAL_MODES else "hybrid"
+        kb = KnowledgeBase.create(
+            id=_parse_id(body.get("id")),
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            name=str(body.get("name") or "未命名知识库"),
+            description=str(body.get("description") or ""),
+            owner=owner,
+            scope=scope,
+            bound_sources=[str(item) for item in (body.get("boundSources") or [])],
+            retrieval=retrieval,
+            top_k=int(body.get("topK") or 8),
+        )
+        await self._catalog.add_kb(kb)
+        return kb.to_admin_dict()
+
+    async def toggle_kb_status(self, kb_id: UUID) -> dict[str, Any]:
+        kb = await self._require_kb(kb_id)
+        updated = kb.toggle_status()
+        await self._catalog.update_kb(updated)
+        return updated.to_admin_dict()
+
+    async def batch_kbs(self, *, ids: list[str], action: str) -> dict[str, int]:
+        affected = 0
+        for raw in ids:
+            try:
+                kb_id = UUID(str(raw))
+            except ValueError:
+                continue
+            kb = await self._catalog.get_kb(kb_id)
+            if kb is None:
+                continue
+            if action == "pause":
+                if kb.status == "paused":
+                    continue
+                updated = kb.pause()
+            elif action == "rebuild":
+                updated = kb.rebuild()
+            else:
+                affected += 1
+                continue
+            await self._catalog.update_kb(updated)
+            affected += 1
+        return {"affected": affected}
+
+    async def list_docs(self, *, workspace_id: UUID) -> list[dict[str, Any]]:
+        items = await self._catalog.list_docs(workspace_id)
+        items.sort(key=lambda item: item.updated_at, reverse=True)
+        return [item.to_admin_dict() for item in items]
+
+    async def list_sources(self, *, workspace_id: UUID) -> list[dict[str, Any]]:
+        items = await self._catalog.list_sources(workspace_id)
+        items.sort(key=lambda item: item.updated_at, reverse=True)
+        return [item.to_admin_dict() for item in items]
+
+    async def create_source(
+        self, *, tenant_id: UUID, workspace_id: UUID, body: dict[str, Any]
+    ) -> dict[str, Any]:
+        source_type = body.get("type") if body.get("type") in SOURCE_TYPES else "api"
+        source = KnowledgeSource.create(
+            id=_parse_id(body.get("id")),
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            name=str(body.get("name") or "未命名数据源"),
+            type=source_type,
+            schedule=str(body.get("schedule") or ""),
+        )
+        await self._catalog.add_source(source)
+        return source.to_admin_dict()
+
+    async def list_tasks(self, *, workspace_id: UUID) -> list[dict[str, Any]]:
+        items = await self._catalog.list_tasks(workspace_id)
+        items.sort(key=lambda item: item.updated_at, reverse=True)
+        return [item.to_admin_dict() for item in items]
+
+    async def list_eval_cases(self, *, workspace_id: UUID) -> list[dict[str, Any]]:
+        items = await self._catalog.list_eval_cases(workspace_id)
+        items.sort(key=lambda item: item.updated_at, reverse=True)
+        return [item.to_admin_dict() for item in items]
+
+    async def list_catalog(self, *, workspace_id: UUID) -> list[dict[str, Any]]:
+        kbs = {kb.id: kb for kb in await self._catalog.list_kbs(workspace_id)}
+        docs = await self._catalog.list_docs(workspace_id)
+        out: list[dict[str, Any]] = []
+        for doc in docs:
+            kb = kbs.get(doc.kb_id)
+            if kb is None:
+                continue
+            if kb.status != "indexed" or not is_workspace_visible(kb.scope):
+                continue
+            if doc.status != "parsed":
+                continue
+            out.append(doc.to_catalog_dict(kb))
+        return out
+
+    async def ask(self, *, workspace_id: UUID, question: str) -> dict[str, Any]:
+        resources = await self.list_catalog(workspace_id=workspace_id)
+        needle = question.strip().lower()
+        hit = None
+        if needle:
+            for item in resources:
+                hay = f"{item['title']} {' '.join(item['tags'])} {item['description']}".lower()
+                if needle in hay:
+                    hit = item
+                    break
+        if hit is None and resources:
+            hit = resources[0]
+        return {"question": question, "resourceId": hit["id"] if hit else ""}
 
     async def search_query(
         self,
         *,
-        tenant_id: TenantId,
-        workspace_id: WorkspaceId,
+        tenant_id: UUID,
+        workspace_id: UUID,
         query: str,
-        top_k: int = 10,
+        top_k: int,
         package_ids: tuple[str, ...] = (),
-        asset_kind: KnowledgeAssetKind | None = None,
     ) -> list[dict[str, Any]]:
-        assert self.search is not None  # post_init
-        rq = RetrievalQuery(
-            query=query,
-            top_k=top_k,
-            package_ids=package_ids,
-            asset_kind_filter=asset_kind,
-        )
-        return await self.search.execute(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            query=rq,
-        )
+        _ = tenant_id
+        kbs = {kb.id: kb for kb in await self._catalog.list_kbs(workspace_id)}
+        allowed = {UUID(str(item)) for item in package_ids if item} if package_ids else None
+        needle = query.strip().lower()
+        scored: list[tuple[float, dict[str, Any]]] = []
+        for doc in await self._catalog.list_docs(workspace_id):
+            kb = kbs.get(doc.kb_id)
+            if kb is None or kb.status != "indexed" or not is_workspace_visible(kb.scope):
+                continue
+            if allowed is not None and kb.id not in allowed:
+                continue
+            if doc.status != "parsed":
+                continue
+            snippets = list(doc.chunks_preview) or []
+            if not snippets:
+                text = f"{doc.name} {kb.description}"
+                score = 1.0 if needle and needle in text.lower() else 0.1
+                scored.append(
+                    (
+                        score,
+                        {
+                            "id": str(doc.id),
+                            "asset_id": str(doc.id),
+                            "package_id": str(kb.id),
+                            "package_name": kb.name,
+                            "asset_name": doc.name,
+                            "content": kb.description or doc.name,
+                            "score": score,
+                            "ordinal": 0,
+                        },
+                    )
+                )
+                continue
+            for chunk in snippets:
+                hay = f"{doc.name} {chunk.heading} {chunk.snippet}".lower()
+                score = 1.0 if needle and needle in hay else (0.2 if not needle else 0.05)
+                if needle and needle in hay:
+                    score += 0.5
+                scored.append(
+                    (
+                        score,
+                        {
+                            "id": f"{doc.id}:{chunk.index}",
+                            "asset_id": str(doc.id),
+                            "package_id": str(kb.id),
+                            "package_name": kb.name,
+                            "asset_name": doc.name,
+                            "content": chunk.snippet or chunk.heading or doc.name,
+                            "score": score,
+                            "ordinal": chunk.index,
+                        },
+                    )
+                )
+        scored.sort(key=lambda item: item[0], reverse=True)
+        return [item[1] for item in scored[: max(1, top_k)]]
 
-    # ---- factory --------------------------------------------------------
+    async def _require_kb(self, kb_id: UUID):
+        kb = await self._catalog.get_kb(kb_id)
+        if kb is None:
+            raise KnowledgeNotFound(f"knowledge base {kb_id} not found")
+        return kb
 
-    @classmethod
-    def from_parts(
-        cls,
-        *,
-        repository: KnowledgeRepository,
-        storage: StoragePort,
-        embedding: EmbeddingPort,
-        vector_search: VectorSearchPort,
-        publisher: KnowledgeEventPublisher | None = None,
-        chunker: ChunkerPort | None = None,
-        policy_guard: object | None = None,
-        default_chunk_size: int = DEFAULT_CHUNK_SIZE,
-        default_chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
-        vetter: KnowledgeVetter | None = None,
-    ) -> KnowledgeService:
-        return cls(
-            repository=repository,
-            storage=storage,
-            embedding=embedding,
-            vector_search=vector_search,
-            publisher=publisher,
-            chunker=chunker,
-            policy_guard=policy_guard,
-            default_chunk_size=default_chunk_size,
-            default_chunk_overlap=default_chunk_overlap,
-            vetter=vetter,
-        )
+
+def _parse_id(raw: Any) -> UUID:
+    if raw:
+        try:
+            return UUID(str(raw))
+        except ValueError:
+            pass
+    return uuid4()
 
 
 __all__ = ["KnowledgeService"]
-
-
-# Silence "unused import" lints for names only re-exported via __all__.
-_ = (
-    KnowledgeAsset,
-    KnowledgePackage,
-    KnowledgeAssetId,
-    KnowledgePackageId,
-    UserId,
-)

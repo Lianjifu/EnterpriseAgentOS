@@ -1,257 +1,202 @@
-"""SQLAlchemy repository implementations of the skill application ports.
-
-PK-only lookups verify `tenant_id` against the value bound via
-`bind_tenant_to_session` (defense in depth on top of the auto-filter
-installed by `eos_persistence.tenant_guard.install_tenant_loader`).
-"""
-
 from __future__ import annotations
 
-from collections.abc import Sequence
 from uuid import UUID
 
 from eos_persistence.tenant_guard import current_tenant_id
-from eos_schema.ids import (
-    SkillId,
-    SkillInstallId,
-    SkillInvocationId,
-    TenantId,
-    WorkspaceId,
-)
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from deos.modules.skill.adapter.persistence.mappers import (
-    skill_install_domain_to_orm,
-    skill_install_orm_to_domain,
-    skill_invocation_domain_to_orm,
-    skill_invocation_orm_to_domain,
-    skill_package_domain_to_orm,
-    skill_package_orm_to_domain,
-)
-from deos.modules.skill.adapter.persistence.models import (
-    SkillInstallORM,
-    SkillInvocationORM,
-    SkillPackageORM,
-)
+from deos.modules.skill.adapter.persistence.models import SkillORM, SkillUserStateORM
 from deos.modules.skill.application.ports import (
-    SkillInstallRepository,
-    SkillInvocationRepository,
     SkillRepository,
+    SkillUserStateRepository,
 )
 from deos.modules.skill.domain.entities import (
-    SkillInstall,
-    SkillInstallStatus,
-    SkillInvocation,
-    SkillInvocationStatus,
-    SkillPackage,
+    AuditEntry,
+    SchemaField,
+    Skill,
+    VersionEntry,
 )
 
 
-def _cross_tenant(o: object) -> bool:
+def _cross_tenant(row: object) -> bool:
     bound = current_tenant_id()
     if bound is None:
         return False
-    return getattr(o, "tenant_id", None) != bound
+    return getattr(row, "tenant_id", None) != bound
+
+
+def skill_to_domain(row: SkillORM) -> Skill:
+    return Skill(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        workspace_id=row.workspace_id,
+        name=row.name,
+        description=row.description,
+        type=row.type,  # type: ignore[arg-type]
+        owner=row.owner,
+        status=row.status,  # type: ignore[arg-type]
+        version=row.version,
+        updated_at=row.updated_at,
+        created_at=row.created_at,
+        calls=row.calls,
+        success_rate=row.success_rate,
+        error_rate=row.error_rate,
+        avg_latency_ms=row.avg_latency_ms,
+        rating=row.rating,
+        risk=row.risk,  # type: ignore[arg-type]
+        need_confirm=row.need_confirm,
+        visible_scope=list(row.visible_scope or ["部门"]),
+        tags=list(row.tags or []),
+        starred=row.starred,
+        input_schema=[SchemaField.from_dict(item) for item in (row.input_schema or [])],
+        output_schema=[SchemaField.from_dict(item) for item in (row.output_schema or [])],
+        versions=[VersionEntry.from_dict(item) for item in (row.versions or [])],
+        trend=list(row.trend or [0] * 12),
+        used_by_agents=list(row.used_by_agents or []),
+        audit_log=[AuditEntry.from_dict(item) for item in (row.audit_log or [])],
+    )
+
+
+def _apply(row: SkillORM, skill: Skill) -> None:
+    row.name = skill.name
+    row.description = skill.description
+    row.type = skill.type
+    row.owner = skill.owner
+    row.status = skill.status
+    row.version = skill.version
+    row.calls = skill.calls
+    row.success_rate = skill.success_rate
+    row.error_rate = skill.error_rate
+    row.avg_latency_ms = skill.avg_latency_ms
+    row.rating = skill.rating
+    row.risk = skill.risk
+    row.need_confirm = skill.need_confirm
+    row.visible_scope = list(skill.visible_scope)
+    row.tags = list(skill.tags)
+    row.starred = skill.starred
+    row.input_schema = [item.to_dict() for item in skill.input_schema]
+    row.output_schema = [item.to_dict() for item in skill.output_schema]
+    row.versions = [item.to_dict() for item in skill.versions]
+    row.trend = list(skill.trend)
+    row.used_by_agents = list(skill.used_by_agents)
+    row.audit_log = [item.to_dict() for item in skill.audit_log]
+    row.updated_at = skill.updated_at
 
 
 class SqlSkillRepository(SkillRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._s = session
 
-    async def add(self, package: SkillPackage) -> None:
-        self._s.add(skill_package_domain_to_orm(package))
+    async def add(self, skill: Skill) -> None:
+        row = SkillORM(
+            id=skill.id,
+            tenant_id=skill.tenant_id,
+            workspace_id=skill.workspace_id,
+            created_at=skill.created_at,
+            updated_at=skill.updated_at,
+        )
+        _apply(row, skill)
+        self._s.add(row)
 
-    async def update(self, package: SkillPackage) -> None:
-        o = await self._s.get(SkillPackageORM, package.id)
-        if o is None or _cross_tenant(o):
+    async def get(self, skill_id: UUID) -> Skill | None:
+        row = await self._s.get(SkillORM, skill_id)
+        if row is None or _cross_tenant(row):
+            return None
+        return skill_to_domain(row)
+
+    async def get_by_name(self, *, workspace_id: UUID, name: str) -> Skill | None:
+        result = await self._s.execute(
+            select(SkillORM).where(SkillORM.workspace_id == workspace_id, SkillORM.name == name)
+        )
+        row = result.scalars().first()
+        if row is None or _cross_tenant(row):
+            return None
+        return skill_to_domain(row)
+
+    async def list_for_workspace(self, workspace_id: UUID) -> list[Skill]:
+        result = await self._s.execute(
+            select(SkillORM).where(SkillORM.workspace_id == workspace_id)
+        )
+        return [skill_to_domain(row) for row in result.scalars().all() if not _cross_tenant(row)]
+
+    async def update(self, skill: Skill) -> None:
+        row = await self._s.get(SkillORM, skill.id)
+        if row is None or _cross_tenant(row):
             return
-        o.name = package.name
-        o.version = package.version
-        o.description = package.description
-        o.entrypoint = package.entrypoint
-        o.image = package.image
-        o.parameters_schema = dict(package.parameters_schema)
-        o.artifact_uri = package.artifact_uri
-        o.network_policy = package.network_policy.value
-        o.cpu_quota = package.cpu_quota
-        o.memory_bytes = package.memory_bytes
-        o.timeout_seconds = package.timeout_seconds
-        o.enabled = package.enabled
-        o.version_lock = package.version_lock
-        o.updated_at = package.updated_at
+        _apply(row, skill)
 
-    async def get(
-        self, *, tenant_id: TenantId, skill_id: SkillId
-    ) -> SkillPackage | None:
-        o = await self._s.get(SkillPackageORM, skill_id)
-        if o is None or _cross_tenant(o):
-            return None
-        if o.tenant_id != tenant_id:
-            return None
-        return skill_package_orm_to_domain(o)
-
-    async def get_by_name(
-        self, *, tenant_id: TenantId, workspace_id: WorkspaceId, name: str
-    ) -> SkillPackage | None:
-        q = select(SkillPackageORM).where(
-            SkillPackageORM.name == name,
-            SkillPackageORM.workspace_id == workspace_id,
-        )
-        rows = (await self._s.execute(q)).scalars().all()
-        for o in rows:
-            if o.tenant_id == tenant_id:
-                return skill_package_orm_to_domain(o)
-        return None
-
-    async def list(
-        self,
-        *,
-        tenant_id: TenantId,
-        workspace_id: WorkspaceId,
-        limit: int = 50,
-        offset: int = 0,
-        enabled_only: bool = False,
-    ) -> Sequence[SkillPackage]:
-        q = (
-            select(SkillPackageORM)
-            .where(SkillPackageORM.workspace_id == workspace_id)
-            .order_by(SkillPackageORM.created_at.desc())
-            .limit(limit)
-            .offset(offset)
-        )
-        if enabled_only:
-            q = q.where(SkillPackageORM.enabled.is_(True))
-        rows = (await self._s.execute(q)).scalars().all()
-        return [
-            skill_package_orm_to_domain(o) for o in rows if o.tenant_id == tenant_id
-        ]
+    async def delete(self, skill_id: UUID) -> None:
+        row = await self._s.get(SkillORM, skill_id)
+        if row is None or _cross_tenant(row):
+            return
+        await self._s.delete(row)
 
 
-class SqlSkillInstallRepository(SkillInstallRepository):
+class SqlSkillUserStateRepository(SkillUserStateRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._s = session
 
-    async def add(self, install: SkillInstall) -> None:
-        self._s.add(skill_install_domain_to_orm(install))
-
-    async def update(self, install: SkillInstall) -> None:
-        o = await self._s.get(SkillInstallORM, install.id)
-        if o is None or _cross_tenant(o):
-            return
-        o.status = install.status.value
-        o.last_used_at = install.last_used_at
-        o.run_token_jti = install.run_token_jti
-
-    async def get(
-        self, *, tenant_id: TenantId, install_id: SkillInstallId
-    ) -> SkillInstall | None:
-        o = await self._s.get(SkillInstallORM, install_id)
-        if o is None or _cross_tenant(o):
-            return None
-        if o.tenant_id != tenant_id:
-            return None
-        return skill_install_orm_to_domain(o)
-
-    async def get_active(
-        self,
-        *,
-        tenant_id: TenantId,
-        workspace_id: WorkspaceId,
-        skill_id: SkillId,
-    ) -> SkillInstall | None:
-        q = (
-            select(SkillInstallORM)
-            .where(
-                SkillInstallORM.workspace_id == workspace_id,
-                SkillInstallORM.package_id == skill_id,
-                SkillInstallORM.status == SkillInstallStatus.INSTALLED.value,
+    async def _row(self, *, user_id: UUID, skill_id: UUID) -> SkillUserStateORM | None:
+        result = await self._s.execute(
+            select(SkillUserStateORM).where(
+                SkillUserStateORM.user_id == user_id,
+                SkillUserStateORM.skill_id == skill_id,
             )
-            .order_by(SkillInstallORM.installed_at.desc())
-            .limit(1)
         )
-        rows = (await self._s.execute(q)).scalars().all()
-        for o in rows:
-            if o.tenant_id == tenant_id:
-                return skill_install_orm_to_domain(o)
-        return None
-
-
-class SqlSkillInvocationRepository(SkillInvocationRepository):
-    def __init__(self, session: AsyncSession) -> None:
-        self._s = session
-
-    async def add(self, invocation: SkillInvocation) -> None:
-        self._s.add(skill_invocation_domain_to_orm(invocation))
-
-    async def update(self, invocation: SkillInvocation) -> SkillInvocation:
-        o = await self._s.get(SkillInvocationORM, invocation.id)
-        if o is None or _cross_tenant(o):
-            return invocation
-        o.status = invocation.status.value
-        o.started_at = invocation.started_at
-        o.finished_at = invocation.finished_at
-        o.latency_ms = invocation.latency_ms
-        o.result = dict(invocation.result) if invocation.result is not None else None
-        o.error_code = invocation.error_code
-        o.error_message = invocation.error_message
-        o.stdout_tail = invocation.stdout_tail
-        o.stderr_tail = invocation.stderr_tail
-        o.artifact_uri = invocation.artifact_uri
-        o.sandbox_run_id = invocation.sandbox_run_id
-        return invocation
-
-    async def get(
-        self, *, tenant_id: TenantId, invocation_id: SkillInvocationId
-    ) -> SkillInvocation | None:
-        o = await self._s.get(SkillInvocationORM, invocation_id)
-        if o is None or _cross_tenant(o):
+        row = result.scalars().first()
+        if row is None or _cross_tenant(row):
             return None
-        if o.tenant_id != tenant_id:
-            return None
-        return skill_invocation_orm_to_domain(o)
+        return row
 
-    async def get_by_id(
-        self, *, invocation_id: SkillInvocationId
-    ) -> SkillInvocation | None:
-        o = await self._s.get(SkillInvocationORM, invocation_id)
-        if o is None or _cross_tenant(o):
-            return None
-        return skill_invocation_orm_to_domain(o)
+    async def get(self, *, user_id: UUID, skill_id: UUID) -> tuple[bool, str | None]:
+        row = await self._row(user_id=user_id, skill_id=skill_id)
+        if row is None:
+            return False, None
+        return row.favorited, row.last_used or None
 
-    async def list(
+    async def set_favorite(
         self,
         *,
-        tenant_id: TenantId,
-        workspace_id: WorkspaceId,
-        skill_id: SkillId | None = None,
-        status: SkillInvocationStatus | None = None,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Sequence[SkillInvocation]:
-        q = (
-            select(SkillInvocationORM)
-            .where(SkillInvocationORM.workspace_id == workspace_id)
-            .order_by(SkillInvocationORM.started_at.desc())
-            .limit(limit)
-            .offset(offset)
-        )
-        if skill_id is not None:
-            q = q.where(SkillInvocationORM.package_id == skill_id)
-        if status is not None:
-            q = q.where(SkillInvocationORM.status == status.value)
-        rows = (await self._s.execute(q)).scalars().all()
-        return [
-            skill_invocation_orm_to_domain(o) for o in rows if o.tenant_id == tenant_id
-        ]
+        tenant_id: UUID,
+        workspace_id: UUID,
+        user_id: UUID,
+        skill_id: UUID,
+        on: bool,
+    ) -> None:
+        row = await self._row(user_id=user_id, skill_id=skill_id)
+        if row is None:
+            self._s.add(
+                SkillUserStateORM(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    user_id=user_id,
+                    skill_id=skill_id,
+                    favorited=on,
+                )
+            )
+            return
+        row.favorited = on
 
-
-__all__ = [
-    "SqlSkillInstallRepository",
-    "SqlSkillInvocationRepository",
-    "SqlSkillRepository",
-]
-
-
-# Keep `UUID` references honest for type-checkers.
-_ = UUID
+    async def record_use(
+        self,
+        *,
+        tenant_id: UUID,
+        workspace_id: UUID,
+        user_id: UUID,
+        skill_id: UUID,
+        at: str,
+    ) -> None:
+        row = await self._row(user_id=user_id, skill_id=skill_id)
+        if row is None:
+            self._s.add(
+                SkillUserStateORM(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    user_id=user_id,
+                    skill_id=skill_id,
+                    last_used=at,
+                )
+            )
+            return
+        row.last_used = at

@@ -1,232 +1,243 @@
-"""Async-SQLAlchemy implementation of :class:`KnowledgeRepository`.
-
-The repository writes via ``AsyncSession``; the ``KnowledgeEventPublisher``
-is NOT touched here — use cases emit events.
-"""
-
 from __future__ import annotations
 
-from eos_schema.ids import (
-    KnowledgeAssetId,
-    KnowledgeChunkId,
-    KnowledgePackageId,
-    TenantId,
-    WorkspaceId,
-)
-from sqlalchemy import delete, select
+from uuid import UUID
+
+from eos_persistence.tenant_guard import current_tenant_id
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from deos.modules.knowledge.adapter.persistence.mappers import (
-    asset_to_domain,
-    asset_to_orm,
-    chunk_to_domain,
-    chunk_to_orm,
-    package_to_domain,
-    package_to_orm,
-)
 from deos.modules.knowledge.adapter.persistence.models import (
-    KnowledgeAssetORM,
-    KnowledgeChunkORM,
-    KnowledgePackageORM,
+    KnowledgeBaseORM,
+    KnowledgeDocORM,
+    KnowledgeEvalCaseORM,
+    KnowledgeSourceORM,
+    KnowledgeTaskORM,
 )
-from deos.modules.knowledge.application.ports import KnowledgeRepository
+from deos.modules.knowledge.application.ports import KnowledgeCatalogRepository
 from deos.modules.knowledge.domain.entities import (
-    KnowledgeAsset,
-    KnowledgeChunk,
-    KnowledgePackage,
+    DocChunk,
+    KnowledgeBase,
+    KnowledgeDoc,
+    KnowledgeEvalCase,
+    KnowledgeSource,
+    KnowledgeTask,
 )
-from deos.modules.knowledge.domain.value_objects import KnowledgePackageStatus
 
 
-class SqlKnowledgeRepository(KnowledgeRepository):
-    """ORM-backed repository — single AsyncSession injected at construction."""
+def _cross_tenant(row: object) -> bool:
+    bound = current_tenant_id()
+    if bound is None:
+        return False
+    return getattr(row, "tenant_id", None) != bound
 
+
+def _kb_to_domain(row: KnowledgeBaseORM) -> KnowledgeBase:
+    return KnowledgeBase(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        workspace_id=row.workspace_id,
+        name=row.name,
+        description=row.description,
+        owner=row.owner,
+        scope=row.scope,  # type: ignore[arg-type]
+        status=row.status,  # type: ignore[arg-type]
+        updated_at=row.updated_at,
+        created_at=row.created_at,
+        doc_count=row.doc_count,
+        vector_count=row.vector_count,
+        tags=list(row.tags or []),
+        tone=row.tone,  # type: ignore[arg-type]
+        eval_hit_rate=row.eval_hit_rate,
+        bound_sources=list(row.bound_sources or []),
+        retrieval=row.retrieval,  # type: ignore[arg-type]
+        top_k=row.top_k,
+    )
+
+
+def _apply_kb(row: KnowledgeBaseORM, kb: KnowledgeBase) -> None:
+    row.name = kb.name
+    row.description = kb.description
+    row.owner = kb.owner
+    row.scope = kb.scope
+    row.status = kb.status
+    row.doc_count = kb.doc_count
+    row.vector_count = kb.vector_count
+    row.tags = list(kb.tags)
+    row.tone = kb.tone
+    row.eval_hit_rate = kb.eval_hit_rate
+    row.bound_sources = list(kb.bound_sources)
+    row.retrieval = kb.retrieval
+    row.top_k = kb.top_k
+    row.updated_at = kb.updated_at
+
+
+def _doc_to_domain(row: KnowledgeDocORM) -> KnowledgeDoc:
+    return KnowledgeDoc(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        workspace_id=row.workspace_id,
+        name=row.name,
+        type=row.type,  # type: ignore[arg-type]
+        kb_id=row.kb_id,
+        status=row.status,  # type: ignore[arg-type]
+        updated_at=row.updated_at,
+        created_at=row.created_at,
+        source_id=row.source_id or None,
+        size_kb=row.size_kb,
+        chunks=row.chunks,
+        citations=row.citations,
+        chunks_preview=[DocChunk.from_dict(item) for item in (row.chunks_preview or [])],
+    )
+
+
+def _source_to_domain(row: KnowledgeSourceORM) -> KnowledgeSource:
+    return KnowledgeSource(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        workspace_id=row.workspace_id,
+        name=row.name,
+        type=row.type,  # type: ignore[arg-type]
+        status=row.status,  # type: ignore[arg-type]
+        updated_at=row.updated_at,
+        created_at=row.created_at,
+        schedule=row.schedule,
+        item_count=row.item_count,
+        last_error=row.last_error,
+    )
+
+
+def _task_to_domain(row: KnowledgeTaskORM) -> KnowledgeTask:
+    return KnowledgeTask(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        workspace_id=row.workspace_id,
+        name=row.name,
+        kind=row.kind,  # type: ignore[arg-type]
+        kb_id=row.kb_id,
+        status=row.status,  # type: ignore[arg-type]
+        updated_at=row.updated_at,
+        created_at=row.created_at,
+        source_id=row.source_id or None,
+        progress=row.progress,
+        items=row.items,
+        duration=row.duration,
+        failure_reason=row.failure_reason,
+    )
+
+
+def _eval_to_domain(row: KnowledgeEvalCaseORM) -> KnowledgeEvalCase:
+    return KnowledgeEvalCase(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        workspace_id=row.workspace_id,
+        name=row.name,
+        query=row.query,
+        expected_kb=row.expected_kb,
+        actual_kb=row.actual_kb,
+        status=row.status,  # type: ignore[arg-type]
+        latency=row.latency,
+        mrr=row.mrr,
+        updated_at=row.updated_at,
+        created_at=row.created_at,
+    )
+
+
+class SqlKnowledgeCatalogRepository(KnowledgeCatalogRepository):
     def __init__(self, session: AsyncSession) -> None:
-        self._session = session
+        self._s = session
 
-    # ── packages ──────────────────────────────────────────────────────────
+    async def add_kb(self, kb: KnowledgeBase) -> None:
+        row = KnowledgeBaseORM(
+            id=kb.id,
+            tenant_id=kb.tenant_id,
+            workspace_id=kb.workspace_id,
+            created_at=kb.created_at,
+            updated_at=kb.updated_at,
+        )
+        _apply_kb(row, kb)
+        self._s.add(row)
 
-    async def add_package(self, package: KnowledgePackage) -> KnowledgePackage:
-        row = package_to_orm(package)
-        self._session.add(row)
-        await self._session.flush()
-        return package_to_domain(row)
+    async def get_kb(self, kb_id: UUID) -> KnowledgeBase | None:
+        row = await self._s.get(KnowledgeBaseORM, kb_id)
+        if row is None or _cross_tenant(row):
+            return None
+        return _kb_to_domain(row)
 
-    async def get_package(
-        self, *, tenant_id: TenantId, package_id: KnowledgePackageId
-    ) -> KnowledgePackage | None:
-        result = await self._session.execute(
-            select(KnowledgePackageORM).where(
-                KnowledgePackageORM.tenant_id == tenant_id,
-                KnowledgePackageORM.id == package_id,
+    async def list_kbs(self, workspace_id: UUID) -> list[KnowledgeBase]:
+        result = await self._s.execute(
+            select(KnowledgeBaseORM).where(KnowledgeBaseORM.workspace_id == workspace_id)
+        )
+        return [_kb_to_domain(row) for row in result.scalars().all() if not _cross_tenant(row)]
+
+    async def update_kb(self, kb: KnowledgeBase) -> None:
+        row = await self._s.get(KnowledgeBaseORM, kb.id)
+        if row is None or _cross_tenant(row):
+            return
+        _apply_kb(row, kb)
+
+    async def add_doc(self, doc: KnowledgeDoc) -> None:
+        self._s.add(
+            KnowledgeDocORM(
+                id=doc.id,
+                tenant_id=doc.tenant_id,
+                workspace_id=doc.workspace_id,
+                kb_id=doc.kb_id,
+                name=doc.name,
+                type=doc.type,
+                status=doc.status,
+                source_id=doc.source_id or "",
+                size_kb=doc.size_kb,
+                chunks=doc.chunks,
+                citations=doc.citations,
+                chunks_preview=[item.to_dict() for item in doc.chunks_preview],
+                created_at=doc.created_at,
+                updated_at=doc.updated_at,
             )
         )
-        row = result.scalar_one_or_none()
-        return package_to_domain(row) if row is not None else None
 
-    async def list_packages(
-        self,
-        *,
-        tenant_id: TenantId,
-        workspace_id: WorkspaceId,
-        limit: int = 50,
-    ) -> list[KnowledgePackage]:
-        if limit <= 0:
-            raise ValueError("limit must be > 0")
-        result = await self._session.execute(
-            select(KnowledgePackageORM)
-            .where(
-                KnowledgePackageORM.tenant_id == tenant_id,
-                KnowledgePackageORM.workspace_id == workspace_id,
-            )
-            .order_by(KnowledgePackageORM.created_at.desc())
-            .limit(limit)
+    async def get_doc(self, doc_id: UUID) -> KnowledgeDoc | None:
+        row = await self._s.get(KnowledgeDocORM, doc_id)
+        if row is None or _cross_tenant(row):
+            return None
+        return _doc_to_domain(row)
+
+    async def list_docs(self, workspace_id: UUID) -> list[KnowledgeDoc]:
+        result = await self._s.execute(
+            select(KnowledgeDocORM).where(KnowledgeDocORM.workspace_id == workspace_id)
         )
-        return [package_to_domain(r) for r in result.scalars().all()]
+        return [_doc_to_domain(row) for row in result.scalars().all() if not _cross_tenant(row)]
 
-    async def update_package(self, package: KnowledgePackage) -> KnowledgePackage:
-        existing = await self._session.get(KnowledgePackageORM, package.id)
-        if existing is None:
-            raise LookupError(f"package {package.id} not found")
-        # status / asset_count / description / metadata may have changed
-        existing.status = package.status.value
-        existing.asset_count = package.asset_count
-        existing.description = package.description
-        existing.metadata_ = dict(package.metadata)
-        existing.updated_at = package.updated_at
-        await self._session.flush()
-        return package_to_domain(existing)
-
-    # ── assets ────────────────────────────────────────────────────────────
-
-    async def add_asset(self, asset: KnowledgeAsset) -> KnowledgeAsset:
-        row = asset_to_orm(asset)
-        self._session.add(row)
-        await self._session.flush()
-        return asset_to_domain(row)
-
-    async def get_asset(
-        self, *, tenant_id: TenantId, asset_id: KnowledgeAssetId
-    ) -> KnowledgeAsset | None:
-        result = await self._session.execute(
-            select(KnowledgeAssetORM).where(
-                KnowledgeAssetORM.tenant_id == tenant_id,
-                KnowledgeAssetORM.id == asset_id,
+    async def add_source(self, source: KnowledgeSource) -> None:
+        self._s.add(
+            KnowledgeSourceORM(
+                id=source.id,
+                tenant_id=source.tenant_id,
+                workspace_id=source.workspace_id,
+                name=source.name,
+                type=source.type,
+                status=source.status,
+                schedule=source.schedule,
+                item_count=source.item_count,
+                last_error=source.last_error,
+                created_at=source.created_at,
+                updated_at=source.updated_at,
             )
         )
-        row = result.scalar_one_or_none()
-        return asset_to_domain(row) if row is not None else None
 
-    async def list_assets_for_package(
-        self,
-        *,
-        tenant_id: TenantId,
-        package_id: KnowledgePackageId,
-    ) -> list[KnowledgeAsset]:
-        result = await self._session.execute(
-            select(KnowledgeAssetORM)
-            .where(
-                KnowledgeAssetORM.tenant_id == tenant_id,
-                KnowledgeAssetORM.package_id == package_id,
-            )
-            .order_by(KnowledgeAssetORM.created_at.asc())
+    async def list_sources(self, workspace_id: UUID) -> list[KnowledgeSource]:
+        result = await self._s.execute(
+            select(KnowledgeSourceORM).where(KnowledgeSourceORM.workspace_id == workspace_id)
         )
-        return [asset_to_domain(r) for r in result.scalars().all()]
+        return [_source_to_domain(row) for row in result.scalars().all() if not _cross_tenant(row)]
 
-    async def update_asset(self, asset: KnowledgeAsset) -> KnowledgeAsset:
-        existing = await self._session.get(KnowledgeAssetORM, asset.id)
-        if existing is None:
-            raise LookupError(f"asset {asset.id} not found")
-        existing.status = asset.status.value
-        existing.chunk_count = asset.chunk_count
-        existing.error_message = asset.error_message
-        existing.metadata_ = dict(asset.metadata)
-        existing.updated_at = asset.updated_at
-        await self._session.flush()
-        return asset_to_domain(existing)
-
-    # ── chunks ────────────────────────────────────────────────────────────
-
-    async def add_chunks(
-        self,
-        *,
-        chunks: list[KnowledgeChunk],
-        embeddings: list[list[float]] | None = None,
-    ) -> list[KnowledgeChunk]:
-        if embeddings is not None and len(embeddings) != len(chunks):
-            raise ValueError(
-                f"embeddings count ({len(embeddings)}) must match chunks count ({len(chunks)})"
-            )
-        rows = [
-            chunk_to_orm(c, embedding=e)
-            for c, e in zip(
-                chunks,
-                embeddings if embeddings is not None else [None] * len(chunks),
-                strict=False,
-            )
-        ]
-        self._session.add_all(rows)
-        await self._session.flush()
-        return [chunk_to_domain(r) for r in rows]
-
-    async def list_chunks_for_asset(
-        self,
-        *,
-        tenant_id: TenantId,
-        asset_id: KnowledgeAssetId,
-    ) -> list[KnowledgeChunk]:
-        result = await self._session.execute(
-            select(KnowledgeChunkORM)
-            .where(
-                KnowledgeChunkORM.tenant_id == tenant_id,
-                KnowledgeChunkORM.asset_id == asset_id,
-            )
-            .order_by(KnowledgeChunkORM.ordinal.asc())
+    async def list_tasks(self, workspace_id: UUID) -> list[KnowledgeTask]:
+        result = await self._s.execute(
+            select(KnowledgeTaskORM).where(KnowledgeTaskORM.workspace_id == workspace_id)
         )
-        return [chunk_to_domain(r) for r in result.scalars().all()]
+        return [_task_to_domain(row) for row in result.scalars().all() if not _cross_tenant(row)]
 
-    async def delete_chunks_for_asset(
-        self, *, tenant_id: TenantId, asset_id: KnowledgeAssetId
-    ) -> int:
-        result = await self._session.execute(
-            delete(KnowledgeChunkORM)
-            .where(
-                KnowledgeChunkORM.tenant_id == tenant_id,
-                KnowledgeChunkORM.asset_id == asset_id,
-            )
-            .execution_options(synchronize_session=False)
+    async def list_eval_cases(self, workspace_id: UUID) -> list[KnowledgeEvalCase]:
+        result = await self._s.execute(
+            select(KnowledgeEvalCaseORM).where(KnowledgeEvalCaseORM.workspace_id == workspace_id)
         )
-        return int(result.rowcount or 0)  # type: ignore[attr-defined]
-
-    async def delete_chunks_for_package(
-        self, *, tenant_id: TenantId, package_id: KnowledgePackageId
-    ) -> int:
-        result = await self._session.execute(
-            delete(KnowledgeChunkORM)
-            .where(
-                KnowledgeChunkORM.tenant_id == tenant_id,
-                KnowledgeChunkORM.package_id == package_id,
-            )
-            .execution_options(synchronize_session=False)
-        )
-        return int(result.rowcount or 0)  # type: ignore[attr-defined]
-
-    async def find_chunk(
-        self, *, tenant_id: TenantId, chunk_id: KnowledgeChunkId
-    ) -> KnowledgeChunk | None:
-        result = await self._session.execute(
-            select(KnowledgeChunkORM).where(
-                KnowledgeChunkORM.tenant_id == tenant_id,
-                KnowledgeChunkORM.id == chunk_id,
-            )
-        )
-        row = result.scalar_one_or_none()
-        return chunk_to_domain(row) if row is not None else None
-
-
-__all__ = ["SqlKnowledgeRepository"]
-
-
-# Type-only re-export to keep the `KnowledgePackageStatus` import alive
-# for tests that introspect this module's namespace.
-_ = KnowledgePackageStatus
+        return [_eval_to_domain(row) for row in result.scalars().all() if not _cross_tenant(row)]

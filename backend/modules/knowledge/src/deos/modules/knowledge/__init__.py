@@ -1,35 +1,7 @@
-"""Knowledge module public surface."""
+"""Knowledge catalog module — admin CRUD and user-side published projection."""
 
-from deos.modules.knowledge.application import KnowledgeService
-from deos.modules.knowledge.domain.entities import (
-    KnowledgeAsset,
-    KnowledgeChunk,
-    KnowledgePackage,
-)
-from deos.modules.knowledge.domain.errors import (
-    KnowledgeAssetNotFound,
-    KnowledgeError,
-    KnowledgePackageNotFound,
-    KnowledgeValidationError,
-)
-from deos.modules.knowledge.domain.value_objects import (
-    KnowledgeAssetKind,
-    KnowledgeAssetStatus,
-    KnowledgePackageStatus,
-    RetrievalQuery,
-)
+from deos.modules.knowledge.application.services import KnowledgeService
+from deos.modules.knowledge.domain.entities import KnowledgeBase
+from deos.modules.knowledge.domain.errors import KnowledgeNotFound
 
-__all__ = [
-    "KnowledgeAsset",
-    "KnowledgeAssetKind",
-    "KnowledgeAssetNotFound",
-    "KnowledgeAssetStatus",
-    "KnowledgeChunk",
-    "KnowledgeError",
-    "KnowledgePackage",
-    "KnowledgePackageNotFound",
-    "KnowledgePackageStatus",
-    "KnowledgeService",
-    "KnowledgeValidationError",
-    "RetrievalQuery",
-]
+__all__ = ["KnowledgeBase", "KnowledgeNotFound", "KnowledgeService"]

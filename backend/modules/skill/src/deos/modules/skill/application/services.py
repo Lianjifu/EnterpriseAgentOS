@@ -1,132 +1,207 @@
-"""SkillService — composition root for use cases.
-
-Each use case is a thin dataclass holding its ports. `SkillService`
-binds them to the UnitOfWork + outbound adapters and is itself created
-by `SkillServiceFactory.for_session(session)` so per-request state is
-fresh and the use cases can stay stateless.
-
-Mirrors the ToolService pattern from P2 to keep the code paths
-symmetric.
-"""
+"""Skill catalog service — CRUD + user catalog projection."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from typing import Any
+from uuid import UUID, uuid4
 
-from deos.modules.skill.application.invocation_runner import InvocationRunner
 from deos.modules.skill.application.ports import (
-    RunTokenIssuer,
-    SkillArtifactStore,
-    SkillEventPublisher,
-    SkillInstallRepository,
-    SkillInvocationRepository,
     SkillRepository,
-    UnitOfWork,
+    SkillUserStateRepository,
 )
-from deos.modules.skill.application.use_cases import (
-    CancelInvocationUseCase,
-    DisableSkillUseCase,
-    GetActiveInstallUseCase,
-    GetInvocationUseCase,
-    GetSkillUseCase,
-    InstallSkillUseCase,
-    InvokeSkillUseCase,
-    ListInvocationsUseCase,
-    ListSkillsUseCase,
-    RegisterSkillUseCase,
-    UpdateSkillUseCase,
+from deos.modules.skill.domain.entities import (
+    SKILL_STATUSES,
+    SKILL_TYPES,
+    VISIBLE_SCOPES,
+    SchemaField,
+    Skill,
+    is_workspace_visible,
 )
-from deos.modules.skill.application.vetter import SkillVetter
+from deos.modules.skill.domain.errors import SkillDisabled, SkillNotFound
 
 
-@dataclass(slots=True)
 class SkillService:
-    uow_factory: type[UnitOfWork]
-    publisher: SkillEventPublisher
-    run_token_issuer: RunTokenIssuer
-    runner: InvocationRunner
-    skill_repository: SkillRepository
-    install_repository: SkillInstallRepository
-    invocation_repository: SkillInvocationRepository
-    artifacts: SkillArtifactStore
-    run_token_ttl_seconds: int = 300
-    vetter: SkillVetter | None = None
+    def __init__(
+        self,
+        skills: SkillRepository,
+        user_state: SkillUserStateRepository,
+    ) -> None:
+        self._skills = skills
+        self._user_state = user_state
 
-    register_skill: RegisterSkillUseCase | None = None
-    update_skill: UpdateSkillUseCase | None = None
-    disable_skill: DisableSkillUseCase | None = None
-    list_skills: ListSkillsUseCase | None = None
-    get_skill: GetSkillUseCase | None = None
-    install_skill: InstallSkillUseCase | None = None
-    invoke_skill: InvokeSkillUseCase | None = None
-    cancel_invocation: CancelInvocationUseCase | None = None
-    get_invocation: GetInvocationUseCase | None = None
-    list_invocations: ListInvocationsUseCase | None = None
-    get_active_install: GetActiveInstallUseCase | None = None
-
-    def __post_init__(self) -> None:
-        from deos.modules.skill.application.vetter import NoOpSkillVetter
-
-        vetter = self.vetter or NoOpSkillVetter()
-        self.register_skill = RegisterSkillUseCase(
-            uow_factory=self.uow_factory,
-            publisher=self.publisher,
-            vetter=vetter,
-        )
-        self.update_skill = UpdateSkillUseCase(
-            uow_factory=self.uow_factory, publisher=self.publisher
-        )
-        self.disable_skill = DisableSkillUseCase(
-            uow_factory=self.uow_factory, publisher=self.publisher
-        )
-        self.list_skills = ListSkillsUseCase(uow_factory=self.uow_factory)
-        self.get_skill = GetSkillUseCase(uow_factory=self.uow_factory)
-        self.install_skill = InstallSkillUseCase(
-            uow_factory=self.uow_factory,
-            publisher=self.publisher,
-            run_token_issuer=self.run_token_issuer,
-            vetter=vetter,
-            run_token_ttl_seconds=self.run_token_ttl_seconds,
-        )
-        self.invoke_skill = InvokeSkillUseCase(
-            uow_factory=self.uow_factory,
-            publisher=self.publisher,
-            runner=self.runner,
-        )
-        self.cancel_invocation = CancelInvocationUseCase(
-            uow_factory=self.uow_factory, runner=self.runner
-        )
-        self.get_invocation = GetInvocationUseCase(uow_factory=self.uow_factory)
-        self.list_invocations = ListInvocationsUseCase(uow_factory=self.uow_factory)
-        self.get_active_install = GetActiveInstallUseCase(uow_factory=self.uow_factory)
-
-    @classmethod
-    def from_parts(
-        cls,
+    async def list_admin(
+        self,
         *,
-        uow_factory: type[UnitOfWork],
-        publisher: SkillEventPublisher,
-        run_token_issuer: RunTokenIssuer,
-        runner: InvocationRunner,
-        skill_repository: SkillRepository,
-        install_repository: SkillInstallRepository,
-        invocation_repository: SkillInvocationRepository,
-        artifacts: SkillArtifactStore,
-        run_token_ttl_seconds: int = 300,
-        vetter: SkillVetter | None = None,
-    ) -> SkillService:
-        return cls(
-            uow_factory=uow_factory,
-            publisher=publisher,
-            run_token_issuer=run_token_issuer,
-            runner=runner,
-            skill_repository=skill_repository,
-            install_repository=install_repository,
-            invocation_repository=invocation_repository,
-            artifacts=artifacts,
-            run_token_ttl_seconds=run_token_ttl_seconds,
-            vetter=vetter,
+        workspace_id: UUID,
+        type_filter: str = "all",
+        status_filter: str = "all",
+        q: str = "",
+        sort: str = "updated",
+    ) -> list[dict[str, Any]]:
+        items = await self._skills.list_for_workspace(workspace_id)
+        query = q.strip().lower()
+        filtered: list[Skill] = []
+        for skill in items:
+            if type_filter not in ("all", "", None) and skill.type != type_filter:
+                continue
+            if status_filter not in ("all", "", None) and skill.status != status_filter:
+                continue
+            hay = f"{skill.name} {skill.description} {skill.owner} {' '.join(skill.tags)}".lower()
+            if query and query not in hay:
+                continue
+            filtered.append(skill)
+        if sort == "calls":
+            filtered.sort(key=lambda item: item.calls, reverse=True)
+        elif sort == "name":
+            filtered.sort(key=lambda item: item.name)
+        else:
+            filtered.sort(key=lambda item: item.updated_at, reverse=True)
+        return [item.to_admin_dict() for item in filtered]
+
+    async def get_admin(self, skill_id: UUID) -> dict[str, Any]:
+        skill = await self._require(skill_id)
+        return skill.to_admin_dict()
+
+    async def get_by_name(self, *, workspace_id: UUID, name: str) -> Skill | None:
+        return await self._skills.get_by_name(workspace_id=workspace_id, name=name)
+
+    async def create(self, *, tenant_id: UUID, workspace_id: UUID, body: dict[str, Any]) -> dict[str, Any]:
+        skill_type = body.get("type") or "Skill"
+        if skill_type not in SKILL_TYPES:
+            skill_type = "Skill"
+        skill_id = _parse_id(body.get("id"))
+        skill = Skill.create(
+            id=skill_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            name=str(body.get("name") or "未命名技能"),
+            description=str(body.get("description") or ""),
+            type=skill_type,  # type: ignore[arg-type]
+            owner=str(body.get("owner") or "管理员"),
+            risk=body.get("risk") if body.get("risk") in {"low", "medium", "high"} else "low",
+            need_confirm=bool(body.get("needConfirm", False)),
+            input_schema=[
+                SchemaField.from_dict(item)
+                for item in (body.get("inputSchema") or [])
+                if isinstance(item, dict)
+            ],
+            output_schema=[
+                SchemaField.from_dict(item)
+                for item in (body.get("outputSchema") or [])
+                if isinstance(item, dict)
+            ],
         )
+        if isinstance(body.get("tags"), list):
+            skill.tags = [str(item) for item in body["tags"]]
+        if isinstance(body.get("visibleScope"), list):
+            skill.visible_scope = [
+                item for item in body["visibleScope"] if item in VISIBLE_SCOPES
+            ] or ["部门"]
+        await self._skills.add(skill)
+        return skill.to_admin_dict()
+
+    async def update(self, *, skill_id: UUID, body: dict[str, Any], actor: str) -> dict[str, Any]:
+        skill = await self._require(skill_id)
+        patch = body.get("patch") if isinstance(body.get("patch"), dict) else body
+        updated = skill.apply_patch(patch, actor=actor)
+        await self._skills.update(updated)
+        return updated.to_admin_dict()
+
+    async def delete(self, skill_id: UUID) -> dict[str, Any]:
+        await self._require(skill_id)
+        await self._skills.delete(skill_id)
+        return {"ok": True, "id": str(skill_id)}
+
+    async def bulk(self, *, ids: list[str], action: str, actor: str) -> dict[str, int]:
+        affected = 0
+        for raw in ids:
+            try:
+                skill_id = UUID(str(raw))
+            except ValueError:
+                continue
+            skill = await self._skills.get(skill_id)
+            if skill is None:
+                continue
+            if action == "publish":
+                updated = skill.publish(actor=actor)
+            else:
+                updated = skill.retire(actor=actor)
+            await self._skills.update(updated)
+            affected += 1
+        return {"affected": affected}
+
+    async def list_catalog(self, *, workspace_id: UUID, user_id: UUID) -> list[dict[str, Any]]:
+        items = await self._skills.list_for_workspace(workspace_id)
+        out: list[dict[str, Any]] = []
+        for skill in items:
+            if skill.status not in {"published", "graying"}:
+                continue
+            if not is_workspace_visible(list(skill.visible_scope)):
+                continue
+            _fav, last_used = await self._user_state.get(user_id=user_id, skill_id=skill.id)
+            out.append(skill.to_catalog_dict(last_used=last_used))
+        return out
+
+    async def get_catalog(self, *, skill_id: UUID, user_id: UUID) -> dict[str, Any]:
+        skill = await self._require(skill_id)
+        _fav, last_used = await self._user_state.get(user_id=user_id, skill_id=skill.id)
+        return skill.to_catalog_dict(last_used=last_used)
+
+    async def set_favorite(self, *, skill_id: UUID, user_id: UUID, on: bool) -> dict[str, Any]:
+        skill = await self._require(skill_id)
+        await self._user_state.set_favorite(
+            tenant_id=skill.tenant_id,
+            workspace_id=skill.workspace_id,
+            user_id=user_id,
+            skill_id=skill_id,
+            on=on,
+        )
+        return {"id": str(skill_id), "on": on}
+
+    async def record_use(self, *, skill_id: UUID, user_id: UUID) -> dict[str, Any]:
+        skill = await self._require(skill_id)
+        from datetime import UTC, datetime
+
+        at = datetime.now(UTC).isoformat()
+        await self._user_state.record_use(
+            tenant_id=skill.tenant_id,
+            workspace_id=skill.workspace_id,
+            user_id=user_id,
+            skill_id=skill_id,
+            at=at,
+        )
+        await self._skills.update(skill.bump_call())
+        return {"id": str(skill_id), "recordedAt": at}
+
+    async def bump_and_describe(self, *, workspace_id: UUID, name: str) -> dict[str, Any]:
+        skill = await self._skills.get_by_name(workspace_id=workspace_id, name=name)
+        if skill is None:
+            raise SkillNotFound(f"skill {name} not found")
+        if skill.status not in {"published", "graying"}:
+            raise SkillDisabled(f"skill {name} is {skill.status}")
+        updated = skill.bump_call()
+        await self._skills.update(updated)
+        return {
+            "ok": True,
+            "skillId": str(updated.id),
+            "name": updated.name,
+            "type": updated.type,
+        }
+
+    async def _require(self, skill_id: UUID) -> Skill:
+        skill = await self._skills.get(skill_id)
+        if skill is None:
+            raise SkillNotFound(f"skill {skill_id} not found")
+        return skill
 
 
-__all__ = ["SkillService"]
+def _parse_id(raw: Any) -> UUID:
+    if raw:
+        try:
+            return UUID(str(raw))
+        except ValueError:
+            pass
+    return uuid4()
+
+
+__all__ = ["SKILL_STATUSES", "SKILL_TYPES", "SkillService"]

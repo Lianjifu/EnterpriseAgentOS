@@ -1,604 +1,345 @@
-"""Skill domain entities.
-
-Three frozen dataclasses:
-
-- `SkillPackage` — registered tool/spec; `version_lock` is the optimistic
-  lock for PATCH; `create()` validates ranges, `update()` returns a new
-  instance with the lock bumped and `updated_at` advanced, `disable()`
-  is `update(enabled=False)`.
-- `SkillInstall` — one install row per (tenant, workspace, package, lock);
-  `succeed(jti=...)` / `fail(reason=...)` transition the status and
-  stamp `run_token_jti` so token revocation can pin the install.
-- `SkillInvocation` — the lifecycle state machine:
-  `queued → starting → running → {succeeded | failed | cancelled | timed_out}`.
-  Each transition method calls `_assert_can(target)` which raises
-  `SkillInvocationAlreadyTerminal` (409) when the source state is already
-  terminal. The in-memory runner (`InvocationRunner`) is the only
-  legitimate caller; HTTP layer only invokes `create()`.
-"""
+"""Admin skill aggregate — fields match frontend `features/skills/schema.ts`."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
-from enum import StrEnum
-from typing import Self
-from uuid import UUID, uuid4
+from dataclasses import dataclass, field, replace
+from datetime import UTC, datetime
+from typing import Any, Literal, Self
+from uuid import UUID
 
-from eos_schema.ids import (
-    SkillId,
-    SkillInstallId,
-    SkillInvocationId,
-    TenantId,
-    UserId,
-    WorkspaceId,
-)
+SkillType = Literal["Skill", "Tool", "MCP"]
+SkillStatus = Literal["published", "draft", "graying", "retired"]
+RiskLevel = Literal["low", "medium", "high"]
+VisibleScope = Literal["公开", "部门", "个人"]
 
-from deos.modules.skill.domain.errors import (
-    InvalidSkillSpec,
-    SkillInvocationAlreadyTerminal,
-    SkillVersionMismatch,
-)
+SCHEMA_FIELD_TYPES = frozenset({"string", "number", "boolean", "object", "array"})
+SKILL_TYPES = frozenset({"Skill", "Tool", "MCP"})
+SKILL_STATUSES = frozenset({"published", "draft", "graying", "retired"})
+RISK_LEVELS = frozenset({"low", "medium", "high"})
+VISIBLE_SCOPES = frozenset({"公开", "部门", "个人"})
 
 
 def _utcnow() -> datetime:
     return datetime.now(UTC)
 
 
-class NetworkPolicy(StrEnum):
-    NONE = "none"
-    DEFAULT = "default"
-    UNRESTRICTED = "unrestricted"
+def format_last_update(moment: datetime) -> str:
+    now = _utcnow()
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
+    seconds = max(0, (now - moment).total_seconds())
+    if seconds < 120:
+        return "刚刚"
+    if seconds < 3600:
+        return f"{int(seconds // 60)} 分钟前"
+    if seconds < 86400:
+        return f"{int(seconds // 3600)} 小时前"
+    if seconds < 86400 * 7:
+        return f"{int(seconds // 86400)} 天前"
+    return moment.astimezone(UTC).strftime("%Y-%m-%d %H:%M")
 
 
-class SkillInstallStatus(StrEnum):
-    PENDING = "pending"
-    INSTALLED = "installed"
-    FAILED = "failed"
-
-
-class SkillInvocationStatus(StrEnum):
-    QUEUED = "queued"
-    STARTING = "starting"
-    RUNNING = "running"
-    SUCCEEDED = "succeeded"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
-    TIMED_OUT = "timed_out"
-
-
-_TERMINAL_STATUSES = frozenset(
-    {
-        SkillInvocationStatus.SUCCEEDED,
-        SkillInvocationStatus.FAILED,
-        SkillInvocationStatus.CANCELLED,
-        SkillInvocationStatus.TIMED_OUT,
-    }
-)
-
-
-@dataclass(slots=True, frozen=True)
-class SkillPackage:
-    id: SkillId
-    tenant_id: TenantId
-    workspace_id: WorkspaceId
+@dataclass(slots=True)
+class SchemaField:
     name: str
-    version: str
+    type: str
+    required: bool
     description: str
-    entrypoint: str
-    image: str
-    parameters_schema: dict = field(default_factory=dict)
-    artifact_uri: str = ""
-    network_policy: NetworkPolicy = NetworkPolicy.DEFAULT
-    cpu_quota: float | None = None
-    memory_bytes: int | None = None
-    timeout_seconds: int = 30
-    enabled: bool = True
-    version_lock: int = 1
-    signature: str = ""
-    signer_key_id: str = ""
-    image_digest: str = ""
-    created_at: datetime = field(default_factory=_utcnow)
-    updated_at: datetime = field(default_factory=_utcnow)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "type": self.type,
+            "required": self.required,
+            "description": self.description,
+        }
+
+    @classmethod
+    def from_dict(cls, raw: dict[str, Any]) -> Self:
+        field_type = str(raw.get("type") or "string")
+        if field_type not in SCHEMA_FIELD_TYPES:
+            field_type = "string"
+        return cls(
+            name=str(raw.get("name") or ""),
+            type=field_type,
+            required=bool(raw.get("required", False)),
+            description=str(raw.get("description") or ""),
+        )
+
+
+@dataclass(slots=True)
+class VersionEntry:
+    version: str
+    publisher: str
+    released_at: str
+    current: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "version": self.version,
+            "publisher": self.publisher,
+            "releasedAt": self.released_at,
+            "current": self.current,
+        }
+
+    @classmethod
+    def from_dict(cls, raw: dict[str, Any]) -> Self:
+        return cls(
+            version=str(raw.get("version") or ""),
+            publisher=str(raw.get("publisher") or ""),
+            released_at=str(raw.get("releasedAt") or raw.get("released_at") or ""),
+            current=bool(raw.get("current", False)),
+        )
+
+
+@dataclass(slots=True)
+class AuditEntry:
+    time: str
+    actor: str
+    action: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"time": self.time, "actor": self.actor, "action": self.action}
+
+    @classmethod
+    def from_dict(cls, raw: dict[str, Any]) -> Self:
+        return cls(
+            time=str(raw.get("time") or ""),
+            actor=str(raw.get("actor") or ""),
+            action=str(raw.get("action") or ""),
+        )
+
+
+@dataclass(slots=True)
+class Skill:
+    id: UUID
+    tenant_id: UUID
+    workspace_id: UUID
+    name: str
+    description: str
+    type: SkillType
+    owner: str
+    status: SkillStatus
+    version: str
+    updated_at: datetime
+    created_at: datetime
+    calls: int = 0
+    success_rate: float = 0.0
+    error_rate: float = 0.0
+    avg_latency_ms: int = 0
+    rating: float = 0.0
+    risk: RiskLevel = "low"
+    need_confirm: bool = False
+    visible_scope: list[VisibleScope] = field(default_factory=lambda: ["部门"])
+    tags: list[str] = field(default_factory=list)
+    starred: bool = False
+    input_schema: list[SchemaField] = field(default_factory=list)
+    output_schema: list[SchemaField] = field(default_factory=list)
+    versions: list[VersionEntry] = field(default_factory=list)
+    trend: list[int] = field(default_factory=lambda: [0] * 12)
+    used_by_agents: list[str] = field(default_factory=list)
+    audit_log: list[AuditEntry] = field(default_factory=list)
 
     @classmethod
     def create(
         cls,
         *,
-        tenant_id: TenantId,
-        workspace_id: WorkspaceId,
+        id: UUID,
+        tenant_id: UUID,
+        workspace_id: UUID,
         name: str,
-        version: str,
-        description: str = "",
-        entrypoint: str,
-        image: str,
-        parameters_schema: dict | None = None,
-        artifact_uri: str = "",
-        network_policy: NetworkPolicy = NetworkPolicy.DEFAULT,
-        cpu_quota: float | None = None,
-        memory_bytes: int | None = None,
-        timeout_seconds: int = 30,
-        signature: str = "",
-        signer_key_id: str = "",
-        image_digest: str = "",
+        description: str,
+        type: SkillType,
+        owner: str,
+        risk: RiskLevel,
+        need_confirm: bool,
+        input_schema: list[SchemaField],
+        output_schema: list[SchemaField],
     ) -> Self:
-        if not 1 <= len(name) <= 128:
-            raise InvalidSkillSpec(
-                f"name length {len(name)} not in [1,128]", code="INVALID_SKILL_SPEC"
-            )
-        if not 1 <= len(version) <= 32:
-            raise InvalidSkillSpec(
-                f"version length {len(version)} not in [1,32]",
-                code="INVALID_SKILL_SPEC",
-            )
-        if not 1 <= len(entrypoint) <= 256:
-            raise InvalidSkillSpec(
-                f"entrypoint length {len(entrypoint)} not in [1,256]",
-                code="INVALID_SKILL_SPEC",
-            )
-        if not 1 <= len(image) <= 256:
-            raise InvalidSkillSpec(
-                f"image length {len(image)} not in [1,256]",
-                code="INVALID_SKILL_SPEC",
-            )
-        if not 1 <= timeout_seconds <= 30:
-            raise InvalidSkillSpec(
-                f"timeout_seconds {timeout_seconds} not in [1,30]",
-                code="INVALID_SKILL_SPEC",
-            )
-        if cpu_quota is not None and cpu_quota <= 0:
-            raise InvalidSkillSpec(
-                f"cpu_quota {cpu_quota} must be > 0", code="INVALID_SKILL_SPEC"
-            )
-        if memory_bytes is not None and memory_bytes < 1024 * 1024:
-            raise InvalidSkillSpec(
-                f"memory_bytes {memory_bytes} must be >= 1MiB",
-                code="INVALID_SKILL_SPEC",
-            )
-        # Signing fields must come as a triple (or be all empty for the
-        # unsigned dev path, gated by the vetter — see RegisterSkillUseCase).
-        signing_fields = (bool(signature), bool(signer_key_id), bool(image_digest))
-        if any(signing_fields) and not all(signing_fields):
-            raise InvalidSkillSpec(
-                "signature / signer_key_id / image_digest must all be set together",
-                code="INVALID_SKILL_SPEC",
-            )
+        if type not in SKILL_TYPES:
+            raise ValueError(f"invalid skill type: {type}")
+        if risk not in RISK_LEVELS:
+            raise ValueError(f"invalid risk: {risk}")
         now = _utcnow()
+        confirm = need_confirm or risk != "low"
         return cls(
-            id=SkillId(uuid4()),
+            id=id,
             tenant_id=tenant_id,
             workspace_id=workspace_id,
-            name=name,
-            version=version,
+            name=name.strip(),
             description=description,
-            entrypoint=entrypoint,
-            image=image,
-            parameters_schema=dict(parameters_schema or {}),
-            artifact_uri=artifact_uri,
-            network_policy=network_policy,
-            cpu_quota=cpu_quota,
-            memory_bytes=memory_bytes,
-            timeout_seconds=timeout_seconds,
-            enabled=True,
-            version_lock=1,
-            signature=signature,
-            signer_key_id=signer_key_id,
-            image_digest=image_digest,
-            created_at=now,
+            type=type,
+            owner=owner,
+            status="draft",
+            version="draft",
             updated_at=now,
+            created_at=now,
+            risk=risk,
+            need_confirm=confirm,
+            input_schema=list(input_schema),
+            output_schema=list(output_schema),
+            audit_log=[AuditEntry(time="刚刚", actor=owner, action="新建技能")],
         )
 
-    def update(
-        self,
-        *,
-        expected_version_lock: int | None = None,
-        description: str | None = None,
-        entrypoint: str | None = None,
-        image: str | None = None,
-        parameters_schema: dict | None = None,
-        artifact_uri: str | None = None,
-        network_policy: NetworkPolicy | None = None,
-        cpu_quota: float | None = None,
-        memory_bytes: int | None = None,
-        timeout_seconds: int | None = None,
-        enabled: bool | None = None,
-        signature: str | None = None,
-        signer_key_id: str | None = None,
-        image_digest: str | None = None,
-    ) -> Self:
-        if (
-            expected_version_lock is not None
-            and expected_version_lock != self.version_lock
-        ):
-            raise SkillVersionMismatch(
-                expected=expected_version_lock, actual=self.version_lock
-            )
-        new_timeout = (
-            self.timeout_seconds if timeout_seconds is None else timeout_seconds
-        )
-        if not 1 <= new_timeout <= 30:
-            raise InvalidSkillSpec(
-                f"timeout_seconds {new_timeout} not in [1,30]",
-                code="INVALID_SKILL_SPEC",
-            )
-        new_sig = self.signature if signature is None else signature
-        new_signer = self.signer_key_id if signer_key_id is None else signer_key_id
-        new_digest = self.image_digest if image_digest is None else image_digest
-        signing_fields = (bool(new_sig), bool(new_signer), bool(new_digest))
-        if any(signing_fields) and not all(signing_fields):
-            raise InvalidSkillSpec(
-                "signature / signer_key_id / image_digest must all be set together",
-                code="INVALID_SKILL_SPEC",
-            )
-        return type(self)(
-            id=self.id,
-            tenant_id=self.tenant_id,
-            workspace_id=self.workspace_id,
-            name=self.name,
-            version=self.version,
-            description=self.description if description is None else description,
-            entrypoint=self.entrypoint if entrypoint is None else entrypoint,
-            image=self.image if image is None else image,
-            parameters_schema=(
-                dict(self.parameters_schema)
-                if parameters_schema is None
-                else dict(parameters_schema)
+    def apply_patch(self, patch: dict[str, Any], *, actor: str) -> Self:
+        data: dict[str, Any] = {}
+        if patch.get("name"):
+            data["name"] = str(patch["name"]).strip()
+        if "description" in patch:
+            data["description"] = str(patch["description"])
+        if patch.get("owner"):
+            data["owner"] = str(patch["owner"])
+        if patch.get("version"):
+            data["version"] = str(patch["version"])
+        if "type" in patch and patch["type"] in SKILL_TYPES:
+            data["type"] = patch["type"]
+        if "status" in patch and patch["status"] in SKILL_STATUSES:
+            data["status"] = patch["status"]
+        if "risk" in patch and patch["risk"] in RISK_LEVELS:
+            data["risk"] = patch["risk"]
+        if "needConfirm" in patch:
+            data["need_confirm"] = bool(patch["needConfirm"])
+        if "visibleScope" in patch and isinstance(patch["visibleScope"], list):
+            data["visible_scope"] = [
+                item for item in patch["visibleScope"] if item in VISIBLE_SCOPES
+            ] or ["部门"]
+        if "tags" in patch and isinstance(patch["tags"], list):
+            data["tags"] = [str(item) for item in patch["tags"]]
+        if "starred" in patch:
+            data["starred"] = bool(patch["starred"])
+        if "inputSchema" in patch and isinstance(patch["inputSchema"], list):
+            data["input_schema"] = [
+                SchemaField.from_dict(item) for item in patch["inputSchema"] if isinstance(item, dict)
+            ]
+        if "outputSchema" in patch and isinstance(patch["outputSchema"], list):
+            data["output_schema"] = [
+                SchemaField.from_dict(item) for item in patch["outputSchema"] if isinstance(item, dict)
+            ]
+        data["updated_at"] = _utcnow()
+        next_skill = replace(self, **data)
+        log = list(self.audit_log)
+        log.insert(0, AuditEntry(time="刚刚", actor=actor, action="更新技能"))
+        next_skill.audit_log = log[:50]
+        if next_skill.status == "published" and self.status != "published":
+            return next_skill.publish(actor=actor)
+        if next_skill.status == "retired" and self.status != "retired":
+            return next_skill.retire(actor=actor)
+        return next_skill
+
+    def publish(self, *, actor: str) -> Self:
+        stamp = _utcnow().strftime("%Y-%m-%d")
+        versions = [
+            replace(item, current=False) for item in self.versions
+        ]
+        next_version = f"v{len(self.versions) + 1}"
+        versions.insert(
+            0,
+            VersionEntry(
+                version=next_version,
+                publisher=actor,
+                released_at=stamp,
+                current=True,
             ),
-            artifact_uri=self.artifact_uri if artifact_uri is None else artifact_uri,
-            network_policy=self.network_policy
-            if network_policy is None
-            else network_policy,
-            cpu_quota=self.cpu_quota if cpu_quota is None else cpu_quota,
-            memory_bytes=self.memory_bytes if memory_bytes is None else memory_bytes,
-            timeout_seconds=new_timeout,
-            enabled=self.enabled if enabled is None else enabled,
-            version_lock=self.version_lock + 1,
-            signature=new_sig,
-            signer_key_id=new_signer,
-            image_digest=new_digest,
-            created_at=self.created_at,
+        )
+        log = list(self.audit_log)
+        log.insert(0, AuditEntry(time="刚刚", actor=actor, action="发布技能"))
+        return replace(
+            self,
+            status="published",
+            version=next_version,
+            versions=versions,
+            updated_at=_utcnow(),
+            audit_log=log[:50],
+        )
+
+    def retire(self, *, actor: str) -> Self:
+        log = list(self.audit_log)
+        log.insert(0, AuditEntry(time="刚刚", actor=actor, action="下线技能"))
+        return replace(
+            self,
+            status="retired",
+            updated_at=_utcnow(),
+            audit_log=log[:50],
+        )
+
+    def bump_call(self) -> Self:
+        trend = list(self.trend or [0] * 12)
+        if len(trend) < 12:
+            trend = ([0] * (12 - len(trend))) + trend
+        trend = trend[1:] + [trend[-1] + 1]
+        return replace(
+            self,
+            calls=self.calls + 1,
+            trend=trend[-12:],
             updated_at=_utcnow(),
         )
 
-    def disable(self) -> Self:
-        return self.update(enabled=False)
+    def to_admin_dict(self) -> dict[str, Any]:
+        return {
+            "id": str(self.id),
+            "name": self.name,
+            "description": self.description,
+            "type": self.type,
+            "owner": self.owner,
+            "status": self.status,
+            "version": self.version,
+            "lastUpdate": format_last_update(self.updated_at),
+            "calls": self.calls,
+            "successRate": self.success_rate,
+            "errorRate": self.error_rate,
+            "avgLatencyMs": self.avg_latency_ms,
+            "rating": self.rating,
+            "risk": self.risk,
+            "needConfirm": self.need_confirm,
+            "visibleScope": list(self.visible_scope),
+            "tags": list(self.tags),
+            "starred": self.starred,
+            "inputSchema": [item.to_dict() for item in self.input_schema],
+            "outputSchema": [item.to_dict() for item in self.output_schema],
+            "versions": [item.to_dict() for item in self.versions],
+            "trend": list(self.trend),
+            "usedByAgents": list(self.used_by_agents),
+            "auditLog": [item.to_dict() for item in self.audit_log],
+        }
 
-
-@dataclass(slots=True, frozen=True)
-class SkillInstall:
-    id: SkillInstallId
-    tenant_id: TenantId
-    workspace_id: WorkspaceId
-    package_id: SkillId
-    package_version_lock: int
-    installed_by: UserId
-    status: SkillInstallStatus
-    installed_at: datetime
-    last_used_at: datetime | None = None
-    run_token_jti: str | None = None
-
-    @classmethod
-    def create(
-        cls,
-        *,
-        tenant_id: TenantId,
-        workspace_id: WorkspaceId,
-        package_id: SkillId,
-        package_version_lock: int,
-        installed_by: UserId,
-    ) -> Self:
-        return cls(
-            id=SkillInstallId(uuid4()),
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            package_id=package_id,
-            package_version_lock=package_version_lock,
-            installed_by=installed_by,
-            status=SkillInstallStatus.PENDING,
-            installed_at=_utcnow(),
-            last_used_at=None,
-            run_token_jti=None,
+    def to_catalog_dict(self, *, last_used: str | None = None) -> dict[str, Any]:
+        input_desc = "；".join(
+            field.description or field.name for field in self.input_schema if field.name or field.description
         )
-
-    def succeed(self, *, jti: str) -> Self:
-        return type(self)(
-            id=self.id,
-            tenant_id=self.tenant_id,
-            workspace_id=self.workspace_id,
-            package_id=self.package_id,
-            package_version_lock=self.package_version_lock,
-            installed_by=self.installed_by,
-            status=SkillInstallStatus.INSTALLED,
-            installed_at=self.installed_at,
-            last_used_at=self.last_used_at,
-            run_token_jti=jti,
+        output_desc = "；".join(
+            field.description or field.name for field in self.output_schema if field.name or field.description
         )
-
-    def fail(self, *, reason: str) -> Self:
-        return type(self)(
-            id=self.id,
-            tenant_id=self.tenant_id,
-            workspace_id=self.workspace_id,
-            package_id=self.package_id,
-            package_version_lock=self.package_version_lock,
-            installed_by=self.installed_by,
-            status=SkillInstallStatus.FAILED,
-            installed_at=self.installed_at,
-            last_used_at=self.last_used_at,
-            run_token_jti=f"failed:{reason[:32]}",
-        )
-
-    def touch_used(self) -> Self:
-        return type(self)(
-            id=self.id,
-            tenant_id=self.tenant_id,
-            workspace_id=self.workspace_id,
-            package_id=self.package_id,
-            package_version_lock=self.package_version_lock,
-            installed_by=self.installed_by,
-            status=self.status,
-            installed_at=self.installed_at,
-            last_used_at=_utcnow(),
-            run_token_jti=self.run_token_jti,
-        )
+        available = self.status in {"published", "graying"}
+        return {
+            "id": str(self.id),
+            "name": self.name,
+            "type": self.type,
+            "description": self.description,
+            "owner": self.owner,
+            "useCase": "、".join(self.tags[:2]) or self.description,
+            "input": input_desc or "按能力说明提供输入",
+            "output": output_desc or "结构化结果",
+            "risk": "needsConfirm" if self.need_confirm or self.risk != "low" else "low",
+            "status": "available" if available else "unavailable",
+            "tags": list(self.tags),
+            "lastUsed": last_used or format_last_update(self.updated_at),
+            "relatedAgents": list(self.used_by_agents),
+        }
 
 
-@dataclass(slots=True, frozen=True)
-class SkillInvocation:
-    id: SkillInvocationId
-    tenant_id: TenantId
-    workspace_id: WorkspaceId
-    install_id: SkillInstallId
-    package_id: SkillId
-    arguments: dict = field(default_factory=dict)
-    status: SkillInvocationStatus = SkillInvocationStatus.QUEUED
-    started_at: datetime = field(default_factory=_utcnow)
-    finished_at: datetime | None = None
-    latency_ms: int | None = None
-    result: dict | None = None
-    error_code: str | None = None
-    error_message: str | None = None
-    stdout_tail: str = ""
-    stderr_tail: str = ""
-    artifact_uri: str | None = None
-    sandbox_run_id: UUID | None = None
-
-    @classmethod
-    def create(
-        cls,
-        *,
-        tenant_id: TenantId,
-        workspace_id: WorkspaceId,
-        install_id: SkillInstallId,
-        package_id: SkillId,
-        arguments: dict | None = None,
-    ) -> Self:
-        return cls(
-            id=SkillInvocationId(uuid4()),
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            install_id=install_id,
-            package_id=package_id,
-            arguments=dict(arguments or {}),
-        )
-
-    def _assert_can(self, target: SkillInvocationStatus) -> None:
-        if self.status in _TERMINAL_STATUSES:
-            raise SkillInvocationAlreadyTerminal(
-                f"invocation {self.id} is terminal ({self.status}); "
-                f"cannot transition to {target}",
-                code="SKILL_INVOCATION_ALREADY_TERMINAL",
-            )
-
-    def with_tails(self, *, stdout_tail: str, stderr_tail: str) -> Self:
-        return type(self)(
-            id=self.id,
-            tenant_id=self.tenant_id,
-            workspace_id=self.workspace_id,
-            install_id=self.install_id,
-            package_id=self.package_id,
-            arguments=self.arguments,
-            status=self.status,
-            started_at=self.started_at,
-            finished_at=self.finished_at,
-            latency_ms=self.latency_ms,
-            result=self.result,
-            error_code=self.error_code,
-            error_message=self.error_message,
-            stdout_tail=stdout_tail,
-            stderr_tail=stderr_tail,
-            artifact_uri=self.artifact_uri,
-            sandbox_run_id=self.sandbox_run_id,
-        )
-
-    def start(self, sandbox_run_id: UUID) -> Self:
-        self._assert_can(SkillInvocationStatus.STARTING)
-        if self.status != SkillInvocationStatus.QUEUED:
-            raise SkillInvocationAlreadyTerminal(
-                f"start requires QUEUED, got {self.status}",
-                code="SKILL_INVOCATION_ALREADY_TERMINAL",
-            )
-        return type(self)(
-            id=self.id,
-            tenant_id=self.tenant_id,
-            workspace_id=self.workspace_id,
-            install_id=self.install_id,
-            package_id=self.package_id,
-            arguments=self.arguments,
-            status=SkillInvocationStatus.STARTING,
-            started_at=self.started_at,
-            finished_at=None,
-            latency_ms=None,
-            result=None,
-            error_code=None,
-            error_message=None,
-            stdout_tail=self.stdout_tail,
-            stderr_tail=self.stderr_tail,
-            artifact_uri=None,
-            sandbox_run_id=sandbox_run_id,
-        )
-
-    def mark_running(self) -> Self:
-        self._assert_can(SkillInvocationStatus.RUNNING)
-        if self.status not in (
-            SkillInvocationStatus.QUEUED,
-            SkillInvocationStatus.STARTING,
-        ):
-            raise SkillInvocationAlreadyTerminal(
-                f"mark_running requires QUEUED|STARTING, got {self.status}",
-                code="SKILL_INVOCATION_ALREADY_TERMINAL",
-            )
-        return type(self)(
-            id=self.id,
-            tenant_id=self.tenant_id,
-            workspace_id=self.workspace_id,
-            install_id=self.install_id,
-            package_id=self.package_id,
-            arguments=self.arguments,
-            status=SkillInvocationStatus.RUNNING,
-            started_at=self.started_at,
-            finished_at=None,
-            latency_ms=None,
-            result=None,
-            error_code=None,
-            error_message=None,
-            stdout_tail=self.stdout_tail,
-            stderr_tail=self.stderr_tail,
-            artifact_uri=None,
-            sandbox_run_id=self.sandbox_run_id,
-        )
-
-    def complete(
-        self,
-        *,
-        result: dict,
-        latency_ms: int,
-        stdout_tail: str,
-        stderr_tail: str,
-        artifact_uri: str | None = None,
-    ) -> Self:
-        self._assert_can(SkillInvocationStatus.SUCCEEDED)
-        return type(self)(
-            id=self.id,
-            tenant_id=self.tenant_id,
-            workspace_id=self.workspace_id,
-            install_id=self.install_id,
-            package_id=self.package_id,
-            arguments=self.arguments,
-            status=SkillInvocationStatus.SUCCEEDED,
-            started_at=self.started_at,
-            finished_at=_utcnow(),
-            latency_ms=latency_ms,
-            result=dict(result),
-            error_code=None,
-            error_message=None,
-            stdout_tail=stdout_tail,
-            stderr_tail=stderr_tail,
-            artifact_uri=artifact_uri,
-            sandbox_run_id=self.sandbox_run_id,
-        )
-
-    def fail(
-        self,
-        *,
-        error_code: str,
-        error_message: str,
-        latency_ms: int | None = None,
-        stdout_tail: str = "",
-        stderr_tail: str = "",
-    ) -> Self:
-        self._assert_can(SkillInvocationStatus.FAILED)
-        return type(self)(
-            id=self.id,
-            tenant_id=self.tenant_id,
-            workspace_id=self.workspace_id,
-            install_id=self.install_id,
-            package_id=self.package_id,
-            arguments=self.arguments,
-            status=SkillInvocationStatus.FAILED,
-            started_at=self.started_at,
-            finished_at=_utcnow(),
-            latency_ms=latency_ms,
-            result=None,
-            error_code=error_code,
-            error_message=error_message,
-            stdout_tail=stdout_tail,
-            stderr_tail=stderr_tail,
-            artifact_uri=None,
-            sandbox_run_id=self.sandbox_run_id,
-        )
-
-    def cancel(
-        self,
-        *,
-        latency_ms: int | None = None,
-        stdout_tail: str = "",
-        stderr_tail: str = "",
-    ) -> Self:
-        self._assert_can(SkillInvocationStatus.CANCELLED)
-        return type(self)(
-            id=self.id,
-            tenant_id=self.tenant_id,
-            workspace_id=self.workspace_id,
-            install_id=self.install_id,
-            package_id=self.package_id,
-            arguments=self.arguments,
-            status=SkillInvocationStatus.CANCELLED,
-            started_at=self.started_at,
-            finished_at=_utcnow(),
-            latency_ms=latency_ms,
-            result=None,
-            error_code="SKILL_CANCELLED",
-            error_message="invocation cancelled by user",
-            stdout_tail=stdout_tail,
-            stderr_tail=stderr_tail,
-            artifact_uri=None,
-            sandbox_run_id=self.sandbox_run_id,
-        )
-
-    def timeout(
-        self,
-        *,
-        latency_ms: int | None = None,
-        stdout_tail: str = "",
-        stderr_tail: str = "",
-    ) -> Self:
-        if self.status not in (
-            SkillInvocationStatus.QUEUED,
-            SkillInvocationStatus.STARTING,
-            SkillInvocationStatus.RUNNING,
-        ):
-            raise SkillInvocationAlreadyTerminal(
-                f"timeout requires non-terminal, got {self.status}",
-                code="SKILL_INVOCATION_ALREADY_TERMINAL",
-            )
-        return type(self)(
-            id=self.id,
-            tenant_id=self.tenant_id,
-            workspace_id=self.workspace_id,
-            install_id=self.install_id,
-            package_id=self.package_id,
-            arguments=self.arguments,
-            status=SkillInvocationStatus.TIMED_OUT,
-            started_at=self.started_at,
-            finished_at=_utcnow(),
-            latency_ms=latency_ms,
-            result=None,
-            error_code="SANDBOX_TIMEOUT",
-            error_message="sandbox exceeded timeout_seconds",
-            stdout_tail=stdout_tail,
-            stderr_tail=stderr_tail,
-            artifact_uri=None,
-            sandbox_run_id=self.sandbox_run_id,
-        )
+def is_workspace_visible(scopes: list[str]) -> bool:
+    return any(scope in {"公开", "部门"} for scope in scopes)
 
 
 __all__ = [
-    "NetworkPolicy",
-    "SkillInstall",
-    "SkillInstallStatus",
-    "SkillInvocation",
-    "SkillInvocationStatus",
-    "SkillPackage",
-    "timedelta",  # re-exported for callers that import from entities
+    "AuditEntry",
+    "RiskLevel",
+    "SchemaField",
+    "Skill",
+    "SkillStatus",
+    "SkillType",
+    "VersionEntry",
+    "VisibleScope",
+    "format_last_update",
+    "is_workspace_visible",
 ]

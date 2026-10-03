@@ -85,16 +85,12 @@ def create_app() -> FastAPI:
 
     app.include_router(memory_router())
 
-    # P7 knowledge module — /v1/knowledge/packages + assets + search
-    from deos.modules.knowledge.adapter.http.router import build_multipart_router
+    # Knowledge module
     from deos.modules.knowledge.adapter.http.router import (
         build_router as knowledge_router,
     )
 
     app.include_router(knowledge_router())
-    mp = build_multipart_router()
-    if mp is not None:
-        app.include_router(mp)
 
     # P7 orchestration module — /v1/orchestration/plans + /runs
     from deos.modules.orchestration.adapter.http.router import (

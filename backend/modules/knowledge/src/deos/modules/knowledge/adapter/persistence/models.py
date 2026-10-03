@@ -1,34 +1,15 @@
-"""SQLAlchemy ORM models for the knowledge module.
-
-Three core tables plus one vector mirror:
-
-- ``knowledge_packages`` — curated collection (one row per package)
-- ``knowledge_assets``   — uploaded artifact attached to a package
-- ``knowledge_chunks``    — text slice of an asset, holds the 1536-dim
-                            pgvector column.  HNSW cosine index lives here
-                            for the SQL-side recall path.
-- ``knowledge_chunks_vec`` — mirror managed by ``eos_vector.PgVectorStore``
-                            for payload-filtered retrieval (the
-                            ``VectorSearchPort`` adapter).
-
-soft-delete (revoked) is enforced via filters on read; rows stay around
-for audit / replay.
-"""
-
 from __future__ import annotations
 
-from typing import Any
 from uuid import UUID
 
-from eos_persistence.base import Base, TenantScopedMixin, make_composite_index
-from eos_persistence.pgvector import register_pgvector
+from eos_persistence.base import Base, TenantScopedMixin
 from sqlalchemy import (
-    BigInteger,
-    CheckConstraint,
-    ForeignKey,
+    Float,
+    Index,
     Integer,
     String,
     Text,
+    UniqueConstraint,
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -36,134 +17,104 @@ from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 
-class KnowledgePackageORM(TenantScopedMixin, Base):
-    __tablename__ = "knowledge_packages"
+class KnowledgeBaseORM(TenantScopedMixin, Base):
+    __tablename__ = "admin_knowledge_kbs"
 
-    workspace_id: Mapped[UUID] = mapped_column(
-        PgUUID(as_uuid=True), nullable=False, index=True
-    )
-    name: Mapped[str] = mapped_column(String(128), nullable=False)
-    description: Mapped[str] = mapped_column(
-        Text, nullable=False, server_default=text("''")
-    )
-    status: Mapped[str] = mapped_column(
-        String(16),
-        nullable=False,
-        server_default=text("'active'"),
-    )
-    asset_count: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default=text("0")
-    )
-    metadata_: Mapped[dict[str, Any]] = mapped_column(
-        "metadata",
-        JSONB,
-        nullable=False,
-        server_default=text("'{}'::jsonb"),
-    )
-    created_by: Mapped[UUID | None] = mapped_column(PgUUID(as_uuid=True), nullable=True)
-    # Tier B signing triple — mirrors ``skill_packages.signature``.
-    # NOT NULL DEFAULT '' so existing rows satisfy the constraint;
-    # partial-triple invariant is enforced in ``KnowledgePackage.create()``.
-    signature: Mapped[str] = mapped_column(
-        Text, nullable=False, default="", server_default=text("''")
-    )
-    signer_key_id: Mapped[str] = mapped_column(
-        String(64), nullable=False, default="", server_default=text("''")
-    )
-    image_digest: Mapped[str] = mapped_column(
-        String(128), nullable=False, default="", server_default=text("''")
-    )
-
-    __table_args__ = (
-        CheckConstraint(
-            "status IN ('active','archived','revoked')",
-            name="knowledge_packages_status_enum",
-        ),
-        make_composite_index("workspace_id", "status"),
-        # UQ (tenant_id, name) — enforced by raw SQL in migration
-    )
-
-
-class KnowledgeAssetORM(TenantScopedMixin, Base):
-    __tablename__ = "knowledge_assets"
-
-    workspace_id: Mapped[UUID] = mapped_column(
-        PgUUID(as_uuid=True), nullable=False, index=True
-    )
-    package_id: Mapped[UUID] = mapped_column(
-        PgUUID(as_uuid=True),
-        ForeignKey("knowledge_packages.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    workspace_id: Mapped[UUID] = mapped_column(PgUUID(as_uuid=True), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(256), nullable=False)
-    mime_type: Mapped[str] = mapped_column(
-        String(128), nullable=False, server_default=text("'application/octet-stream'")
-    )
-    byte_size: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    storage_uri: Mapped[str] = mapped_column(String(512), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default=text("''"))
+    owner: Mapped[str] = mapped_column(String(128), nullable=False, default="", server_default=text("''"))
+    scope: Mapped[str] = mapped_column(String(16), nullable=False, default="部门", server_default=text("'部门'"))
     status: Mapped[str] = mapped_column(
-        String(16), nullable=False, server_default=text("'pending'")
+        String(16), nullable=False, default="indexing", server_default=text("'indexing'")
     )
-    chunk_count: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default=text("0")
+    doc_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+    vector_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+    tags: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
+    tone: Mapped[str] = mapped_column(String(16), nullable=False, default="info", server_default=text("'info'"))
+    eval_hit_rate: Mapped[float] = mapped_column(Float, nullable=False, default=0, server_default=text("0"))
+    bound_sources: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb")
     )
-    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    metadata_: Mapped[dict[str, Any]] = mapped_column(
-        "metadata",
-        JSONB,
-        nullable=False,
-        server_default=text("'{}'::jsonb"),
+    retrieval: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="hybrid", server_default=text("'hybrid'")
+    )
+    top_k: Mapped[int] = mapped_column(Integer, nullable=False, default=8, server_default=text("8"))
+
+    __table_args__ = (
+        Index("ix_admin_knowledge_kbs_tenant_workspace_status", "tenant_id", "workspace_id", "status"),
+        UniqueConstraint("tenant_id", "workspace_id", "name", name="uq_admin_knowledge_kbs_tenant_ws_name"),
+    )
+
+
+class KnowledgeDocORM(TenantScopedMixin, Base):
+    __tablename__ = "admin_knowledge_docs"
+
+    workspace_id: Mapped[UUID] = mapped_column(PgUUID(as_uuid=True), nullable=False, index=True)
+    kb_id: Mapped[UUID] = mapped_column(PgUUID(as_uuid=True), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(512), nullable=False)
+    type: Mapped[str] = mapped_column(String(16), nullable=False, default="manual", server_default=text("'manual'"))
+    status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="pending", server_default=text("'pending'")
+    )
+    source_id: Mapped[str] = mapped_column(String(64), nullable=False, default="", server_default=text("''"))
+    size_kb: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+    chunks: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+    citations: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+    chunks_preview: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb")
     )
 
     __table_args__ = (
-        CheckConstraint(
-            "kind IN ('text','document','webpage')",
-            name="knowledge_assets_kind_enum",
-        ),
-        CheckConstraint(
-            "status IN ('pending','processing','ready','failed','revoked')",
-            name="knowledge_assets_status_enum",
-        ),
-        make_composite_index("workspace_id", "package_id", "status"),
+        Index("ix_admin_knowledge_docs_tenant_workspace_kb", "tenant_id", "workspace_id", "kb_id"),
     )
 
 
-# Eagerly register pgvector so the Vector() type resolves.
-register_pgvector()
-from pgvector.sqlalchemy import Vector
+class KnowledgeSourceORM(TenantScopedMixin, Base):
+    __tablename__ = "admin_knowledge_sources"
 
-
-class KnowledgeChunkORM(TenantScopedMixin, Base):
-    __tablename__ = "knowledge_chunks"
-
-    workspace_id: Mapped[UUID] = mapped_column(
-        PgUUID(as_uuid=True), nullable=False, index=True
+    workspace_id: Mapped[UUID] = mapped_column(PgUUID(as_uuid=True), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(256), nullable=False)
+    type: Mapped[str] = mapped_column(String(32), nullable=False, default="api", server_default=text("'api'"))
+    status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="online", server_default=text("'online'")
     )
-    package_id: Mapped[UUID] = mapped_column(
-        PgUUID(as_uuid=True),
-        ForeignKey("knowledge_packages.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    asset_id: Mapped[UUID] = mapped_column(
-        PgUUID(as_uuid=True),
-        ForeignKey("knowledge_assets.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
-    content: Mapped[str] = mapped_column(Text, nullable=False)
-    char_start: Mapped[int] = mapped_column(Integer, nullable=False)
-    char_end: Mapped[int] = mapped_column(Integer, nullable=False)
-    embedding: Mapped[list[float]] = mapped_column(Vector(1536), nullable=False)
+    schedule: Mapped[str] = mapped_column(String(64), nullable=False, default="", server_default=text("''"))
+    item_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+    last_error: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default=text("''"))
 
     __table_args__ = (
-        make_composite_index("workspace_id", "asset_id", "ordinal"),
-        make_composite_index("workspace_id", "package_id"),
+        UniqueConstraint(
+            "tenant_id", "workspace_id", "name", name="uq_admin_knowledge_sources_tenant_ws_name"
+        ),
     )
 
 
-__all__ = [
-    "KnowledgeAssetORM",
-    "KnowledgeChunkORM",
-    "KnowledgePackageORM",
-]
+class KnowledgeTaskORM(TenantScopedMixin, Base):
+    __tablename__ = "admin_knowledge_tasks"
+
+    workspace_id: Mapped[UUID] = mapped_column(PgUUID(as_uuid=True), nullable=False, index=True)
+    kb_id: Mapped[UUID] = mapped_column(PgUUID(as_uuid=True), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(256), nullable=False)
+    kind: Mapped[str] = mapped_column(String(16), nullable=False, default="index", server_default=text("'index'"))
+    status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="pending", server_default=text("'pending'")
+    )
+    source_id: Mapped[str] = mapped_column(String(64), nullable=False, default="", server_default=text("''"))
+    progress: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+    items: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+    duration: Mapped[str] = mapped_column(String(32), nullable=False, default="", server_default=text("''"))
+    failure_reason: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default=text("''"))
+
+
+class KnowledgeEvalCaseORM(TenantScopedMixin, Base):
+    __tablename__ = "admin_knowledge_eval_cases"
+
+    workspace_id: Mapped[UUID] = mapped_column(PgUUID(as_uuid=True), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(256), nullable=False)
+    query: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default=text("''"))
+    expected_kb: Mapped[str] = mapped_column(String(256), nullable=False, default="", server_default=text("''"))
+    actual_kb: Mapped[str] = mapped_column(String(256), nullable=False, default="", server_default=text("''"))
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="skipped", server_default=text("'skipped'"))
+    latency: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+    mrr: Mapped[float] = mapped_column(Float, nullable=False, default=0, server_default=text("0"))

@@ -1,396 +1,373 @@
-"""Knowledge domain entities.
-
-Three aggregate roots: ``KnowledgePackage`` (a curated collection),
-``KnowledgeAsset`` (one uploaded artifact — text, document, or webpage),
-and ``KnowledgeChunk`` (one embedding-indexed slice of an asset's text).
-
-All entities are frozen dataclasses with `slots=True`. Mutating
-operations return new instances (`with_status`, `with_chunk_count`).
-
-Embedding dimension matches ``eos_llm.llm_embedding_dim`` (1536 for the
-default ``text-embedding-3-small``).
-"""
+"""Admin knowledge aggregates — fields match frontend `features/knowledge/schema.ts`."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
-from typing import Any
-from uuid import uuid4
+from typing import Any, Literal, Self
+from uuid import UUID
 
-from eos_schema.ids import (
-    KnowledgeAssetId,
-    KnowledgeChunkId,
-    KnowledgePackageId,
-    TenantId,
-    UserId,
-    WorkspaceId,
-)
+KbStatus = Literal["indexed", "indexing", "paused", "failed"]
+DocStatus = Literal["parsed", "parsing", "pending", "failed"]
+DocType = Literal["manual", "policy", "meeting", "contract", "faq"]
+SourceType = Literal[
+    "notion", "slack", "web", "postgres", "s3", "api", "folder", "confluence"
+]
+SourceStatus = Literal["online", "syncing", "error", "paused"]
+TaskStatus = Literal["pending", "running", "success", "failed", "paused"]
+TaskKind = Literal["index", "reindex", "rebuild"]
+EvalStatus = Literal["pass", "fail", "skipped"]
+KbScope = Literal["公开", "部门", "个人"]
+Tone = Literal["brand", "info", "success", "warn", "danger", "purple"]
+RetrievalMode = Literal["hybrid", "semantic", "keyword"]
+KnowledgeKind = Literal["制度", "项目", "指南"]
 
-from deos.modules.knowledge.domain.errors import (
-    KnowledgeAssetNotFound,
-    KnowledgeValidationError,
+KB_STATUSES = frozenset({"indexed", "indexing", "paused", "failed"})
+DOC_STATUSES = frozenset({"parsed", "parsing", "pending", "failed"})
+DOC_TYPES = frozenset({"manual", "policy", "meeting", "contract", "faq"})
+SOURCE_TYPES = frozenset(
+    {"notion", "slack", "web", "postgres", "s3", "api", "folder", "confluence"}
 )
-from deos.modules.knowledge.domain.value_objects import (
-    DEFAULT_CHUNK_OVERLAP,
-    DEFAULT_CHUNK_SIZE,
-    KnowledgeAssetKind,
-    KnowledgeAssetStatus,
-    KnowledgePackageStatus,
-)
-
-EMBEDDING_DIM = 1536
+SOURCE_STATUSES = frozenset({"online", "syncing", "error", "paused"})
+TASK_STATUSES = frozenset({"pending", "running", "success", "failed", "paused"})
+TASK_KINDS = frozenset({"index", "reindex", "rebuild"})
+EVAL_STATUSES = frozenset({"pass", "fail", "skipped"})
+KB_SCOPES = frozenset({"公开", "部门", "个人"})
+TONES = frozenset({"brand", "info", "success", "warn", "danger", "purple"})
+RETRIEVAL_MODES = frozenset({"hybrid", "semantic", "keyword"})
+OPEN_SCOPES = frozenset({"公开", "部门"})
 
 
 def _utcnow() -> datetime:
     return datetime.now(UTC)
 
 
-@dataclass(slots=True, frozen=True)
-class KnowledgeChunk:
-    """One embedding-indexed slice of an asset's text."""
-
-    id: KnowledgeChunkId
-    tenant_id: TenantId
-    workspace_id: WorkspaceId
-    package_id: KnowledgePackageId
-    asset_id: KnowledgeAssetId
-    ordinal: int
-    content: str
-    char_start: int
-    char_end: int
-    created_at: datetime = field(default_factory=_utcnow)
-
-    @classmethod
-    def from_text(
-        cls,
-        *,
-        id: KnowledgeChunkId | None,
-        tenant_id: TenantId,
-        workspace_id: WorkspaceId,
-        package_id: KnowledgePackageId,
-        asset_id: KnowledgeAssetId,
-        ordinal: int,
-        text: str,
-        char_start: int,
-        char_end: int,
-        now: datetime | None = None,
-    ) -> KnowledgeChunk:
-        if ordinal < 0:
-            raise KnowledgeValidationError(
-                f"ordinal must be >= 0, got {ordinal}", code="INVALID_KNOWLEDGE_SPEC"
-            )
-        if not text:
-            raise KnowledgeValidationError(
-                "chunk content must be non-empty", code="INVALID_KNOWLEDGE_SPEC"
-            )
-        if char_end <= char_start:
-            raise KnowledgeValidationError(
-                f"char_end ({char_end}) must be > char_start ({char_start})",
-                code="INVALID_KNOWLEDGE_SPEC",
-            )
-        chunk_id = id if id is not None else KnowledgeChunkId(uuid4())
-        return cls(
-            id=chunk_id,
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            package_id=package_id,
-            asset_id=asset_id,
-            ordinal=ordinal,
-            content=text,
-            char_start=char_start,
-            char_end=char_end,
-            created_at=now or _utcnow(),
-        )
+def format_last_update(moment: datetime) -> str:
+    now = _utcnow()
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
+    seconds = max(0, (now - moment).total_seconds())
+    if seconds < 120:
+        return "刚刚"
+    if seconds < 3600:
+        return f"{int(seconds // 60)} 分钟前"
+    if seconds < 86400:
+        return f"{int(seconds // 3600)} 小时前"
+    if seconds < 86400 * 7:
+        return f"{int(seconds // 86400)} 天前"
+    return moment.astimezone(UTC).strftime("%Y-%m-%d %H:%M")
 
 
-@dataclass(slots=True, frozen=True)
-class KnowledgeAsset:
-    """One uploaded artifact attached to a knowledge package."""
+def next_kb_status(current: str) -> KbStatus:
+    if current == "paused":
+        return "indexed"
+    if current == "failed":
+        return "indexing"
+    if current == "indexing":
+        return "paused"
+    return "paused"
 
-    id: KnowledgeAssetId
-    tenant_id: TenantId
-    workspace_id: WorkspaceId
-    package_id: KnowledgePackageId
-    kind: KnowledgeAssetKind
-    name: str
-    mime_type: str
-    byte_size: int
-    storage_uri: str
-    status: KnowledgeAssetStatus = KnowledgeAssetStatus.PENDING
-    chunk_count: int = 0
-    error_message: str | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
-    created_at: datetime = field(default_factory=_utcnow)
-    updated_at: datetime = field(default_factory=_utcnow)
+
+def map_doc_kind(doc_type: str) -> KnowledgeKind:
+    if doc_type in {"policy", "contract"}:
+        return "制度"
+    if doc_type in {"meeting", "manual"}:
+        return "项目"
+    return "指南"
+
+
+def is_workspace_visible(scope: str) -> bool:
+    return scope in OPEN_SCOPES
+
+
+@dataclass(slots=True)
+class DocChunk:
+    index: int
+    snippet: str
+    citations: int = 0
+    tokens: int = 0
+    heading: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        out: dict[str, Any] = {
+            "index": self.index,
+            "snippet": self.snippet,
+            "citations": self.citations,
+            "tokens": self.tokens,
+        }
+        if self.heading:
+            out["heading"] = self.heading
+        return out
 
     @classmethod
-    def create(
-        cls,
-        *,
-        tenant_id: TenantId,
-        workspace_id: WorkspaceId,
-        package_id: KnowledgePackageId,
-        kind: KnowledgeAssetKind | str,
-        name: str,
-        mime_type: str,
-        byte_size: int,
-        storage_uri: str,
-        metadata: dict[str, Any] | None = None,
-        id: KnowledgeAssetId | None = None,
-        now: datetime | None = None,
-    ) -> KnowledgeAsset:
-        if not name or not name.strip():
-            raise KnowledgeValidationError(
-                "asset name must be non-empty", code="INVALID_KNOWLEDGE_SPEC"
-            )
-        if byte_size < 0:
-            raise KnowledgeValidationError(
-                f"byte_size must be >= 0, got {byte_size}",
-                code="INVALID_KNOWLEDGE_SPEC",
-            )
-        if not storage_uri:
-            raise KnowledgeValidationError(
-                "storage_uri must be non-empty", code="INVALID_KNOWLEDGE_SPEC"
-            )
-        kind_enum = (
-            kind if isinstance(kind, KnowledgeAssetKind) else KnowledgeAssetKind(kind)
-        )
-        ts = now or _utcnow()
+    def from_dict(cls, raw: dict[str, Any]) -> Self:
         return cls(
-            id=id if id is not None else KnowledgeAssetId(uuid4()),
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            package_id=package_id,
-            kind=kind_enum,
-            name=name,
-            mime_type=mime_type or "application/octet-stream",
-            byte_size=byte_size,
-            storage_uri=storage_uri,
-            status=KnowledgeAssetStatus.PENDING,
-            chunk_count=0,
-            error_message=None,
-            metadata=dict(metadata or {}),
-            created_at=ts,
-            updated_at=ts,
+            index=int(raw.get("index") or 0),
+            snippet=str(raw.get("snippet") or ""),
+            citations=int(raw.get("citations") or 0),
+            tokens=int(raw.get("tokens") or 0),
+            heading=str(raw.get("heading") or ""),
         )
 
-    def with_status(
-        self,
-        *,
-        status: KnowledgeAssetStatus,
-        error_message: str | None = None,
-        now: datetime | None = None,
-    ) -> KnowledgeAsset:
-        ts = now or _utcnow()
-        return KnowledgeAsset(
-            id=self.id,
-            tenant_id=self.tenant_id,
-            workspace_id=self.workspace_id,
-            package_id=self.package_id,
-            kind=self.kind,
-            name=self.name,
-            mime_type=self.mime_type,
-            byte_size=self.byte_size,
-            storage_uri=self.storage_uri,
-            status=status,
-            chunk_count=self.chunk_count,
-            error_message=error_message,
-            metadata=dict(self.metadata),
-            created_at=self.created_at,
-            updated_at=ts,
-        )
 
-    def with_chunk_count(
-        self, *, chunk_count: int, now: datetime | None = None
-    ) -> KnowledgeAsset:
-        if chunk_count < 0:
-            raise KnowledgeValidationError(
-                f"chunk_count must be >= 0, got {chunk_count}",
-                code="INVALID_KNOWLEDGE_SPEC",
-            )
-        ts = now or _utcnow()
-        return KnowledgeAsset(
-            id=self.id,
-            tenant_id=self.tenant_id,
-            workspace_id=self.workspace_id,
-            package_id=self.package_id,
-            kind=self.kind,
-            name=self.name,
-            mime_type=self.mime_type,
-            byte_size=self.byte_size,
-            storage_uri=self.storage_uri,
-            status=self.status,
-            chunk_count=chunk_count,
-            error_message=self.error_message,
-            metadata=dict(self.metadata),
-            created_at=self.created_at,
-            updated_at=ts,
-        )
-
-    def is_visible(self) -> bool:
-        """Whether the asset is ready to be searched.
-
-        Chunks are only emitted into the vector index once the asset
-        reaches ``READY``; intermediate / failed / revoked assets are
-        hidden from search.
-        """
-        return self.status == KnowledgeAssetStatus.READY
-
-    def assert_visible(self) -> None:
-        if not self.is_visible():
-            raise KnowledgeAssetNotFound(
-                f"asset {self.id} not visible (status={self.status.value})",
-                code="KNOWLEDGE_ASSET_NOT_READY",
-            )
-
-
-@dataclass(slots=True, frozen=True)
-class KnowledgePackage:
-    """A curated collection of knowledge assets."""
-
-    id: KnowledgePackageId
-    tenant_id: TenantId
-    workspace_id: WorkspaceId
+@dataclass(slots=True)
+class KnowledgeBase:
+    id: UUID
+    tenant_id: UUID
+    workspace_id: UUID
     name: str
     description: str
-    status: KnowledgePackageStatus = KnowledgePackageStatus.ACTIVE
-    asset_count: int = 0
-    metadata: dict[str, Any] = field(default_factory=dict)
-    created_by: UserId | None = None
-    # Tier B signing triple — same shape as SkillPackage.signature etc.
-    # Defaults are "" so existing seeds / tests keep constructing
-    # without explicit signing; the vetter enforces "all three set or all
-    # empty" once ``EOS_KNOWLEDGE_SIGNING_MODE != "disabled"``.
-    signature: str = ""
-    signer_key_id: str = ""
-    image_digest: str = ""
-    created_at: datetime = field(default_factory=_utcnow)
-    updated_at: datetime = field(default_factory=_utcnow)
+    owner: str
+    scope: KbScope
+    status: KbStatus
+    updated_at: datetime
+    created_at: datetime
+    doc_count: int = 0
+    vector_count: int = 0
+    tags: list[str] = field(default_factory=list)
+    tone: Tone = "info"
+    eval_hit_rate: float = 0.0
+    bound_sources: list[str] = field(default_factory=list)
+    retrieval: RetrievalMode = "hybrid"
+    top_k: int = 8
 
     @classmethod
     def create(
         cls,
         *,
-        tenant_id: TenantId,
-        workspace_id: WorkspaceId,
+        id: UUID,
+        tenant_id: UUID,
+        workspace_id: UUID,
         name: str,
-        description: str = "",
-        metadata: dict[str, Any] | None = None,
-        created_by: UserId | None = None,
-        id: KnowledgePackageId | None = None,
-        now: datetime | None = None,
-        signature: str = "",
-        signer_key_id: str = "",
-        image_digest: str = "",
-    ) -> KnowledgePackage:
-        if not name or not name.strip():
-            raise KnowledgeValidationError(
-                "package name must be non-empty", code="INVALID_KNOWLEDGE_SPEC"
-            )
-        if len(name) > 128:
-            raise KnowledgeValidationError(
-                f"package name too long ({len(name)} > 128)",
-                code="INVALID_KNOWLEDGE_SPEC",
-            )
-        signing_fields = (bool(signature), bool(signer_key_id), bool(image_digest))
-        if any(signing_fields) and not all(signing_fields):
-            raise KnowledgeValidationError(
-                "signature / signer_key_id / image_digest must all be set together",
-                code="INVALID_KNOWLEDGE_SPEC",
-            )
-        ts = now or _utcnow()
+        description: str,
+        owner: str,
+        scope: KbScope,
+        bound_sources: list[str],
+        retrieval: RetrievalMode,
+        top_k: int,
+    ) -> Self:
+        now = _utcnow()
         return cls(
-            id=id if id is not None else KnowledgePackageId(uuid4()),
+            id=id,
             tenant_id=tenant_id,
             workspace_id=workspace_id,
-            name=name,
-            description=description or "",
-            status=KnowledgePackageStatus.ACTIVE,
-            asset_count=0,
-            metadata=dict(metadata or {}),
-            created_by=created_by,
-            signature=signature,
-            signer_key_id=signer_key_id,
-            image_digest=image_digest,
-            created_at=ts,
-            updated_at=ts,
+            name=name.strip() or "未命名知识库",
+            description=description,
+            owner=owner,
+            scope=scope if scope in KB_SCOPES else "部门",
+            status="indexing",
+            updated_at=now,
+            created_at=now,
+            bound_sources=list(bound_sources),
+            retrieval=retrieval if retrieval in RETRIEVAL_MODES else "hybrid",
+            top_k=max(1, min(int(top_k or 8), 50)),
         )
 
-    def with_status(
-        self,
+    def toggle_status(self) -> Self:
+        return replace(self, status=next_kb_status(self.status), updated_at=_utcnow())
+
+    def pause(self) -> Self:
+        return replace(self, status="paused", updated_at=_utcnow())
+
+    def rebuild(self) -> Self:
+        return replace(self, status="indexing", updated_at=_utcnow())
+
+    def to_admin_dict(self) -> dict[str, Any]:
+        return {
+            "id": str(self.id),
+            "name": self.name,
+            "description": self.description,
+            "owner": self.owner,
+            "scope": self.scope,
+            "status": self.status,
+            "docCount": self.doc_count,
+            "vectorCount": self.vector_count,
+            "updatedAt": format_last_update(self.updated_at),
+            "tags": list(self.tags),
+            "tone": self.tone,
+            "evalHitRate": self.eval_hit_rate,
+        }
+
+
+@dataclass(slots=True)
+class KnowledgeDoc:
+    id: UUID
+    tenant_id: UUID
+    workspace_id: UUID
+    name: str
+    type: DocType
+    kb_id: UUID
+    status: DocStatus
+    updated_at: datetime
+    created_at: datetime
+    source_id: str | None = None
+    size_kb: int = 0
+    chunks: int = 0
+    citations: int = 0
+    chunks_preview: list[DocChunk] = field(default_factory=list)
+
+    def to_admin_dict(self) -> dict[str, Any]:
+        out: dict[str, Any] = {
+            "id": str(self.id),
+            "name": self.name,
+            "type": self.type,
+            "kbId": str(self.kb_id),
+            "status": self.status,
+            "sizeKb": self.size_kb,
+            "chunks": self.chunks,
+            "updatedAt": format_last_update(self.updated_at),
+            "citations": self.citations,
+        }
+        if self.source_id:
+            out["sourceId"] = self.source_id
+        if self.chunks_preview:
+            out["chunksPreview"] = [item.to_dict() for item in self.chunks_preview]
+        return out
+
+    def to_catalog_dict(self, kb: KnowledgeBase) -> dict[str, Any]:
+        excerpt = ""
+        if self.chunks_preview:
+            first = self.chunks_preview[0]
+            excerpt = first.snippet or first.heading
+        return {
+            "id": str(self.id),
+            "title": self.name,
+            "kind": map_doc_kind(self.type),
+            "description": kb.description or self.name,
+            "owner": kb.owner or "知识管理",
+            "updated": format_last_update(self.updated_at),
+            "tags": list(kb.tags) if kb.tags else [self.type],
+            "excerpt": excerpt or kb.description or "暂无摘要",
+        }
+
+
+@dataclass(slots=True)
+class KnowledgeSource:
+    id: UUID
+    tenant_id: UUID
+    workspace_id: UUID
+    name: str
+    type: SourceType
+    status: SourceStatus
+    updated_at: datetime
+    created_at: datetime
+    schedule: str = ""
+    item_count: int = 0
+    last_error: str = ""
+
+    @classmethod
+    def create(
+        cls,
         *,
-        status: KnowledgePackageStatus,
-        now: datetime | None = None,
-    ) -> KnowledgePackage:
-        ts = now or _utcnow()
-        return KnowledgePackage(
-            id=self.id,
-            tenant_id=self.tenant_id,
-            workspace_id=self.workspace_id,
-            name=self.name,
-            description=self.description,
-            status=status,
-            asset_count=self.asset_count,
-            metadata=dict(self.metadata),
-            created_by=self.created_by,
-            signature=self.signature,
-            signer_key_id=self.signer_key_id,
-            image_digest=self.image_digest,
-            created_at=self.created_at,
-            updated_at=ts,
+        id: UUID,
+        tenant_id: UUID,
+        workspace_id: UUID,
+        name: str,
+        type: SourceType,
+        schedule: str,
+    ) -> Self:
+        now = _utcnow()
+        source_type: SourceType = type if type in SOURCE_TYPES else "api"
+        return cls(
+            id=id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            name=name.strip() or "未命名数据源",
+            type=source_type,
+            status="online",
+            updated_at=now,
+            created_at=now,
+            schedule=schedule,
         )
 
-    def with_asset_count(
-        self, *, asset_count: int, now: datetime | None = None
-    ) -> KnowledgePackage:
-        if asset_count < 0:
-            raise KnowledgeValidationError(
-                f"asset_count must be >= 0, got {asset_count}",
-                code="INVALID_KNOWLEDGE_SPEC",
-            )
-        ts = now or _utcnow()
-        return KnowledgePackage(
-            id=self.id,
-            tenant_id=self.tenant_id,
-            workspace_id=self.workspace_id,
-            name=self.name,
-            description=self.description,
-            status=self.status,
-            asset_count=asset_count,
-            metadata=dict(self.metadata),
-            created_by=self.created_by,
-            signature=self.signature,
-            signer_key_id=self.signer_key_id,
-            image_digest=self.image_digest,
-            created_at=self.created_at,
-            updated_at=ts,
-        )
+    def to_admin_dict(self) -> dict[str, Any]:
+        out: dict[str, Any] = {
+            "id": str(self.id),
+            "name": self.name,
+            "type": self.type,
+            "status": self.status,
+            "lastSync": format_last_update(self.updated_at),
+            "schedule": self.schedule,
+            "itemCount": self.item_count,
+        }
+        if self.last_error:
+            out["lastError"] = self.last_error
+        return out
 
 
-def chunk_size_default() -> int:
-    return DEFAULT_CHUNK_SIZE
+@dataclass(slots=True)
+class KnowledgeTask:
+    id: UUID
+    tenant_id: UUID
+    workspace_id: UUID
+    name: str
+    kind: TaskKind
+    kb_id: UUID
+    status: TaskStatus
+    updated_at: datetime
+    created_at: datetime
+    source_id: str | None = None
+    progress: int = 0
+    items: int = 0
+    duration: str = ""
+    failure_reason: str = ""
+
+    def to_admin_dict(self) -> dict[str, Any]:
+        out: dict[str, Any] = {
+            "id": str(self.id),
+            "name": self.name,
+            "kind": self.kind,
+            "kbId": str(self.kb_id),
+            "status": self.status,
+            "progress": self.progress,
+            "items": self.items,
+            "startedAt": format_last_update(self.created_at),
+            "duration": self.duration,
+        }
+        if self.source_id:
+            out["sourceId"] = self.source_id
+        if self.failure_reason:
+            out["failureReason"] = self.failure_reason
+        return out
 
 
-def chunk_overlap_default() -> int:
-    return DEFAULT_CHUNK_OVERLAP
+@dataclass(slots=True)
+class KnowledgeEvalCase:
+    id: UUID
+    tenant_id: UUID
+    workspace_id: UUID
+    name: str
+    query: str
+    expected_kb: str
+    actual_kb: str
+    status: EvalStatus
+    latency: int
+    mrr: float
+    updated_at: datetime
+    created_at: datetime
+
+    def to_admin_dict(self) -> dict[str, Any]:
+        return {
+            "id": str(self.id),
+            "name": self.name,
+            "query": self.query,
+            "expectedKb": self.expected_kb,
+            "actualKb": self.actual_kb,
+            "status": self.status,
+            "latency": self.latency,
+            "mrr": self.mrr,
+        }
 
 
 __all__ = [
-    "DEFAULT_CHUNK_OVERLAP",
-    "DEFAULT_CHUNK_SIZE",
-    "EMBEDDING_DIM",
-    "KnowledgeAsset",
-    "KnowledgeChunk",
-    "KnowledgePackage",
+    "DocChunk",
+    "KnowledgeBase",
+    "KnowledgeDoc",
+    "KnowledgeEvalCase",
+    "KnowledgeSource",
+    "KnowledgeTask",
+    "format_last_update",
+    "is_workspace_visible",
+    "map_doc_kind",
+    "next_kb_status",
 ]
-
-
-# Convenience re-export of errors so consumers can `from deos.modules.knowledge.domain.entities import KnowledgePackageNotFound`.
-_KNOWLEDGE_ENTITY_REEXPORTS = (
-    "KnowledgeAssetNotFound",
-    "KnowledgeChunkNotFound",
-    "KnowledgePackageNotFound",
-    "KnowledgeValidationError",
-)
-__all__ += list(_KNOWLEDGE_ENTITY_REEXPORTS)  # type: ignore[arg-type]
